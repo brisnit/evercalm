@@ -1,8 +1,15 @@
-import { and, asc, eq, ilike, inArray, isNull, type SQL } from 'drizzle-orm'
-import { employmentLocations, employments, locations } from '@/server/db/schema'
+import { and, asc, eq, ilike, inArray, isNull, or, type SQL } from 'drizzle-orm'
+import {
+  employmentCredentials,
+  employmentLocations,
+  employments,
+  locations,
+} from '@/server/db/schema'
 import type { Tx } from '@/server/db'
-import { NotFoundError } from '@/lib/errors'
-import { accessibleLocationIds, authorize, can, isSelf } from '@/server/authz/can'
+import { ForbiddenError, NotFoundError } from '@/lib/errors'
+import { newId } from '@/lib/ids'
+import { AUDIT_ACTIONS, recordAuditEvent } from '@/server/audit'
+import { accessibleLocationIds, authorize, can, canAtAnyLocation, isSelf } from '@/server/authz/can'
 import type { Actor } from '@/server/authz/actor'
 
 /**
@@ -19,7 +26,7 @@ import type { Actor } from '@/server/authz/actor'
  */
 
 export interface DirectoryFilters {
-  /** Free-text match on display name. Never on email. */
+  /** Free-text match on display name or job title. Never on email. */
   query?: string
   locationId?: string
   status?: string
@@ -29,6 +36,7 @@ export interface DirectoryEntry {
   employmentId: string
   displayName: string
   status: string
+  jobTitle: string | null
   homeLocationId: string | null
   homeLocationName: string | null
 }
@@ -49,6 +57,8 @@ export interface SensitiveContact {
 export interface EmploymentDetail extends DirectoryEntry {
   hiredOn: string | null
   separatedOn: string | null
+  managerEmploymentId: string | null
+  managerName: string | null
   locationIds: string[]
   /** Null when the viewer may not see sensitive information. */
   contact: SensitiveContact | null
@@ -68,9 +78,9 @@ export async function listEmployments(
   actor: Actor,
   filters: DirectoryFilters = {},
 ): Promise<DirectoryEntry[]> {
-  if (!can(actor, 'people.view') && accessibleLocationIds(actor, 'people.view')?.length === 0) {
-    authorize(actor, 'people.view')
-  }
+  // Holding people.view ANYWHERE is enough to open the directory; which rows
+  // come back is then narrowed by locationScopeCondition().
+  if (!canAtAnyLocation(actor, 'people.view')) throw new ForbiddenError('people.view')
 
   const conditions: (SQL | undefined)[] = [
     eq(employments.organizationId, actor.organizationId),
@@ -85,7 +95,7 @@ export async function listEmployments(
     // Deliberately not searchable by email: an email search would turn the
     // directory into an oracle for "does this person exist", which is the
     // same leak the invitation flow has to avoid.
-    conditions.push(ilike(employments.displayName, term))
+    conditions.push(or(ilike(employments.displayName, term), ilike(employments.jobTitle, term)))
   }
 
   const rows = await tx
@@ -93,6 +103,7 @@ export async function listEmployments(
       employmentId: employments.id,
       displayName: employments.displayName,
       status: employments.status,
+      jobTitle: employments.jobTitle,
       homeLocationId: employments.homeLocationId,
       homeLocationName: locations.name,
     })
@@ -122,6 +133,8 @@ export async function getEmployment(
       employmentId: employments.id,
       displayName: employments.displayName,
       status: employments.status,
+      jobTitle: employments.jobTitle,
+      managerEmploymentId: employments.managerEmploymentId,
       homeLocationId: employments.homeLocationId,
       homeLocationName: locations.name,
       hiredOn: employments.hiredOn,
@@ -157,6 +170,21 @@ export async function getEmployment(
   if (!isSelf(actor, employmentId))
     authorize(actor, 'people.view', { locationId: row.homeLocationId })
 
+  let managerName: string | null = null
+  if (row.managerEmploymentId) {
+    const [manager] = await tx
+      .select({ displayName: employments.displayName })
+      .from(employments)
+      .where(
+        and(
+          eq(employments.organizationId, actor.organizationId),
+          eq(employments.id, row.managerEmploymentId),
+        ),
+      )
+      .limit(1)
+    managerName = manager?.displayName ?? null
+  }
+
   const assigned = await tx
     .select({ locationId: employmentLocations.locationId })
     .from(employmentLocations)
@@ -171,10 +199,13 @@ export async function getEmployment(
     employmentId: row.employmentId,
     displayName: row.displayName,
     status: row.status,
+    jobTitle: row.jobTitle,
     homeLocationId: row.homeLocationId,
     homeLocationName: row.homeLocationName,
     hiredOn: row.hiredOn,
     separatedOn: row.separatedOn,
+    managerEmploymentId: row.managerEmploymentId,
+    managerName,
     locationIds: assigned.map((a) => a.locationId),
     contact: mayViewSensitive
       ? {
@@ -218,4 +249,219 @@ export async function findEmploymentByEmailInTenant(
     .limit(1)
 
   return rows[0] ?? null
+}
+
+/**
+ * PROFESSIONAL CREDENTIALS.
+ *
+ * Generic by design. The salon tenant tracks state cosmetology licences here;
+ * the restaurant tracks food handler cards. The platform knows only that a
+ * credential has an issuer and usually an expiry.
+ *
+ * The licence NUMBER is sensitive and is returned only to actors who also hold
+ * `people.view_sensitive`. Expiry dates are not sensitive - a manager needs to
+ * know somebody's licence lapses next month without being able to read the
+ * number itself.
+ */
+
+export type CredentialExpiryState = 'valid' | 'expiring_soon' | 'expired' | 'no_expiry'
+
+export interface CredentialView {
+  id: string
+  name: string
+  issuingAuthority: string | null
+  /** Null unless the viewer holds people.view_sensitive or it is their own. */
+  identifier: string | null
+  issuedOn: string | null
+  expiresOn: string | null
+  expiryState: CredentialExpiryState
+  daysUntilExpiry: number | null
+}
+
+const EXPIRING_SOON_DAYS = 45
+
+export function credentialExpiryState(expiresOn: string | null): {
+  state: CredentialExpiryState
+  daysUntilExpiry: number | null
+} {
+  if (!expiresOn) return { state: 'no_expiry', daysUntilExpiry: null }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(`${expiresOn}T00:00:00`)
+  const days = Math.round((expiry.getTime() - today.getTime()) / 86_400_000)
+  if (days < 0) return { state: 'expired', daysUntilExpiry: days }
+  if (days <= EXPIRING_SOON_DAYS) return { state: 'expiring_soon', daysUntilExpiry: days }
+  return { state: 'valid', daysUntilExpiry: days }
+}
+
+export async function listCredentials(
+  tx: Tx,
+  actor: Actor,
+  employmentId: string,
+): Promise<CredentialView[]> {
+  let subjectLocationId: string | null = null
+  if (!isSelf(actor, employmentId)) {
+    const [subject] = await tx
+      .select({ homeLocationId: employments.homeLocationId })
+      .from(employments)
+      .where(
+        and(eq(employments.organizationId, actor.organizationId), eq(employments.id, employmentId)),
+      )
+      .limit(1)
+    if (!subject) throw new NotFoundError('Employee not found')
+    subjectLocationId = subject.homeLocationId
+    authorize(actor, 'people.view', { locationId: subjectLocationId })
+  }
+
+  const mayViewIdentifier =
+    isSelf(actor, employmentId) ||
+    can(actor, 'people.view_sensitive', { locationId: subjectLocationId })
+
+  const rows = await tx
+    .select({
+      id: employmentCredentials.id,
+      name: employmentCredentials.name,
+      issuingAuthority: employmentCredentials.issuingAuthority,
+      identifier: employmentCredentials.identifier,
+      issuedOn: employmentCredentials.issuedOn,
+      expiresOn: employmentCredentials.expiresOn,
+    })
+    .from(employmentCredentials)
+    .where(
+      and(
+        eq(employmentCredentials.organizationId, actor.organizationId),
+        eq(employmentCredentials.employmentId, employmentId),
+        isNull(employmentCredentials.archivedAt),
+      ),
+    )
+    .orderBy(asc(employmentCredentials.expiresOn))
+
+  return rows.map((r) => {
+    const { state, daysUntilExpiry } = credentialExpiryState(r.expiresOn)
+    return {
+      id: r.id,
+      name: r.name,
+      issuingAuthority: r.issuingAuthority,
+      identifier: mayViewIdentifier ? r.identifier : null,
+      issuedOn: r.issuedOn,
+      expiresOn: r.expiresOn,
+      expiryState: state,
+      daysUntilExpiry,
+    }
+  })
+}
+
+/** Credentials expiring soon or already expired, across the organization. */
+export async function listExpiringCredentials(
+  tx: Tx,
+  actor: Actor,
+): Promise<{ employmentId: string; employeeName: string; credential: CredentialView }[]> {
+  if (!canAtAnyLocation(actor, 'people.view')) throw new ForbiddenError('people.view')
+  const allowedLocations = accessibleLocationIds(actor, 'people.view')
+
+  const rows = await tx
+    .select({
+      id: employmentCredentials.id,
+      employmentId: employmentCredentials.employmentId,
+      employeeName: employments.displayName,
+      name: employmentCredentials.name,
+      issuingAuthority: employmentCredentials.issuingAuthority,
+      issuedOn: employmentCredentials.issuedOn,
+      expiresOn: employmentCredentials.expiresOn,
+      homeLocationId: employments.homeLocationId,
+    })
+    .from(employmentCredentials)
+    .innerJoin(
+      employments,
+      and(
+        eq(employments.id, employmentCredentials.employmentId),
+        eq(employments.organizationId, employmentCredentials.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(employmentCredentials.organizationId, actor.organizationId),
+        isNull(employmentCredentials.archivedAt),
+      ),
+    )
+    .orderBy(asc(employmentCredentials.expiresOn))
+
+  return rows
+    .filter(
+      // null means an organization-wide grant, so no narrowing is needed.
+      (r) =>
+        allowedLocations === null ||
+        (r.homeLocationId !== null && allowedLocations.includes(r.homeLocationId)),
+    )
+    .map((r) => {
+      const { state, daysUntilExpiry } = credentialExpiryState(r.expiresOn)
+      return {
+        employmentId: r.employmentId,
+        employeeName: r.employeeName,
+        credential: {
+          id: r.id,
+          name: r.name,
+          issuingAuthority: r.issuingAuthority,
+          // Never expose the number in an organization-wide list.
+          identifier: null,
+          issuedOn: r.issuedOn,
+          expiresOn: r.expiresOn,
+          expiryState: state,
+          daysUntilExpiry,
+        },
+      }
+    })
+    .filter(
+      (r) => r.credential.expiryState === 'expired' || r.credential.expiryState === 'expiring_soon',
+    )
+}
+
+export async function recordCredential(
+  tx: Tx,
+  actor: Actor,
+  employmentId: string,
+  input: {
+    name: string
+    issuingAuthority?: string
+    identifier?: string
+    issuedOn?: string | null
+    expiresOn?: string | null
+  },
+): Promise<string> {
+  authorize(actor, 'people.manage_credentials')
+
+  const [person] = await tx
+    .select({ displayName: employments.displayName, homeLocationId: employments.homeLocationId })
+    .from(employments)
+    .where(
+      and(eq(employments.organizationId, actor.organizationId), eq(employments.id, employmentId)),
+    )
+    .limit(1)
+  if (!person) throw new NotFoundError('Employee not found')
+
+  const id = newId()
+  await tx.insert(employmentCredentials).values({
+    id,
+    organizationId: actor.organizationId,
+    employmentId,
+    name: input.name.trim(),
+    issuingAuthority: input.issuingAuthority?.trim() || null,
+    identifier: input.identifier?.trim() || null,
+    issuedOn: input.issuedOn ?? null,
+    expiresOn: input.expiresOn ?? null,
+    verifiedAt: new Date(),
+    verifiedByEmploymentId: actor.employmentId,
+  })
+
+  await recordAuditEvent(tx, actor, {
+    action: AUDIT_ACTIONS.CREDENTIAL_RECORDED,
+    summary: `Recorded ${input.name.trim()} for ${person.displayName}`,
+    subjectType: 'employment',
+    subjectId: employmentId,
+    locationId: person.homeLocationId,
+    // The licence number is deliberately absent from audit metadata.
+    metadata: { credential: input.name.trim(), expiresOn: input.expiresOn ?? null },
+  })
+
+  return id
 }

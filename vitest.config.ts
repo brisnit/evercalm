@@ -21,6 +21,9 @@ export default defineConfig({
           environment: 'node',
           include: ['tests/integration/**/*.test.ts'],
           globalSetup: ['./tests/global-setup.ts'],
+          // Runs inside the worker, so modules that read the environment at
+          // call time have valid throwaway values.
+          setupFiles: ['./tests/setup-env.ts'],
           // One real database, shared serially: tests assert on role
           // attributes and session-local settings, which parallel workers
           // would make ambiguous.

@@ -7,7 +7,16 @@ import {
 import { resolveActor } from '@/server/authz/resolve'
 import type { Actor } from '@/server/authz/actor'
 import { NotFoundError, ForbiddenError } from '@/lib/errors'
+import { SEED_ORGANIZATIONS } from '@/server/db/seed/data'
 import { asTenant, closeTestPools, migrationClient, organizationIdBySlug } from '../helpers/tenant'
+
+/** Derived from the seed rather than hard-coded, so enriching the demo
+ *  tenants does not make this test wrong. */
+function seededPeopleCount(slug: string): number {
+  const org = SEED_ORGANIZATIONS.find((o) => o.slug === slug)
+  if (!org) throw new Error(`Unknown seed organization ${slug}`)
+  return org.people.length
+}
 
 /**
  * GLOBAL IDENTITY BOUNDARY.
@@ -124,11 +133,27 @@ describe('the directory resolves through employments, never global identity', ()
     const harborPeople = await asTenant(harborId, (tx) => listEmployments(tx, dana))
     const lumenPeople = await asTenant(lumenId, (tx) => listEmployments(tx, ana))
 
-    expect(harborPeople.length).toBe(7)
-    expect(lumenPeople.length).toBe(4)
+    // Asserted as a PROPERTY, not an exact count: other test files create
+    // employments in this shared database, and a brittle number would fail
+    // for reasons that have nothing to do with the boundary being tested.
+    expect(harborPeople.length).toBeGreaterThanOrEqual(seededPeopleCount('harbor-vine'))
+    expect(lumenPeople.length).toBeGreaterThanOrEqual(seededPeopleCount('lumen-salon'))
+
     // Neither directory equals the global identity count - which is the point.
     expect(harborPeople.length).toBeLessThan(globalUsers.rows[0]!.c)
     expect(lumenPeople.length).toBeLessThan(globalUsers.rows[0]!.c)
+
+    // And neither directory contains a single person from the other tenant.
+    const harborNames = new Set(harborPeople.map((p) => p.displayName))
+    const lumenNames = new Set(lumenPeople.map((p) => p.displayName))
+    expect(harborNames.has('Marisol Vega'), 'salon staff must not appear at the restaurant').toBe(
+      false,
+    )
+    expect(lumenNames.has('Marcus Bell'), 'restaurant staff must not appear at the salon').toBe(
+      false,
+    )
+    expect(harborNames.has('Marcus Bell')).toBe(true)
+    expect(lumenNames.has('Marisol Vega')).toBe(true)
   })
 
   it('does not let an employee enumerate the directory at all', async () => {

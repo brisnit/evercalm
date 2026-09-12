@@ -9,6 +9,9 @@ export const PEOPLE = {
   harborGmRiverside: { email: 'marcus@harborvine.test', name: 'Marcus Bell' },
   harborEmployee: { email: 'sam@harborvine.test', name: 'Sam Whitfield' },
   salonOwner: { email: 'ana@lumensalon.test', name: 'Ana Beltrán' },
+  salonGmPearl: { email: 'kofi@lumensalon.test', name: 'Kofi Mensah' },
+  salonNewStylist: { email: 'elodie@lumensalon.test', name: 'Elodie Garnier' },
+  harborNewServer: { email: 'ava@harborvine.test', name: 'Ava Lindqvist' },
 } as const
 
 /**
@@ -79,6 +82,12 @@ export async function signIn(page: Page, email: string): Promise<void> {
     throw new Error(`Sign-in failed for ${email}: ${message?.trim() ?? 'unknown error'}`)
   }
   await landed
+
+  // Sign-in finishes with a client-side push AND a refresh. Returning before
+  // those settle lets the next page.goto() race them, which surfaces as
+  // "navigation interrupted by another navigation". Waiting for the landed
+  // page's main landmark is the signal that the router has finished.
+  await page.getByRole('main').waitFor({ state: 'visible', timeout: 15_000 })
 }
 
 export async function signOut(page: Page): Promise<void> {

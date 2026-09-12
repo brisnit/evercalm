@@ -19,7 +19,7 @@ export function Card({
   as?: 'div' | 'section' | 'article'
 }) {
   return (
-    <Component className={cn('rounded-card border-line border bg-white', className)}>
+    <Component className={cn('rounded-card border-line min-w-0 border bg-white', className)}>
       {children}
     </Component>
   )

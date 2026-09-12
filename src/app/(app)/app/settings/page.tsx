@@ -43,7 +43,7 @@ export default async function SettingsPage() {
         description="Foundation settings. People, scheduling, and training settings arrive with their slices."
       />
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_1.15fr] lg:items-start">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
         <Card>
           <CardHeader title="Profile" />
           <dl className="divide-line flex flex-col divide-y">

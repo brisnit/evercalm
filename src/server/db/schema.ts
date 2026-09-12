@@ -11,5 +11,8 @@
  */
 export * from '@/modules/org/schema'
 export * from '@/modules/people/schema'
+export * from '@/modules/structure/schema'
 export * from '@/modules/access/schema'
+export * from '@/modules/invitations/schema'
+export * from '@/modules/onboarding/schema'
 export * from '@/modules/audit/schema'

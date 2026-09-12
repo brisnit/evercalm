@@ -67,7 +67,6 @@ export const CAPABILITIES = def({
     description: 'Manage departments, teams, job roles, and stations.',
     group: 'organization',
     locationScopable: false,
-    plannedSlice: 2,
   },
   'org.manage_roles': {
     label: 'Manage roles and permissions',
@@ -108,21 +107,18 @@ export const CAPABILITIES = def({
     description: 'Send invitations to join the organization.',
     group: 'people',
     locationScopable: true,
-    plannedSlice: 2,
   },
   'people.update': {
     label: 'Update people',
     description: 'Edit employee profile details.',
     group: 'people',
     locationScopable: true,
-    plannedSlice: 2,
   },
   'people.manage_employment': {
     label: 'Manage employment',
     description: 'Change status, hire dates, and location assignment.',
     group: 'people',
     locationScopable: true,
-    plannedSlice: 2,
   },
   'people.separate': {
     label: 'Separate an employee',
@@ -130,7 +126,13 @@ export const CAPABILITIES = def({
       'Offboarding. Requires a second distinct approver holding this capability organization-wide.',
     group: 'people',
     locationScopable: false,
-    plannedSlice: 2,
+  },
+  'people.manage_credentials': {
+    label: 'Manage professional credentials',
+    description:
+      'Record licences and certifications and their expiry. Reading the licence number itself additionally requires people.view_sensitive.',
+    group: 'people',
+    locationScopable: true,
   },
   'people.export': {
     label: 'Export people data',
@@ -138,6 +140,27 @@ export const CAPABILITIES = def({
     group: 'people',
     locationScopable: false,
     plannedSlice: 7,
+  },
+
+  // --- onboarding ----------------------------------------------------------
+  'onboarding.manage': {
+    label: 'Manage onboarding checklists',
+    description: 'Create and edit the onboarding templates new hires follow.',
+    group: 'people',
+    locationScopable: false,
+  },
+  'onboarding.view_progress': {
+    label: 'View onboarding progress',
+    description: 'See how far each new hire has got, and what is blocking them.',
+    group: 'people',
+    locationScopable: true,
+  },
+  'onboarding.verify': {
+    label: 'Verify onboarding steps',
+    description:
+      'Confirm in person that a step was completed. An employee can never complete their own manager-verified step.',
+    group: 'people',
+    locationScopable: true,
   },
 
   // --- communication -------------------------------------------------------

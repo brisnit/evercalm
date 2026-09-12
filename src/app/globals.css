@@ -95,6 +95,16 @@
     border-radius: 4px;
   }
 
+  /*
+    Checkboxes and radios keep their native behaviour and their native
+    accessibility, but wear the brand accent rather than the browser's default
+    blue, which read as a foreign control next to everything else.
+  */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-violet-600);
+  }
+
   /* Numbers that line up in columns must be tabular. */
   table,
   [data-tabular] {

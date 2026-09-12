@@ -12,6 +12,9 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  // Reseeds the database, so a run is deterministic however it was started -
+  // `npm run test:e2e`, a bare `playwright test`, or a single spec from an editor.
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -26,12 +29,17 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
+  // Screenshot capture is opt-in via CAPTURE_SCREENSHOTS and excluded here so
+  // the normal suite stays assertion-only.
+  testIgnore: process.env.CAPTURE_SCREENSHOTS ? [] : [/screenshots.*\.spec\.ts/],
+
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     {
       name: 'mobile',
       use: { ...devices['iPhone 14'] },
-      testMatch: /.*(employee|marketing|accessibility)\.spec\.ts/,
+      testMatch:
+        /.*(employee|employee-onboarding|marketing|accessibility|screenshots-mobile)\.spec\.ts/,
     },
   ],
 

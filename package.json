@@ -28,7 +28,9 @@
     "db:local:stop": "tsx scripts/local-postgres.ts stop",
     "db:local:status": "tsx scripts/local-postgres.ts status",
     "db:local:reset": "tsx scripts/local-postgres.ts reset",
-    "secrets:scan": "tsx scripts/secret-scan.ts"
+    "secrets:scan": "tsx scripts/secret-scan.ts",
+    "db:refresh": "tsx scripts/refresh-data.ts",
+    "test:e2e:only": "E2E_SKIP_REFRESH=true playwright test"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.1",

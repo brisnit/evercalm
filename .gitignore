@@ -19,3 +19,8 @@ blob-report/
 .tmp/
 tsconfig.tsbuildinfo
 .pgdata/
+
+# Review screenshots are generated, not authored: 7.6 MB of PNGs that change on
+# every capture. Regenerate with:
+#   CAPTURE_SCREENSHOTS=1 npx playwright test -g "@screenshots"
+docs/screenshots/

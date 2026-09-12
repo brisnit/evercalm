@@ -11,7 +11,8 @@ test('an employee lands on their own surface with their own location', async ({ 
 
   await expect(page).toHaveURL(/\/my$/)
   await expect(page.getByRole('heading', { name: /Hello, Sam/ })).toBeVisible()
-  await expect(page.getByText('Riverside')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Where you work' })).toBeVisible()
+  await expect(page.getByText('Riverside').first()).toBeVisible()
   await expect(page.getByText('Downtown')).toHaveCount(0)
 
   // No administration link for someone with no administrative capability.

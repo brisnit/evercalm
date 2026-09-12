@@ -6,11 +6,24 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slice 1 (Foundation) complete.** Authentication, multi-tenant
-organizations and locations, the capability permission system, three-layer
-tenant isolation, and the audit foundation are working end to end. Scheduling,
-training, communication, and daily operations arrive in later slices and are
-not built — nothing in the interface pretends otherwise.
+**Status: Slices 1–2 complete.**
+
+- **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
+  locations, capability permissions with location scope, three-layer tenant
+  isolation, and append-only audit.
+- **Slice 2 — People & onboarding.** Company setup, organizational structure,
+  values and standards, secure invitations, the employee directory, employee
+  profiles, professional credentials with expiry, and the full set of
+  employment change workflows including a two-person separation rule.
+  Onboarding checklists are authored in the browser and **versioned**: a
+  published version is immutable, editing creates a new draft, and each
+  assignment is pinned to the version the person was actually given. People can
+  also be added in bulk from a spreadsheet, with a preview that writes nothing,
+  per-row reasons for anything rejected, and invitations only when the
+  administrator asks for them.
+
+Scheduling, training, communication, and daily operations arrive in later
+slices and are not built — nothing in the interface pretends otherwise.
 
 ## Quick start
 
@@ -90,6 +103,22 @@ rules that enforce the tenant-isolation boundary.
 - A generated test enumerates every tenant table and **fails CI if one lacks an
   RLS policy**, so a new table cannot quietly skip isolation.
 - There is no support impersonation feature.
+- Uploaded spreadsheets are treated as hostile input: the tenant is always taken
+  from the session and never from the file, confirmation re-validates from the
+  raw bytes rather than trusting the preview, and any cell we export that begins
+  `=`, `+`, `-` or `@` is neutralised so our own error report cannot become a
+  spreadsheet formula attack.
+
+### Known advisories
+
+`npm audit` reports 4 moderate advisories, all one chain: `esbuild` →
+`@esbuild-kit/*` → `drizzle-kit`, reaching us as a dependency of `better-auth`.
+The vulnerability is in **esbuild's development server**, which lets any website
+read responses from it. Nothing in this chain runs in production — `drizzle-kit`
+is a schema CLI and esbuild's serve mode is never started — so the advisories do
+not affect a deployed EverCalm. There is no non-breaking fix: `npm audit fix
+--force` changes the `better-auth` major version. Re-check when `better-auth`
+updates its own dependency.
 
 EverCalm organises HR workflows. It does not provide legal advice, and no
 workflow here should be taken as a guarantee of compliance with any

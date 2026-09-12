@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import pg from 'pg'
 import * as schema from '../full-schema'
 import { seedAll, SEED_PASSWORD } from './index'
+import { assertDevelopmentDatabase } from '../../../lib/dev-only'
 
 /**
  * CLI: npm run db:seed
@@ -26,6 +27,9 @@ if (isDirectRun) {
     process.exit(1)
   }
 
+  // Seeded accounts share a password that is a constant in this repository.
+  assertDevelopmentDatabase('seed the database', url)
+
   const pool = new pg.Pool({
     connectionString: url,
     ssl: /\bsslmode=require\b/.test(url) ? { rejectUnauthorized: true } : undefined,
@@ -35,10 +39,19 @@ if (isDirectRun) {
   try {
     const summary = await seedAll(db)
     for (const org of summary.organizations) {
+      if (!org.created) {
+        console.log(`  = ${org.name} already seeded, skipped`)
+        continue
+      }
+      console.log(`  + ${org.name} (${org.industry})`)
       console.log(
-        org.created
-          ? `  + ${org.name} (${org.industry}): ${org.locations} locations, ${org.people} people, ${org.roles} roles, ${org.grants} grants`
-          : `  = ${org.name} already seeded, skipped`,
+        `      ${org.locations} locations, ${org.departments} departments, ${org.jobRoles} job roles, ${org.stations} stations`,
+      )
+      console.log(
+        `      ${org.people} people, ${org.grants} role grants, ${org.credentials} credentials`,
+      )
+      console.log(
+        `      ${org.values} values and standards, ${org.onboardingTemplates} onboarding checklists, ${org.onboardingAssignments} onboarding runs`,
       )
     }
     if (summary.organizations.some((o) => o.created)) {

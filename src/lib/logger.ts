@@ -36,10 +36,24 @@ const REDACTED_PATHS = [
   '*.addressLine1',
 ]
 
-export const logger = pino({
-  level: getEnv().LOG_LEVEL,
-  redact: { paths: REDACTED_PATHS, censor: '[redacted]' },
-  base: { service: 'evercalm' },
-})
+/**
+ * Built lazily.
+ *
+ * Reading the environment at module scope would make merely IMPORTING anything
+ * that logs fail when the environment is incomplete - which is exactly what
+ * happened to a test that imported a service two levels away from any logging.
+ * A module should not refuse to load because of configuration it has not used
+ * yet.
+ */
+let instance: pino.Logger | undefined
 
-export type Logger = typeof logger
+export function getLogger(): pino.Logger {
+  instance ??= pino({
+    level: getEnv().LOG_LEVEL,
+    redact: { paths: REDACTED_PATHS, censor: '[redacted]' },
+    base: { service: 'evercalm' },
+  })
+  return instance
+}
+
+export type Logger = pino.Logger

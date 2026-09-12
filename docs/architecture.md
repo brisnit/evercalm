@@ -156,6 +156,98 @@ merged, by a later matching flat-config block, and an earlier version of this
 config silently lost the identity rules that way. The test does not depend on
 lint being configured correctly.
 
+## Invitations: the only anonymous write path
+
+Accepting an invitation is the one place an unauthenticated caller writes data,
+so it is deliberately narrow.
+
+| Property                | How                                                                                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tokens are never stored | 32 random bytes, base64url; only the SHA-256 is persisted                                                                                                                                                  |
+| Single use              | Acceptance claims the row with a conditional `UPDATE ... WHERE status = 'pending'`, so a race produces one employment and one failure                                                                      |
+| Expiry                  | Checked on lookup; an expired link is indistinguishable from an invented one                                                                                                                               |
+| Revocation is immediate | Revoking replaces the hash with a dead value, so an outstanding link stops working at once                                                                                                                 |
+| Resend rotates          | A new token is issued and the old hash replaced, so a forwarded old link dies                                                                                                                              |
+| No enumeration          | The preview returns the organization and nothing personal. The account is created from the **invitation's** address, never from the form, so the page cannot be used to discover who an address belongs to |
+| Nothing granted early   | Role, scope and locations are stored as intent and applied only on acceptance                                                                                                                              |
+| Rate limited            | Per organization per rolling hour, plus a per-invitation resend cooldown                                                                                                                                   |
+
+Migration `0005` provides the SECURITY DEFINER lookup, keyed on the hash. It is
+the second and last sanctioned cross-tenant read, and the pre-authentication
+call is routed through `src/server/auth/invitation-access.ts` so unscoped
+database access stays confined to the auth layer.
+
+## The integration boundary with later slices
+
+Onboarding steps of kind `training_assignment` and `policy_ack` point at systems that have
+not been built. Rather than letting them be ticked off as if they had, they
+start **blocked** with a stated reason, and the service refuses to complete
+them.
+
+They are also distinguished from real blockers: `awaitingPlatform` marks a step
+waiting on EverCalm rather than on a person. The onboarding board counts only
+human-actionable blocks as "blocked", because a board where every new hire is
+blocked by our own roadmap tells a manager nothing.
+
+When Slice 5 lands, a training step points at a real assignment through the
+`reference_type` / `reference_id` pair with no schema change here.
+
+## Onboarding templates are versioned, and published versions are immutable
+
+A checklist is three things, not one:
+
+| Table                            | Holds                                                                 |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `onboarding_templates`           | The identity of a checklist: its name, description, targeting, status |
+| `onboarding_template_versions`   | One editable draft or one frozen published version                    |
+| `onboarding_sections` / `_steps` | The content, owned by a **version**, never by the template            |
+
+The rule the whole design exists to enforce: **once a version is published, its
+content cannot change.** Editing means creating a new draft.
+
+Two properties follow, and both matter to somebody:
+
+- An assignment pins `template_version_id`. A person part-way through a
+  checklist keeps working through exactly the steps they were given, even if an
+  administrator publishes three new versions that afternoon.
+- An audit trail of "what was this person actually asked to do" survives,
+  because the version they were assigned still exists unaltered.
+
+Every content mutation goes through one gate, `requireDraftVersion()`, which
+loads the version and refuses anything that is not a draft. Authoring actions do
+not each re-implement the check, so a new one cannot forget it. Assignment is
+guarded from the other side: `resolveTemplateForAssignment()` considers only
+published, non-archived versions, so an unfinished draft cannot reach a new hire
+by accident.
+
+Migration `0006` restructured the original flat model and carried the existing
+data across, mapping the old step kinds onto the new ones, creating a v1 for
+every template, and repointing every step and assignment.
+
+## Importing people from a spreadsheet
+
+The import is the only place EverCalm ingests a file somebody else produced, so
+the rules are concentrated and tested rather than spread through the UI.
+
+`src/modules/people/csv.ts` is pure and dependency-free — parsing, header
+detection, field validation, safe output — which is what makes the hostile cases
+exhaustively unit-testable. The database-aware half lives in
+`import-service.ts`.
+
+| Property                        | How                                                                                                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The tenant is never in the file | `organizationId` always comes from the session. No column maps to an organization id, and a header claiming to be one is simply unrecognised                                                            |
+| Preview writes nothing          | `previewImport()` is read-only                                                                                                                                                                          |
+| Confirmation re-validates       | `runImport()` re-parses and re-validates the raw text from scratch. Nothing the preview computed is trusted as input, so a hand-crafted post cannot submit pre-approved rows                            |
+| All or nothing                  | One transaction                                                                                                                                                                                         |
+| No formulas in our own report   | Any exported cell beginning `=`, `+`, `-` or `@`, with or without leading whitespace, is prefixed with a quote. The error report echoes untrusted input, so without this our report would be the attack |
+| Invitations are explicit        | Never sent during preview. At confirmation the administrator chooses, and the choice defaults to off                                                                                                    |
+| Bounded                         | 500 rows and 1 MB per file, plus a rolling-hour ceiling measured by people actually created                                                                                                             |
+
+Line numbers count the file as a spreadsheet shows it: interior blank rows are
+kept through parsing so that a stray empty line in the middle does not shift
+every later error message onto the wrong row.
+
 ## Audit
 
 `recordAuditEvent()` takes the caller's transaction, so an action and its audit

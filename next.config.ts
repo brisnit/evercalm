@@ -2,6 +2,9 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Dev-only overlay that sits on top of page content; it obscures the
+  // bottom-left of every screen during development and in screenshots.
+  devIndicators: false,
   poweredByHeader: false,
   typedRoutes: false,
   // Keep CI honest: a type error must fail the build, never be skipped.
