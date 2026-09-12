@@ -1,0 +1,50 @@
+import { defineConfig, devices } from '@playwright/test'
+
+/**
+ * Browser tests.
+ *
+ * Runs against `next dev`. The production server deliberately refuses to boot
+ * with EMAIL_PROVIDER=console (see src/lib/env.ts), which is the guard working
+ * as intended - the production BUILD is verified separately by `npm run build`.
+ *
+ * Employee-facing journeys also run at phone width, because /my is a
+ * mobile-first surface and desktop-only coverage would miss its real use.
+ */
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: false,
+  workers: 1,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  timeout: 45_000,
+  expect: { timeout: 10_000 },
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+
+  projects: [
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'mobile',
+      use: { ...devices['iPhone 14'] },
+      testMatch: /.*(employee|marketing|accessibility)\.spec\.ts/,
+    },
+  ],
+
+  webServer: {
+    // Sign-in is rate limited to 5 attempts per minute, which is correct for
+    // real users and far below what a browser suite does. Relaxing is only
+    // possible outside production (see src/server/auth/rate-limits.ts) and
+    // the strict production values are asserted by a unit test.
+    command: 'E2E_RELAX_RATE_LIMIT=true npm run dev',
+    url: 'http://localhost:3000/api/health',
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+    stdout: 'ignore',
+    stderr: 'pipe',
+  },
+})

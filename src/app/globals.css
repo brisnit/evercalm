@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   EverCalm design tokens.
+
+   Every colour below was measured against WCAG 2.2 AA rather than assumed.
+   Two results constrain the whole system and are encoded here:
+
+     - Brand pink #EA33A9 is 3.79:1 on white and FAILS AA for normal text.
+       It is a display, fill, border and icon colour. Pink TEXT uses
+       --color-pink-700 (#B8177F, 6.06:1).
+     - Brand violet #7C24F5 is 2.72:1 on charcoal and FAILS on dark surfaces.
+       Dark surfaces use --color-violet-300 (#A56BFF, 4.88:1).
+
+   Do not introduce a colour here without measuring it first.
+   ========================================================================== */
+
+@theme {
+  /* --- brand ------------------------------------------------------------ */
+  --color-ink: #040404; /* 20.50:1 on white - AAA */
+  --color-charcoal: #1e1e1e; /* dark section ground */
+
+  --color-violet-50: #f6f0ff;
+  --color-violet-100: #ece0ff;
+  --color-violet-200: #d9c2ff;
+  --color-violet-300: #a56bff; /* 4.88:1 on charcoal - AA on dark */
+  --color-violet-400: #9147f9;
+  --color-violet-500: #8a35f7;
+  --color-violet-600: #7c24f5; /* BRAND. 6.13:1 on white - AA */
+  --color-violet-700: #6b17db; /* 7.58:1 on white - AAA */
+  --color-violet-800: #5a10be;
+  --color-violet-900: #400a89;
+
+  --color-pink-50: #fdeff8;
+  --color-pink-100: #fbdcf0;
+  --color-pink-200: #f7b9e0;
+  --color-pink-300: #f27aca; /* 6.68:1 on charcoal - AA on dark */
+  --color-pink-400: #ee4fb5;
+  --color-pink-500: #ea33a9; /* BRAND. 3.79:1 - large text and fills ONLY */
+  --color-pink-600: #d2208f;
+  --color-pink-700: #b8177f; /* 6.06:1 on white - AA. Pink TEXT uses this. */
+  --color-pink-800: #a01070;
+
+  /* --- neutrals (biased toward the violet accent, not pure grey) --------- */
+  --color-ground: #ffffff;
+  --color-raise: #faf9fc;
+  --color-sunk: #f3f1f7;
+  --color-line: #e3e0ea;
+  --color-line-strong: #cfcad9;
+  --color-faint: #66627a; /* 5.84:1 on white - AA */
+  --color-muted: #5a5766; /* 7.02:1 on white - AAA */
+
+  /* --- semantic (separate from the brand accent) ------------------------ */
+  --color-success: #146c43; /* 6.45:1 */
+  --color-success-soft: #e8f5ee;
+  --color-warning: #8c5200; /* 6.32:1 */
+  --color-warning-soft: #fdf2e3;
+  --color-danger: #c02626; /* 5.92:1 */
+  --color-danger-soft: #fdeaea;
+  --color-info: #1d4fd8; /* 6.64:1 */
+  --color-info-soft: #e8eefc;
+
+  /* --- type ------------------------------------------------------------- */
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-editorial: var(--font-fraunces), Georgia, serif;
+
+  /* --- shape ------------------------------------------------------------ */
+  --radius-control: 0.625rem; /* 10px - buttons, inputs */
+  --radius-card: 0.75rem; /* 12px - cards */
+  --radius-panel: 1.25rem; /* 20px - marketing panels */
+
+  /* Two elevations only. Borders do the structural work. */
+  --shadow-low: 0 1px 2px rgb(4 4 4 / 0.06), 0 1px 3px rgb(4 4 4 / 0.04);
+  --shadow-lift: 0 4px 12px rgb(4 4 4 / 0.08), 0 2px 4px rgb(4 4 4 / 0.04);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Focus is never removed, only restyled. Visible on every focusable thing. */
+  :focus-visible {
+    outline: 2px solid var(--color-violet-600);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Numbers that line up in columns must be tabular. */
+  table,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Skip link: visible only when focused, required for keyboard users. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+  }
+  .skip-link:focus {
+    left: 0.75rem;
+    top: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: var(--color-ink);
+    color: #fff;
+    border-radius: var(--radius-control);
+  }
+}

@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CI-only values. Real secrets never live in this file.
+  # The integration suite boots its OWN throwaway PostgreSQL, so these point
+  # at the local development instance used for the build and browser tests.
+  NODE_ENV: development
+  APP_URL: http://localhost:3000
+  DATABASE_URL: postgres://evercalm_app:evercalm_app_dev@127.0.0.1:55500/evercalm_dev
+  MIGRATION_DATABASE_URL: postgres://evercalm_migrator:evercalm_migrator_dev@127.0.0.1:55500/evercalm_dev
+  BETTER_AUTH_SECRET: ci_only_secret_not_used_anywhere_else_0123456789
+  EMAIL_PROVIDER: console
+  EMAIL_FROM: EverCalm CI <no-reply@example.invalid>
+  LOG_LEVEL: error
+
+jobs:
+  static:
+    name: Types, lint, format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+
+  test:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      # Integration tests start a real PostgreSQL with the two-role model and
+      # prove tenant isolation, RLS coverage, and append-only audit. No
+      # service container needed - the database is booted by the suite.
+      - run: npm run test:integration
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  e2e:
+    name: Browser tests and accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Start local PostgreSQL
+        run: |
+          npm run db:local > /tmp/local-pg.log 2>&1 &
+          for i in $(seq 1 60); do
+            grep -q "Leave this process running" /tmp/local-pg.log && break
+            sleep 2
+          done
+          grep -q "Leave this process running" /tmp/local-pg.log || { cat /tmp/local-pg.log; exit 1; }
+
+      - run: npm run db:migrate
+      - run: npm run db:seed
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
