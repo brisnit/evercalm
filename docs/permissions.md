@@ -127,6 +127,97 @@ answer a question about a screen rather than about an action. Volume is bounded
 by rate limits, which is the right control for volume; capability is the
 control for _kind_.
 
+## Communication capabilities, and what overrides a preference
+
+Slice 3 added five capabilities to the four declared in Slice 1:
+
+| Capability                       | Location-scopable | What it allows                                  |
+| -------------------------------- | ----------------- | ----------------------------------------------- |
+| `announcement.create`            | yes               | Draft, edit, preview an audience, duplicate     |
+| `announcement.publish`           | yes               | Publish, schedule, cancel, revise, sync         |
+| `announcement.publish_urgent`    | yes               | Use the urgent priority                         |
+| `announcement.publish_emergency` | yes               | Use emergency, which overrides every preference |
+| `announcement.view_receipts`     | yes               | See who read and confirmed                      |
+| `announcement.send_reminder`     | yes               | Nudge the outstanding                           |
+| `announcement.archive`           | yes               | Retire an announcement                          |
+| `notification.administer`        | **no**            | Inspect the delivery queue, retry failures      |
+| `event.manage`                   | yes               | Create and edit events                          |
+
+**Organization-wide publishing is not a separate capability.** Asking for
+`announcement.publish` with no location is already the stronger question, and a
+location grant cannot satisfy it — so an org-wide publisher is simply somebody
+holding the capability at org scope. Adding a second capability would have
+meant two places to get it wrong.
+
+**Audience preview is not a separate capability either.** It requires
+`announcement.create`: you can only preview an audience you would be allowed to
+target, and the same `assertRulesWithinScope` runs on both paths.
+
+### The delivery policy
+
+Two questions, answered separately, by `deliveryPolicy()` in
+`src/modules/comms/delivery-policy.ts` — the only place the rule lives:
+
+- **May it reach somebody who switched this category off?**
+  (`overrides_preferences`)
+- **May it arrive during their quiet hours?** (`overrides_quiet_hours`)
+
+| Priority      | Ordinary category (General, Training, Schedule…)    | Safety, HR or Emergency category                    |
+| ------------- | --------------------------------------------------- | --------------------------------------------------- |
+| Normal        | respects both                                       | **cannot be muted**; waits for quiet hours to end   |
+| Important     | respects both                                       | **cannot be muted**; waits for quiet hours to end   |
+| Urgent        | respects both                                       | **cannot be muted, and arrives during quiet hours** |
+| **Emergency** | **cannot be muted, and arrives during quiet hours** | **cannot be muted, and arrives during quiet hours** |
+
+**Requiring acknowledgement changes neither answer.** Until the Slice 3 review
+it overrode both, which meant "please confirm you have read the new rota
+process" would buzz a phone at 3am. Needing a confirmation is a reason to keep a
+message visible — it is pinned at the top of the inbox and on the home screen
+until confirmed, and the author sees who is outstanding — not a reason to
+interrupt somebody's night. Its notification is held until their quiet hours
+end, like anything else.
+
+Every override is reachable only through explicit authorization:
+
+- **Urgent** requires `announcement.publish_urgent`.
+- **Emergency** requires `announcement.publish_emergency`, has its own
+  differently worded confirmation, and is audited as
+  `announcement.emergency_published`.
+- **Which categories cannot be muted** is an organization setting stored on
+  the category row (`overrides_preferences`: Safety, HR and Emergency by
+  default), never a per-message checkbox — a checkbox everybody ticks makes the
+  preference meaningless.
+
+So an author cannot wake people by ticking a box, and nobody can do it by
+habit. Nothing is ever dropped: a held notification is delivered when the
+window ends, and a muted one is still in the inbox and recorded as
+`suppressed`.
+
+The same policy applies to manual reminders and to the worker's automatic
+"due soon" and "overdue" reminders. It is tested as a pure function
+(`tests/unit/comms-behaviour.test.ts`) and through real publishes against a
+person in quiet hours (`tests/integration/notifications.test.ts`, "who may be
+interrupted").
+
+### Reading somebody else's messages
+
+`notification.administer` is for the delivery QUEUE — what is stuck, what
+failed, what needs retrying. It does **not** grant reading a named employee's
+in-app feed or inbox: both are self-access only. Debugging delivery is not a
+reason to read somebody's messages. Preferences and quiet hours _are_ covered
+by the capability, because changing them on request is a support action rather
+than surveillance.
+
+### Receipts narrow rather than refuse
+
+Every communication read follows the list rule in the section above: ask
+`canAtAnyLocation`, then narrow. A location manager gets their own slice of an
+organization-wide report and the screen says `partialView` in words, rather
+than an error because other locations exist. Four services shipped with the
+org-wide form during Slice 3 and were caught by tests signing in as a General
+Manager — the same family of bugs as Slice 2, so the rule is now applied
+through one documented helper, `authorizeSomewhere`.
+
 ## Enforcement
 
 Every mutation is a server action whose first act is resolving the actor from

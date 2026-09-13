@@ -110,3 +110,57 @@ export function hasDstTransition(isoDate: string, timeZone: string): boolean {
   const late = new Date(Date.UTC(y, m - 1, d, 22, 0))
   return utcOffsetMinutes(early, timeZone) !== utcOffsetMinutes(late, timeZone)
 }
+
+/**
+ * The instant a wall-clock time names at a timezone.
+ *
+ * `<input type="datetime-local">` posts "2026-09-15T14:00" with no zone. On
+ * the server, `new Date(value)` reads that in the SERVER's zone - fine on a
+ * laptop in Los Angeles, eight hours wrong on a UTC production host. A
+ * manager scheduling "2pm" means 2pm where their business is.
+ *
+ * Solved by guessing the instant as if the wall time were UTC, measuring the
+ * zone's offset at that guess, correcting, and measuring again so a guess on
+ * the wrong side of a DST change still lands right.
+ */
+export function zonedWallTimeToInstant(value: string, timeZone: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value.trim())
+  if (!match) return null
+  const [, y, mo, d, h, mi] = match.map(Number) as [number, number, number, number, number, number]
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi)
+
+  let instant = asUtc - utcOffsetMinutes(new Date(asUtc), timeZone) * 60_000
+  instant = asUtc - utcOffsetMinutes(new Date(instant), timeZone) * 60_000
+  const result = new Date(instant)
+  return Number.isNaN(result.getTime()) ? null : result
+}
+
+/** The `datetime-local` value for an instant, as seen at a timezone. */
+export function instantToZonedWallTime(instant: Date, timeZone: string): string {
+  const p = zonedParts(instant, timeZone)
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `${p.year}-${two(p.month)}-${two(p.day)}T${two(p.hour)}:${two(p.minute)}`
+}
+
+/** "Tue 15 Sep, 2:00 PM PDT" - an instant as a person at that location reads it. */
+export function formatInZone(instant: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(instant)
+}
+
+/** "15 Sep 2026" - a date as a person at that location reads it. */
+export function formatDateInZone(instant: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(instant)
+}

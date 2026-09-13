@@ -175,6 +175,42 @@ export const employmentJobRoles = pgTable(
 )
 
 /**
+ * Team membership.
+ *
+ * Teams already existed as a structural unit, but nobody belonged to one -
+ * which made "tell the closing team" impossible to express. This is the
+ * missing edge, added in Slice 3 because announcement targeting is the first
+ * feature that needs to name a group of people who are not simply everyone
+ * holding a job role.
+ */
+export const employmentTeams = pgTable(
+  'employment_teams',
+  {
+    id: uuid('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    employmentId: uuid('employment_id').notNull(),
+    teamId: uuid('team_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('employment_teams_unique').on(t.organizationId, t.employmentId, t.teamId),
+    foreignKey({
+      columns: [t.organizationId, t.employmentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'employment_teams_employment_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.teamId],
+      foreignColumns: [teams.organizationId, teams.id],
+      name: 'employment_teams_team_tenant_fk',
+    }).onDelete('cascade'),
+    index('employment_teams_org_idx').on(t.organizationId),
+  ],
+)
+
+/**
  * Company values and operating standards.
  *
  * `kind` separates aspirational values from concrete standards, because they

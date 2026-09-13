@@ -169,29 +169,57 @@ export const CAPABILITIES = def({
     description: 'Draft announcements for an audience.',
     group: 'communication',
     locationScopable: true,
-    plannedSlice: 3,
   },
   'announcement.publish': {
     label: 'Publish announcements',
     description: 'Send announcements to their audience.',
     group: 'communication',
     locationScopable: true,
-    plannedSlice: 3,
   },
   'announcement.publish_urgent': {
     label: 'Publish urgent announcements',
     description: 'Bypass quiet hours. Separated so urgency cannot be used casually.',
     group: 'communication',
     locationScopable: true,
-    plannedSlice: 3,
   },
   'announcement.view_receipts': {
     label: 'View read and acknowledgement receipts',
     description: 'See who has read and acknowledged.',
     group: 'communication',
     locationScopable: true,
-    plannedSlice: 3,
   },
+  'announcement.publish_emergency': {
+    label: 'Publish emergency announcements',
+    description:
+      'Send an emergency announcement. Overrides every notification preference and quiet hour, so it is separated from ordinary urgency and always audited.',
+    group: 'communication',
+    locationScopable: true,
+  },
+  'announcement.archive': {
+    label: 'Archive announcements',
+    description: 'Retire an announcement. History and receipts are preserved.',
+    group: 'communication',
+    locationScopable: true,
+  },
+  'announcement.send_reminder': {
+    label: 'Send acknowledgement reminders',
+    description: 'Nudge the people who have not yet read or acknowledged.',
+    group: 'communication',
+    locationScopable: true,
+  },
+  'notification.administer': {
+    label: 'Administer notifications',
+    description: 'Inspect the delivery queue, retries, and failures for the organization.',
+    group: 'communication',
+    locationScopable: false,
+  },
+  'event.manage': {
+    label: 'Manage events',
+    description: 'Create and edit events that announcements can point at.',
+    group: 'communication',
+    locationScopable: true,
+  },
+
   // Declared in Slice 1 so two-way messaging lands without an authz retrofit.
   // No interface offers these in Phase 1.
   'conversation.start': {

@@ -16,7 +16,9 @@ import { execFileSync } from 'node:child_process'
  * Set E2E_SKIP_REFRESH=true to iterate on a spec against state you have set up
  * by hand.
  */
-export default function globalSetup(): void {
+export default async function globalSetup(): Promise<void> {
+  await assertServerWillNotThrottle()
+
   if (process.env.E2E_SKIP_REFRESH === 'true') {
     console.log('[e2e] E2E_SKIP_REFRESH=true - leaving the database as it is.')
     return
@@ -25,4 +27,40 @@ export default function globalSetup(): void {
   // Inherited stdio so a seeding failure is visible rather than swallowed into
   // a wall of confusing assertion errors.
   execFileSync('npm', ['run', '--silent', 'db:refresh'], { stdio: 'inherit' })
+}
+
+/**
+ * Refuse a server that will rate-limit our sign-ins.
+ *
+ * `reuseExistingServer` means a dev server somebody already had running gets
+ * used, and that one was almost certainly started WITHOUT
+ * E2E_RELAX_RATE_LIMIT. Sign-in is limited to five attempts a minute, which is
+ * correct for real people and far below what this suite does - so the run
+ * fails as a dozen unrelated assertion errors with "that email and password
+ * did not match" buried inside. Failing here, with the reason, costs one
+ * request and saves the hunt.
+ */
+async function assertServerWillNotThrottle(): Promise<void> {
+  const url = 'http://localhost:3000/api/health'
+  let body: { auth?: { rateLimitsRelaxed?: boolean } }
+  try {
+    const response = await fetch(url)
+    body = (await response.json()) as typeof body
+  } catch {
+    // No server yet: Playwright is about to start its own, correctly.
+    return
+  }
+
+  if (body.auth?.rateLimitsRelaxed !== true) {
+    throw new Error(
+      [
+        'A dev server is already running on port 3000 WITHOUT relaxed sign-in rate limits,',
+        'and Playwright reuses it. The suite signs in far more often than a person does, so',
+        'sign-ins would start failing part-way through the run.',
+        '',
+        'Stop it and let Playwright start its own (npm run test:e2e), or restart it with:',
+        '  E2E_RELAX_RATE_LIMIT=true npm run dev',
+      ].join('\n'),
+    )
+  }
 }

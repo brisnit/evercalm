@@ -68,6 +68,27 @@ export const AUDIT_ACTIONS = {
   ONBOARDING_STEP_VERIFIED: 'onboarding_step.verified',
   ONBOARDING_STEP_BLOCKED: 'onboarding_step.blocked',
   ONBOARDING_COMPLETED: 'onboarding.completed',
+  // communication
+  ANNOUNCEMENT_CREATED: 'announcement.created',
+  ANNOUNCEMENT_UPDATED: 'announcement.updated',
+  ANNOUNCEMENT_REVISED: 'announcement.revised',
+  ANNOUNCEMENT_PUBLISHED: 'announcement.published',
+  ANNOUNCEMENT_SCHEDULED: 'announcement.scheduled',
+  ANNOUNCEMENT_SCHEDULE_CANCELLED: 'announcement.schedule_cancelled',
+  /** The worker could not publish a schedule and returned it to draft. */
+  ANNOUNCEMENT_SCHEDULE_FAILED: 'announcement.schedule_failed',
+  ANNOUNCEMENT_EXPIRED: 'announcement.expired',
+  ANNOUNCEMENT_ARCHIVED: 'announcement.archived',
+  ANNOUNCEMENT_DUPLICATED: 'announcement.duplicated',
+  ANNOUNCEMENT_RECIPIENTS_SYNCED: 'announcement.recipients_synced',
+  ANNOUNCEMENT_REMINDER_SENT: 'announcement.reminder_sent',
+  ANNOUNCEMENT_ACKNOWLEDGED: 'announcement.acknowledged',
+  /** Emergency distribution is separated so it is trivial to audit for. */
+  ANNOUNCEMENT_EMERGENCY_PUBLISHED: 'announcement.emergency_published',
+  NOTIFICATION_PREFERENCES_CHANGED: 'notification_preferences.changed',
+  EVENT_CREATED: 'event.created',
+  EVENT_UPDATED: 'event.updated',
+  EVENT_ARCHIVED: 'event.archived',
   // access
   ROLE_GRANTED: 'role_grant.granted',
   ROLE_REVOKED: 'role_grant.revoked',

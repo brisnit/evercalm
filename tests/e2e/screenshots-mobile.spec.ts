@@ -53,4 +53,44 @@ test.describe('@screenshots', () => {
     await expect(page.getByRole('heading', { name: 'Import from a spreadsheet' })).toBeVisible()
     await page.screenshot({ path: `${DIR}/mobile-09-import-upload.png`, fullPage: true })
   })
+
+  test('mobile employee communication', async ({ page }) => {
+    await signIn(page, PEOPLE.harborNewServer.email)
+    await page.screenshot({ path: `${DIR}/mobile-10-home-needs-you.png`, fullPage: true })
+
+    await page.goto('/my/inbox')
+    await expect(page.getByRole('heading', { name: 'Your inbox' })).toBeVisible()
+    await page.screenshot({ path: `${DIR}/mobile-11-inbox.png`, fullPage: true })
+
+    await page
+      .getByRole('link', { name: /Allergen handling/ })
+      .first()
+      .click()
+    await expect(page.getByRole('heading', { name: 'Confirm you have read this' })).toBeVisible()
+    await page.screenshot({ path: `${DIR}/mobile-12-message.png`, fullPage: true })
+
+    await page.goto('/my/inbox?filter=acknowledge')
+    await page.screenshot({ path: `${DIR}/mobile-13-inbox-needs-you.png`, fullPage: true })
+
+    await page.goto('/my/notifications')
+    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
+    await page.screenshot({ path: `${DIR}/mobile-14-preferences.png`, fullPage: true })
+  })
+
+  test('mobile manager communication', async ({ page }) => {
+    await signIn(page, PEOPLE.harborHr.email)
+    await page.goto('/app/comms')
+    await expect(page.getByRole('heading', { name: 'Announcements' })).toBeVisible()
+    await page.screenshot({ path: `${DIR}/mobile-15-announcements.png`, fullPage: true })
+
+    await page
+      .getByRole('link', { name: /Allergen handling/ })
+      .first()
+      .click()
+    await expect(page.getByRole('heading', { name: 'Who has read it' })).toBeVisible()
+    await page.screenshot({ path: `${DIR}/mobile-16-receipts.png`, fullPage: true })
+
+    await page.goto('/app/comms/new')
+    await page.screenshot({ path: `${DIR}/mobile-17-composer.png`, fullPage: true })
+  })
 })

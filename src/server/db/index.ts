@@ -86,3 +86,4 @@ export async function assertRuntimeRoleIsSafe(): Promise<RuntimeRoleAttributes> 
 
 export type { Db as DbHandle }
 export { appPool, closePools } from './client'
+export { organizationsWithDueWork } from './due-work'

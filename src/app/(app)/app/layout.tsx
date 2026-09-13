@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="border-line border-b bg-white">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 px-5 py-3">
           <Link href="/app" aria-label="EverCalm overview" className="shrink-0">
-            <Logo height={24} priority />
+            <Logo size="h-8" eager />
           </Link>
 
           <div className="flex min-w-0 items-center gap-2">

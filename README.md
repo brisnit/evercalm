@@ -6,7 +6,7 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slices 1–2 complete.**
+**Status: Slices 1–3 complete.**
 
 - **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
   locations, capability permissions with location scope, three-layer tenant
@@ -22,8 +22,20 @@ businesses.
   per-row reasons for anything rejected, and invitations only when the
   administrator asks for them.
 
-Scheduling, training, communication, and daily operations arrive in later
-slices and are not built — nothing in the interface pretends otherwise.
+- **Slice 3 — Announcements & communication.** Announcement authoring with
+  drafts, scheduling, expiry, archiving and auditable corrections; explicit
+  audience targeting by location, department, job role, team, work position or
+  named person, with a human-readable summary and a real count before anything
+  is sent; a mobile-first employee inbox; separate read and acknowledgement
+  tracking, where **opening is never confirming**; receipt reporting scoped to
+  the locations a manager is responsible for; reminders; an internal
+  notification queue with per-person preferences, quiet hours and idempotent
+  delivery; and a small event record that announcements can point at.
+
+Scheduling, training, and daily shift operations arrive in later slices and are
+not built — nothing in the interface pretends otherwise. Two-way messaging is
+deliberately absent: the architecture supports it, and no half-built chat is
+exposed.
 
 ## Quick start
 
@@ -33,7 +45,7 @@ npm run db:local        # real PostgreSQL under .pgdata/, no Docker needed
                         # leave running; then in another terminal:
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev             # web server + background worker
 ```
 
 Open <http://localhost:3000>. Seeded accounts share the development password
@@ -58,7 +70,12 @@ try `/app/settings/audit` to see server-side authorization.
 
 | Command                    | What it does                                   |
 | -------------------------- | ---------------------------------------------- |
-| `npm run dev`              | Development server                             |
+| `npm run dev`              | Development server and background worker       |
+| `npm run dev:web`          | Development server only                        |
+| `npm run worker`           | Background worker alone (Ctrl+C to stop)       |
+| `npm run worker:once`      | One worker tick, then exit                     |
+| `npm run worker:status`    | Is the worker running; when did it last tick   |
+| `npm run worker:stop`      | Stop the running worker gracefully             |
 | `npm run build`            | Production build                               |
 | `npm run typecheck`        | `tsc --noEmit`                                 |
 | `npm run lint`             | ESLint, including the isolation-boundary rules |
@@ -103,6 +120,14 @@ rules that enforce the tenant-isolation boundary.
 - A generated test enumerates every tenant table and **fails CI if one lacks an
   RLS policy**, so a new table cannot quietly skip isolation.
 - There is no support impersonation feature.
+- Announcement bodies are never HTML. They are stored as text, parsed into a
+  typed tree, and rendered as React elements, so there is no
+  `dangerouslySetInnerHTML` in any communication surface and injection is
+  impossible by construction rather than filtered.
+- Delivery records carry a title, a short preview and a pointer — never message
+  content, and never anything about a person beyond their employment id.
+- No external email is sent. The provider is development-safe and the real one
+  still refuses to start without an approved sending domain.
 - Uploaded spreadsheets are treated as hostile input: the tenant is always taken
   from the session and never from the file, confirmation re-validates from the
   raw bytes rather than trusting the preview, and any cell we export that begins

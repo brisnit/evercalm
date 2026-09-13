@@ -41,6 +41,8 @@ test('administration screens have no accessibility violations', async ({ page })
     '/app/onboarding',
     '/app/onboarding/templates',
     '/app/people/import',
+    '/app/comms',
+    '/app/comms/new',
     '/app/settings',
     '/app/settings/structure',
     '/app/settings/values',
@@ -153,6 +155,58 @@ test('the import preview and its error report have no accessibility violations',
   })
   await page.getByRole('button', { name: 'Read the file' }).click()
   await expect(page.getByRole('heading', { name: '3. Review every row' })).toBeVisible()
+
+  const results = await scan(page)
+  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+})
+
+test('the employee inbox has no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborNewServer.email)
+  await page.goto('/my/inbox')
+  await expect(page.getByRole('heading', { name: 'Your inbox' })).toBeVisible()
+
+  const list = await scan(page)
+  expect(list.violations.map((v) => `inbox -> ${v.id}: ${v.help}`)).toEqual([])
+
+  // The detail view is where the interesting markup is. Any message will do -
+  // this must not depend on one that an earlier project already confirmed.
+  await page.getByRole('listitem').first().getByRole('link').first().click()
+  await expect(page).toHaveURL(/\/my\/inbox\/[0-9a-f-]{36}$/)
+  const detail = await scan(page)
+  expect(detail.violations.map((v) => `message -> ${v.id}: ${v.help}`)).toEqual([])
+})
+
+test('notification preferences have no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborNewServer.email)
+  await page.goto('/my/notifications')
+  await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
+
+  const results = await scan(page)
+  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+})
+
+test('the announcement composer has no accessibility violations with its pickers open', async ({
+  page,
+}) => {
+  await signIn(page, PEOPLE.harborHr.email)
+  await page.goto('/app/comms/new')
+
+  // Open a disclosure so the scan covers the expanded state, not the shell.
+  await page.getByRole('button', { name: /^Locations/ }).click()
+  await expect(page.getByRole('button', { name: /^Riverside/ })).toBeVisible()
+
+  const results = await scan(page)
+  expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+})
+
+test('the receipt report has no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborHr.email)
+  await page.goto('/app/comms')
+  await page
+    .getByRole('link', { name: /Allergen handling/ })
+    .first()
+    .click()
+  await expect(page.getByRole('heading', { name: 'Who has read it' })).toBeVisible()
 
   const results = await scan(page)
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])

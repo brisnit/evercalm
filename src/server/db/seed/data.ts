@@ -75,6 +75,64 @@ export interface SeedSection {
   steps: SeedStep[]
 }
 
+/** A team, plus who is on it. Person keys, resolved during seeding. */
+export interface SeedTeam {
+  key: string
+  name: string
+  department?: string
+  location?: string
+  members: string[]
+}
+
+export interface SeedEvent {
+  key: string
+  title: string
+  description?: string
+  kind: 'large_party' | 'training' | 'inspection' | 'promotion' | 'general'
+  location?: string
+  /** Days from the seed run. Keeps the demo permanently plausible. */
+  inDays: number
+  startHour?: number
+  endHour?: number
+  allDay?: boolean
+  notes?: string
+}
+
+/**
+ * A demo announcement.
+ *
+ * `readBy` and `acknowledgedBy` are person keys, which is how the demo shows a
+ * partially completed acknowledgement report rather than an empty one.
+ */
+export interface SeedAnnouncement {
+  key: string
+  title: string
+  body: string
+  category: string
+  priority?: 'normal' | 'important' | 'urgent' | 'emergency'
+  author: string
+  status?: 'draft' | 'scheduled' | 'published'
+  /** Days ago it was published. Ignored when scheduled. */
+  publishedDaysAgo?: number
+  /** Days from now, for a scheduled announcement. */
+  scheduledInDays?: number
+  expiresInDays?: number
+  requiresAcknowledgement?: boolean
+  acknowledgementDueInDays?: number
+  callToActionLabel?: string
+  callToActionHref?: string
+  event?: string
+  audience: {
+    mode?: 'include' | 'exclude'
+    type:
+      'organization' | 'location' | 'department' | 'job_role' | 'team' | 'station' | 'employment'
+    /** Key of the location, department, role, team, station, or person. */
+    ref?: string
+  }[]
+  readBy?: string[]
+  acknowledgedBy?: string[]
+}
+
 export interface SeedOrganization {
   key: string
   name: string
@@ -103,6 +161,9 @@ export interface SeedOrganization {
     sections: SeedSection[]
   }[]
   people: SeedPerson[]
+  teams?: SeedTeam[]
+  events?: SeedEvent[]
+  announcements?: SeedAnnouncement[]
 }
 
 /** Development-only password, shared by every seeded account. */
@@ -702,6 +763,215 @@ const HARBOR: SeedOrganization = {
       hiredOn: '2025-11-02',
     },
   ],
+
+  teams: [
+    {
+      key: 'closing-riverside',
+      name: 'Riverside closing crew',
+      department: 'foh',
+      location: 'riverside',
+      members: ['lead-riverside', 'bartender', 'server', 'new-busser'],
+    },
+    {
+      key: 'kitchen-leads',
+      name: 'Kitchen leads',
+      department: 'boh',
+      location: 'riverside',
+      members: ['sous', 'prep'],
+    },
+  ],
+
+  events: [
+    {
+      key: 'saturday-forty',
+      title: 'Rehearsal dinner — 40 guests',
+      description: 'Private booking in the back room. Set as two long tables.',
+      kind: 'large_party',
+      location: 'riverside',
+      inDays: 3,
+      startHour: 19,
+      endHour: 22,
+      notes: 'Two shellfish allergies and one coeliac. Chef has a fixed menu.',
+    },
+    {
+      key: 'health-visit',
+      title: 'County health inspection window opens',
+      description: 'Routine annual window. Could be any service.',
+      kind: 'inspection',
+      location: 'riverside',
+      inDays: 12,
+      allDay: true,
+      notes: 'Cooling logs and the allergen matrix are the two they always ask for.',
+    },
+  ],
+
+  announcements: [
+    {
+      key: 'huddle',
+      title: 'Tonight\u2019s pre-shift huddle',
+      body: [
+        'Doors at 4:30. Patio is open, so we are running section 3.',
+        '',
+        '- 86 the halibut. Salmon is the sub.',
+        '- The Sancerre is back on by the glass.',
+        '- Ramos is out. Devon covers section 3.',
+        '',
+        'Line up at **4:45 sharp** by the pass.',
+      ].join('\n'),
+      category: 'operations',
+      priority: 'important',
+      author: 'gm-riverside',
+      publishedDaysAgo: 0,
+      expiresInDays: 1,
+      audience: [{ type: 'location', ref: 'riverside' }],
+      readBy: ['server', 'bartender', 'lead-riverside'],
+    },
+    {
+      key: 'large-party',
+      title: 'Saturday: 40-guest rehearsal dinner',
+      body: [
+        'We have a 40-top in the back room on Saturday at 7pm.',
+        '',
+        '1. Back room is closed to walk-ins from 6pm.',
+        '2. Two shellfish allergies and one coeliac \u2014 chef has a fixed menu.',
+        '3. Bar, please pre-batch the welcome cocktail by 6:30.',
+        '',
+        'Section 3 will run light to cover the extra hands.',
+      ].join('\n'),
+      category: 'event',
+      priority: 'important',
+      author: 'gm-riverside',
+      publishedDaysAgo: 1,
+      event: 'saturday-forty',
+      audience: [
+        { type: 'location', ref: 'riverside' },
+        { mode: 'exclude', type: 'job_role', ref: 'dish' },
+      ],
+      readBy: ['server', 'bartender', 'host', 'lead-riverside', 'sous'],
+    },
+    {
+      key: 'eighty-six',
+      title: 'The 86 list moves to the board at the pass',
+      body: [
+        'From Monday the 86 list lives on the board at the pass, not in the group chat.',
+        '',
+        '- Kitchen updates it when something runs out.',
+        '- Servers check it before every table, not just at line-up.',
+        '- If it is not on the board, it is on.',
+        '',
+        'The group chat goes back to being for scheduling only.',
+      ].join('\n'),
+      category: 'operations',
+      author: 'owner',
+      publishedDaysAgo: 4,
+      audience: [{ type: 'organization' }],
+      readBy: ['gm-riverside', 'gm-downtown', 'server', 'sous', 'bartender', 'lead-riverside'],
+    },
+    {
+      key: 'allergen',
+      title: 'Allergen handling \u2014 read and confirm',
+      body: [
+        'A guest was served the wrong dish last week. Nobody was hurt. It was close.',
+        '',
+        'The rule has not changed, and it is not negotiable:',
+        '',
+        '1. Any allergy goes on the ticket, in writing, every time.',
+        '2. The expo repeats it back before the plate leaves the pass.',
+        '3. A new pan and clean tongs. No exceptions, however busy we are.',
+        '',
+        'Read this and confirm you have. Your manager will ask.',
+      ].join('\n'),
+      category: 'safety',
+      priority: 'urgent',
+      author: 'hr',
+      publishedDaysAgo: 6,
+      requiresAcknowledgement: true,
+      acknowledgementDueInDays: 2,
+      callToActionLabel: 'Open the allergen matrix',
+      callToActionHref: '/app/settings/values',
+      audience: [{ type: 'organization' }],
+      readBy: [
+        'gm-riverside',
+        'gm-downtown',
+        'server',
+        'bartender',
+        'host',
+        'sous',
+        'lead-riverside',
+        'prep',
+      ],
+      // Deliberately partial: the report shows real outstanding work.
+      acknowledgedBy: ['gm-riverside', 'server', 'bartender', 'sous', 'lead-riverside'],
+    },
+    {
+      key: 'riverside-parking',
+      title: 'Riverside: staff parking moves to the north lot',
+      body: [
+        'The south lot is being resurfaced for two weeks from Monday.',
+        '',
+        'Staff parking is the north lot, past the loading bay. The code is the same.',
+        'Give yourself an extra five minutes \u2014 it is a longer walk than it looks.',
+      ].join('\n'),
+      category: 'general',
+      author: 'gm-riverside',
+      publishedDaysAgo: 2,
+      expiresInDays: 16,
+      audience: [{ type: 'location', ref: 'riverside' }],
+      readBy: ['server', 'lead-riverside'],
+    },
+    {
+      key: 'owner-quarter',
+      title: 'Where we are, and what changes next quarter',
+      body: [
+        'Both rooms finished the quarter ahead. That is you, and thank you.',
+        '',
+        'Three things change in the new quarter:',
+        '',
+        '- Downtown goes to seven days from the first.',
+        '- We are putting real money into training. More on that shortly.',
+        '- Every station gets a written standard, so nobody has to guess.',
+        '',
+        'Bring questions to your GM. I would rather answer them early.',
+      ].join('\n'),
+      category: 'general',
+      priority: 'important',
+      author: 'owner',
+      publishedDaysAgo: 9,
+      audience: [{ type: 'organization' }],
+      readBy: ['gm-riverside', 'gm-downtown', 'hr', 'server', 'sous'],
+    },
+    {
+      key: 'winter-menu',
+      title: 'Winter menu launches Monday',
+      body: [
+        'The winter menu goes live on Monday. Tasting for all service staff is Sunday at 3pm.',
+        '',
+        '- Six new plates, four leaving.',
+        '- The by-the-glass list changes with it.',
+        '- Allergen matrix is updated and posted before the tasting.',
+      ].join('\n'),
+      category: 'operations',
+      author: 'owner',
+      status: 'scheduled',
+      scheduledInDays: 2,
+      audience: [{ type: 'organization' }],
+    },
+    {
+      key: 'closing-crew',
+      title: 'Closing crew: new lock-up order',
+      body: [
+        'Small change to lock-up, starting tonight.',
+        '',
+        '1. Bar cashes out first, then the floor.',
+        '2. Kitchen signs the cooling log before anyone leaves.',
+        '3. Last person out sets the alarm and texts the GM. Every night.',
+      ].join('\n'),
+      category: 'operations',
+      author: 'gm-riverside',
+      status: 'draft',
+      audience: [{ type: 'team', ref: 'closing-riverside' }],
+    },
+  ],
 }
 
 // ---------------------------------------------------------------------------
@@ -1184,6 +1454,143 @@ const LUMEN: SeedOrganization = {
       jobRoles: ['coordinator'],
       manager: 'gm-pearl',
       hiredOn: '2026-01-24',
+    },
+  ],
+
+  teams: [
+    {
+      key: 'pearl-colour',
+      name: 'Pearl colour team',
+      department: 'hair',
+      location: 'pearl',
+      members: ['colourist', 'stylist-senior', 'new-stylist'],
+    },
+  ],
+
+  events: [
+    {
+      key: 'boise-open-house',
+      title: 'Boise Bench open house',
+      description: 'Evening open house for the neighbourhood: consultations, retail, refreshments.',
+      kind: 'promotion',
+      location: 'bench',
+      inDays: 9,
+      startHour: 17,
+      endHour: 20,
+      notes: 'Two stylists on consultations, one on the retail floor. Front desk runs the list.',
+    },
+    {
+      key: 'colour-class',
+      title: 'Colour correction masterclass',
+      description: 'Four continuing-education hours with the regional educator.',
+      kind: 'training',
+      location: 'pearl',
+      inDays: 5,
+      startHour: 10,
+      endHour: 14,
+      notes: 'Counts toward Oregon continuing education. Bring your own mannequin head.',
+    },
+  ],
+
+  announcements: [
+    {
+      key: 'inventory',
+      title: 'Retail inventory: new colour line lands Thursday',
+      body: [
+        'The new bond-building line arrives Thursday and replaces the old one on the shelf.',
+        '',
+        '- Old stock stays available for existing colour clients until it runs out.',
+        '- Retail price list is updated at the desk.',
+        '- Please do not open testers until the display is built.',
+      ].join('\n'),
+      category: 'operations',
+      author: 'owner',
+      publishedDaysAgo: 2,
+      audience: [{ type: 'organization' }],
+      readBy: ['gm-pearl', 'stylist-senior', 'colourist', 'coordinator'],
+    },
+    {
+      key: 'continuing-ed',
+      title: 'Continuing education hours are due this cycle',
+      body: [
+        'Oregon and Idaho both want hours logged before the cycle closes.',
+        '',
+        '1. Check how many you have at the desk binder or ask your GM.',
+        '2. The colour correction masterclass on the 5th is four hours.',
+        '3. Send certificates to the front desk so we can file them.',
+      ].join('\n'),
+      category: 'training',
+      priority: 'important',
+      author: 'trainer',
+      publishedDaysAgo: 5,
+      event: 'colour-class',
+      requiresAcknowledgement: true,
+      acknowledgementDueInDays: 10,
+      audience: [
+        { type: 'department', ref: 'hair' },
+        { type: 'department', ref: 'skin' },
+      ],
+      readBy: ['stylist-senior', 'colourist', 'esthetician', 'new-stylist'],
+      // Early in the cycle: read widely, acknowledged by few.
+      acknowledgedBy: ['stylist-senior', 'colourist'],
+    },
+    {
+      key: 'licence',
+      title: 'Licence renewal \u2014 confirm your expiry date',
+      body: [
+        'We are tidying up licence records before the board inspection.',
+        '',
+        'Every stylist, colourist, esthetician and massage therapist needs a current licence on file.',
+        '',
+        '- Check the date we hold for you at the desk.',
+        '- If it expires in the next ninety days, start the renewal now.',
+        '- Confirm below once you have checked.',
+      ].join('\n'),
+      category: 'hr',
+      priority: 'urgent',
+      author: 'owner',
+      publishedDaysAgo: 8,
+      requiresAcknowledgement: true,
+      acknowledgementDueInDays: -1,
+      audience: [{ type: 'organization' }],
+      readBy: ['gm-pearl', 'gm-bench', 'stylist-senior', 'colourist', 'esthetician', 'massage'],
+      // Overdue and still outstanding for several people, on purpose.
+      acknowledgedBy: ['gm-pearl', 'stylist-senior', 'esthetician'],
+    },
+    {
+      key: 'pearl-water',
+      title: 'Pearl District: hot water off Tuesday morning',
+      body: [
+        'The building is working on the boiler on Tuesday, 8am to about noon.',
+        '',
+        'No backwash bowls until it is back. The desk is moving colour appointments to the afternoon;',
+        'cutting and styling run as normal.',
+      ].join('\n'),
+      category: 'operations',
+      priority: 'important',
+      author: 'gm-pearl',
+      publishedDaysAgo: 1,
+      expiresInDays: 4,
+      audience: [{ type: 'location', ref: 'pearl' }],
+      readBy: ['stylist-senior', 'colourist'],
+    },
+    {
+      key: 'boise-event',
+      title: 'Boise Bench open house \u2014 we need three volunteers',
+      body: [
+        'The open house is on the 9th, 5pm to 8pm.',
+        '',
+        'We need two stylists on consultations and one person on the retail floor.',
+        'It is paid at your normal rate, and dinner is on the salon.',
+        '',
+        'Tell your GM by Friday if you want in.',
+      ].join('\n'),
+      category: 'event',
+      author: 'gm-bench',
+      publishedDaysAgo: 3,
+      event: 'boise-open-house',
+      audience: [{ type: 'location', ref: 'bench' }],
+      readBy: ['gm-bench', 'massage'],
     },
   ],
 }

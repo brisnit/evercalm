@@ -27,7 +27,7 @@ export default async function MyOnboardingPage() {
       <header className="border-line border-b bg-white px-5 py-3">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
           <Link href="/my" aria-label="Your work">
-            <Logo height={22} priority />
+            <Logo size="h-8" eager />
           </Link>
           <Link href="/my" className="text-muted text-sm underline-offset-4 hover:underline">
             Back

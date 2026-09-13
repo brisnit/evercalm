@@ -52,6 +52,8 @@ test('administration screens fit a phone screen', async ({ page }) => {
     '/app/people/import',
     '/app/onboarding',
     '/app/onboarding/templates',
+    '/app/comms',
+    '/app/comms/new',
     '/app/settings',
     '/app/settings/structure',
     '/app/settings/values',
@@ -96,4 +98,30 @@ test('public pages fit a phone screen', async ({ page }) => {
     await page.goto(path)
     await expectNoHorizontalOverflow(page, path)
   }
+})
+
+test('the communication surfaces fit a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborNewServer.email)
+  await page.goto('/my/inbox')
+  await expectNoHorizontalOverflow(page, '/my/inbox')
+
+  await page
+    .getByRole('link', { name: /Allergen handling/ })
+    .first()
+    .click()
+  await expectNoHorizontalOverflow(page, '/my/inbox/[id]')
+
+  await page.goto('/my/notifications')
+  await expectNoHorizontalOverflow(page, '/my/notifications')
+})
+
+test('the receipt report fits a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborHr.email)
+  await page.goto('/app/comms')
+  await page
+    .getByRole('link', { name: /Allergen handling/ })
+    .first()
+    .click()
+  await expect(page.getByRole('heading', { name: 'Who has read it' })).toBeVisible()
+  await expectNoHorizontalOverflow(page, '/app/comms/[id]')
 })

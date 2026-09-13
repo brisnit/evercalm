@@ -60,6 +60,18 @@
   --color-info: #1d4fd8; /* 6.64:1 */
   --color-info-soft: #e8eefc;
 
+  /* --- marketing surfaces -----------------------------------------------
+     The public site runs a deeper, more saturated palette than the product:
+     an indigo ink and a bluer violet accent. Kept as its own group so a
+     change made for a landing page cannot drift the application's contrast.
+     Ratios are against white unless noted. */
+  --color-deep: #171240; /* headings.   17.54:1 - AAA */
+  --color-quiet: #393366; /* body copy.  11.42:1 - AAA */
+  --color-accent: #6b4df1; /* fills and large text. 5.31:1 - AA */
+  --color-accent-strong: #5a3ae4; /* small accent text. 6.65:1 - AAA */
+  --color-lift: #f7f5ff; /* pale section ground */
+  --color-mist: #eeebfa; /* deeper section ground */
+
   /* --- type ------------------------------------------------------------- */
   --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

@@ -114,3 +114,72 @@ export function expectNoConsoleErrors(errors: string[]): void {
   const relevant = errors.filter((e) => !/Download the React DevTools/i.test(e))
   expect(relevant, `Console errors:\n${relevant.join('\n')}`).toEqual([])
 }
+
+/**
+ * Publish a fresh announcement to one named person, and return its title.
+ *
+ * Tests that consume a ONE-SHOT state - an unread message, an outstanding
+ * acknowledgement - cannot share a seeded row: the first project to run
+ * acknowledges it and the second finds nothing to do. Creating the thing under
+ * test makes those specs independent of run order, of which project runs
+ * first, and of the seed's exact acknowledgement mix.
+ *
+ * Leaves the browser signed in as `recipientEmail`.
+ */
+export interface AnnouncementDraftOptions {
+  authorEmail: string
+  recipientName: string
+  title: string
+  body?: string
+  priority?: 'Normal' | 'Important' | 'Urgent' | 'Emergency'
+  requiresAcknowledgement?: boolean
+}
+
+/** Sign in as the author and save a draft to one person. Leaves the author on its page. */
+export async function draftAnnouncementTo(
+  page: Page,
+  options: AnnouncementDraftOptions,
+): Promise<void> {
+  await page.context().clearCookies()
+  await signIn(page, options.authorEmail)
+
+  await page.goto('/app/comms/new')
+  await page.getByLabel('Title').fill(options.title)
+  await page.getByLabel('Message').fill(options.body ?? 'Please read this and confirm.')
+
+  if (options.priority && options.priority !== 'Normal') {
+    await page.getByRole('radio', { name: new RegExp(`^${options.priority}`) }).check()
+  }
+  if (options.requiresAcknowledgement) {
+    await page.getByLabel('Ask people to confirm they read it').check()
+  }
+
+  await page.getByRole('button', { name: /^Individual people/ }).click()
+  await page.getByRole('button', { name: new RegExp(`^${options.recipientName}`) }).click()
+
+  await page.getByRole('button', { name: 'Save as draft' }).click()
+  await expect(page.getByRole('heading', { name: options.title })).toBeVisible()
+}
+
+export async function publishAnnouncementTo(
+  page: Page,
+  options: {
+    authorEmail: string
+    recipientName: string
+    recipientEmail: string
+    title: string
+    body?: string
+    priority?: 'Normal' | 'Important' | 'Urgent' | 'Emergency'
+    requiresAcknowledgement?: boolean
+  },
+): Promise<string> {
+  await draftAnnouncementTo(page, options)
+
+  await page.getByRole('button', { name: 'Publish now' }).click()
+  await page.getByRole('button', { name: 'Yes, publish it' }).click()
+  await expect(page.getByRole('heading', { name: 'Who has read it' })).toBeVisible()
+
+  await page.context().clearCookies()
+  await signIn(page, options.recipientEmail)
+  return options.title
+}

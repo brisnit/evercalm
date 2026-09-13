@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useCallback, useRef } from 'react'
 import type { ActionState } from '@/modules/people/actions'
 import { Button } from '@/ui/primitives'
 
@@ -12,6 +12,11 @@ const INITIAL: ActionState = { status: 'idle' }
  *
  * The result is announced through `role="status"`, so a screen reader hears
  * the outcome rather than only seeing a colour change.
+ *
+ * `onSuccess` hands a successful result to a parent instead of showing it
+ * here. Use it whenever success REMOVES this form from the page (publishing
+ * removes the Publish card), or the message would vanish with it. See
+ * action-notice.tsx.
  */
 export function ActionForm({
   action,
@@ -20,6 +25,7 @@ export function ActionForm({
   variant = 'primary',
   destructive = false,
   className,
+  onSuccess,
 }: {
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>
   submitLabel: string
@@ -27,12 +33,30 @@ export function ActionForm({
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   destructive?: boolean
   className?: string
+  onSuccess?: (state: ActionState) => void
 }) {
-  const [state, formAction, pending] = useActionState(action, INITIAL)
+  // Success is handed over from INSIDE the action, not from an effect after
+  // render. When success removes this form, the result and the refreshed page
+  // land in the same commit - the form is gone before any effect of its own
+  // could run, and the message would never reach the parent.
+  const onSuccessRef = useRef(onSuccess)
+  onSuccessRef.current = onSuccess
+  const run = useCallback(
+    async (previous: ActionState, formData: FormData) => {
+      const result = await action(previous, formData)
+      if (result.status === 'success') onSuccessRef.current?.(result)
+      return result
+    },
+    [action],
+  )
+  const [state, formAction, pending] = useActionState(run, INITIAL)
+
+  const inlineMessage =
+    state.status !== 'idle' && state.message && !(state.status === 'success' && onSuccess)
 
   return (
     <form action={formAction} className={className ?? 'flex flex-col gap-3'}>
-      {state.status !== 'idle' && state.message ? (
+      {inlineMessage ? (
         <p
           role="status"
           className={

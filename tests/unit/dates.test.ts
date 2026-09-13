@@ -4,7 +4,10 @@ import {
   businessDate,
   hasDstTransition,
   utcOffsetMinutes,
+  formatInZone,
+  instantToZonedWallTime,
   zonedParts,
+  zonedWallTimeToInstant,
 } from '@/lib/dates'
 
 const LA = 'America/Los_Angeles'
@@ -85,5 +88,38 @@ describe('DST boundaries', () => {
     expect(addCalendarDays('2026-11-01', -1)).toBe('2026-10-31')
     expect(addCalendarDays('2026-01-01', -1)).toBe('2025-12-31')
     expect(addCalendarDays('2028-02-28', 1)).toBe('2028-02-29') // leap year
+  })
+})
+
+describe('wall-clock times entered in an organization timezone', () => {
+  // A manager in Los Angeles typing "9:30" means 9:30 in Los Angeles, whatever
+  // timezone the server happens to run in.
+  it('converts a winter time using the standard offset', () => {
+    expect(zonedWallTimeToInstant('2026-01-15T09:30', LA)?.toISOString()).toBe(
+      '2026-01-15T17:30:00.000Z',
+    )
+  })
+
+  it('converts a summer time using the daylight offset', () => {
+    expect(zonedWallTimeToInstant('2026-07-01T09:30', LA)?.toISOString()).toBe(
+      '2026-07-01T16:30:00.000Z',
+    )
+  })
+
+  it('round-trips back to the same wall-clock value', () => {
+    for (const value of ['2026-01-15T09:30', '2026-07-01T23:45', '2026-11-01T12:00']) {
+      const instant = zonedWallTimeToInstant(value, DENVER)
+      expect(instant).not.toBeNull()
+      expect(instantToZonedWallTime(instant!, DENVER)).toBe(value)
+    }
+  })
+
+  it('rejects something that is not a date and time', () => {
+    expect(zonedWallTimeToInstant('', LA)).toBeNull()
+    expect(zonedWallTimeToInstant('tomorrow', LA)).toBeNull()
+  })
+
+  it('formats with the zone abbreviation, so nobody guesses', () => {
+    expect(formatInZone(new Date('2026-07-01T16:30:00Z'), LA)).toMatch(/9:30.*PDT/)
   })
 })

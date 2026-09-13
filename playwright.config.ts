@@ -39,7 +39,7 @@ export default defineConfig({
       name: 'mobile',
       use: { ...devices['iPhone 14'] },
       testMatch:
-        /.*(employee|employee-onboarding|marketing|accessibility|screenshots-mobile)\.spec\.ts/,
+        /.*(employee|employee-onboarding|employee-inbox|marketing|accessibility|screenshots-mobile)\.spec\.ts/,
     },
   ],
 
@@ -48,7 +48,9 @@ export default defineConfig({
     // real users and far below what a browser suite does. Relaxing is only
     // possible outside production (see src/server/auth/rate-limits.ts) and
     // the strict production values are asserted by a unit test.
-    command: 'E2E_RELAX_RATE_LIMIT=true npm run dev',
+    // `npm run dev` starts the background worker too; a one-second tick keeps
+    // the scheduled-publishing journey fast without changing what it proves.
+    command: 'E2E_RELAX_RATE_LIMIT=true WORKER_INTERVAL_MS=1000 npm run dev',
     url: 'http://localhost:3000/api/health',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

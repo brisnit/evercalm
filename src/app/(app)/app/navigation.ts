@@ -25,6 +25,7 @@ const ITEMS: NavItem[] = [
   { href: '/app', label: 'Overview', requires: null },
   { href: '/app/people', label: 'People', requires: 'people.view' },
   { href: '/app/onboarding', label: 'Onboarding', requires: 'onboarding.view_progress' },
+  { href: '/app/comms', label: 'Communication', requires: 'announcement.create' },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
 

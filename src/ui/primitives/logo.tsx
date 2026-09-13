@@ -5,22 +5,26 @@ import { WORDMARK, WORDMARK_NEEDS_LIGHT_BACKGROUND } from '../brand'
 /**
  * EverCalm wordmark.
  *
- * Sized by height; width follows the asset's aspect ratio. Swapping the
- * temporary PNG for a production SVG means editing src/ui/brand.ts and
+ * Sized with a Tailwind height class rather than a pixel number, so a caller
+ * can be responsive - the marketing header is deliberately large on a desktop
+ * and smaller on a phone. Width always follows the asset's aspect ratio.
+ *
+ * Swapping the PNG for a production SVG means editing src/ui/brand.ts and
  * nothing else.
  */
 export function Logo({
-  height = 28,
+  size = 'h-8',
   onDark = false,
   className,
-  priority = false,
+  eager = false,
 }: {
-  height?: number
+  /** Tailwind height class(es), e.g. `h-10 sm:h-15`. */
+  size?: string
   onDark?: boolean
   className?: string
-  priority?: boolean
+  /** Set on above-the-fold marks. `priority` is deprecated in Next 16. */
+  eager?: boolean
 }) {
-  const width = Math.round(height * WORDMARK.aspectRatio)
   const needsChip = onDark && WORDMARK_NEEDS_LIGHT_BACKGROUND
 
   return (
@@ -34,10 +38,11 @@ export function Logo({
       <Image
         src={WORDMARK.src}
         alt="EverCalm"
-        width={width}
-        height={height}
-        priority={priority}
-        style={{ height, width: 'auto' }}
+        width={WORDMARK.intrinsicWidth}
+        height={WORDMARK.intrinsicHeight}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : 'auto'}
+        className={cn('w-auto', size)}
       />
     </span>
   )

@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="bg-raise flex min-h-screen flex-col">
       <header className="px-5 py-5">
         <Link href="/" aria-label="EverCalm home">
-          <Logo height={26} priority />
+          <Logo size="h-11" eager />
         </Link>
       </header>
       <main id="main" className="flex flex-1 items-start justify-center px-5 pt-6 pb-16">

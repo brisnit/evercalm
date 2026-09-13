@@ -5,6 +5,8 @@ import { newId } from '@/lib/ids'
 import { addCalendarDays } from '@/lib/dates'
 import { ROLE_KEYS, ROLE_PRESETS } from '@/server/authz/role-presets'
 import * as schema from '../full-schema'
+import { DEFAULT_ANNOUNCEMENT_CATEGORIES } from '@/modules/comms/categories'
+import { deliveryPolicy } from '@/modules/comms/delivery-policy'
 import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data'
 
 /**
@@ -39,10 +41,61 @@ export interface SeedOrganizationSummary {
   grants: number
   credentials: number
   onboardingAssignments: number
+  announcements: number
 }
 
 export interface SeedSummary {
   organizations: SeedOrganizationSummary[]
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Resolve a seeded audience to person keys.
+ *
+ * A small mirror of the real resolver in modules/comms/audience.ts, working on
+ * seed keys rather than rows because the seed writes recipients directly.
+ * Kept deliberately simple: include is a union, exclude is subtracted, and
+ * exclude wins - the same three rules the product enforces.
+ */
+function resolveSeedAudience(
+  seed: SeedOrganization,
+  rules: NonNullable<SeedOrganization['announcements']>[number]['audience'],
+): string[] {
+  const roleDepartment = new Map(seed.jobRoles.map((r) => [r.key, r.department]))
+  const teamMembers = new Map((seed.teams ?? []).map((t) => [t.key, t.members]))
+
+  const matches = (rule: (typeof rules)[number]): string[] => {
+    switch (rule.type) {
+      case 'organization':
+        return seed.people.map((p) => p.key)
+      case 'location':
+        return seed.people.filter((p) => p.locations.includes(rule.ref ?? '')).map((p) => p.key)
+      case 'job_role':
+        return seed.people.filter((p) => p.jobRoles?.includes(rule.ref ?? '')).map((p) => p.key)
+      case 'department':
+        return seed.people
+          .filter((p) => (p.jobRoles ?? []).some((r) => roleDepartment.get(r) === rule.ref))
+          .map((p) => p.key)
+      case 'team':
+        return teamMembers.get(rule.ref ?? '') ?? []
+      case 'employment':
+        return rule.ref ? [rule.ref] : []
+      default:
+        return []
+    }
+  }
+
+  const included = new Set<string>()
+  for (const rule of rules) {
+    if ((rule.mode ?? 'include') !== 'include') continue
+    for (const key of matches(rule)) included.add(key)
+  }
+  for (const rule of rules) {
+    if ((rule.mode ?? 'include') !== 'exclude') continue
+    for (const key of matches(rule)) included.delete(key)
+  }
+  return [...included]
 }
 
 export async function seedAll(db: SeedDb): Promise<SeedSummary> {
@@ -70,6 +123,7 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
     grants: 0,
     credentials: 0,
     onboardingAssignments: 0,
+    announcements: 0,
   }
 }
 
@@ -192,6 +246,24 @@ async function seedOrganization(
       title: value.title,
       body: value.body,
       position: index,
+    })
+  }
+
+  // --- announcement categories ---------------------------------------------
+  // Rows, not an enum, so a tenant can rename or extend them. See
+  // src/modules/comms/categories.ts for why some override preferences.
+  const categoryIds = new Map<string, string>()
+  for (const [index, category] of DEFAULT_ANNOUNCEMENT_CATEGORIES.entries()) {
+    const id = newId()
+    categoryIds.set(category.key, id)
+    await db.insert(schema.announcementCategories).values({
+      id,
+      organizationId,
+      key: category.key,
+      name: category.name,
+      description: category.description,
+      position: index,
+      overridesPreferences: category.overridesPreferences,
     })
   }
 
@@ -598,6 +670,234 @@ async function seedOrganization(
     })
   }
 
+  // --- teams, events, and announcements -------------------------------------
+  // Last, because every one of them refers to people by key.
+  const teamIds = new Map<string, string>()
+  for (const team of seed.teams ?? []) {
+    const id = newId()
+    teamIds.set(team.key, id)
+    await db.insert(schema.teams).values({
+      id,
+      organizationId,
+      departmentId: team.department ? (departmentIds.get(team.department) ?? null) : null,
+      locationId: team.location ? (locationIds.get(team.location) ?? null) : null,
+      name: team.name,
+    })
+    for (const memberKey of team.members) {
+      const employmentId = employmentIds.get(memberKey)
+      if (!employmentId) continue
+      await db.insert(schema.employmentTeams).values({
+        id: newId(),
+        organizationId,
+        employmentId,
+        teamId: id,
+      })
+    }
+  }
+
+  const eventIds = new Map<string, string>()
+  for (const event of seed.events ?? []) {
+    const id = newId()
+    eventIds.set(event.key, id)
+    const start = new Date(Date.now() + event.inDays * DAY_MS)
+    start.setUTCHours(event.startHour ?? 9, 0, 0, 0)
+    const end = event.endHour === undefined ? null : new Date(start)
+    if (end && event.endHour !== undefined) end.setUTCHours(event.endHour, 0, 0, 0)
+
+    await db.insert(schema.events).values({
+      id,
+      organizationId,
+      locationId: event.location ? (locationIds.get(event.location) ?? null) : null,
+      title: event.title,
+      description: event.description ?? '',
+      kind: event.kind,
+      startsAt: start,
+      endsAt: end,
+      allDay: event.allDay ?? false,
+      notes: event.notes ?? '',
+      createdByEmploymentId: employmentIds.get('owner') ?? null,
+    })
+  }
+
+  let announcementCount = 0
+  for (const announcement of seed.announcements ?? []) {
+    const authorId = employmentIds.get(announcement.author) ?? null
+    const categoryId = categoryIds.get(announcement.category)
+    if (!categoryId) continue
+    const seedPolicy = deliveryPolicy(
+      {
+        priority: announcement.priority ?? 'normal',
+        requiresAcknowledgement: announcement.requiresAcknowledgement ?? false,
+      },
+      {
+        overridesPreferences:
+          DEFAULT_ANNOUNCEMENT_CATEGORIES.find((c) => c.key === announcement.category)
+            ?.overridesPreferences ?? false,
+      },
+    )
+
+    const status = announcement.status ?? 'published'
+    const publishedAt =
+      status === 'published'
+        ? new Date(Date.now() - (announcement.publishedDaysAgo ?? 0) * DAY_MS)
+        : null
+    const publishAt =
+      status === 'scheduled'
+        ? new Date(Date.now() + (announcement.scheduledInDays ?? 1) * DAY_MS)
+        : null
+
+    const announcementId = newId()
+    const revisionId = newId()
+
+    await db.insert(schema.announcements).values({
+      id: announcementId,
+      organizationId,
+      categoryId,
+      status,
+      priority: announcement.priority ?? 'normal',
+      requiresAcknowledgement: announcement.requiresAcknowledgement ?? false,
+      acknowledgementDueAt:
+        announcement.acknowledgementDueInDays === undefined
+          ? null
+          : new Date(Date.now() + announcement.acknowledgementDueInDays * DAY_MS),
+      publishAt,
+      publishedAt,
+      expiresAt:
+        announcement.expiresInDays === undefined
+          ? null
+          : new Date(Date.now() + announcement.expiresInDays * DAY_MS),
+      eventId: announcement.event ? (eventIds.get(announcement.event) ?? null) : null,
+      createdByEmploymentId: authorId,
+      updatedByEmploymentId: authorId,
+      publishedByEmploymentId: status === 'published' ? authorId : null,
+      scheduledByEmploymentId: status === 'scheduled' ? authorId : null,
+      createdAt: publishedAt ?? new Date(),
+      updatedAt: publishedAt ?? new Date(),
+    })
+
+    await db.insert(schema.announcementRevisions).values({
+      id: revisionId,
+      organizationId,
+      announcementId,
+      revisionNumber: 1,
+      title: announcement.title,
+      body: announcement.body,
+      callToActionLabel: announcement.callToActionLabel ?? null,
+      callToActionHref: announcement.callToActionHref ?? null,
+      createdByEmploymentId: authorId,
+      createdAt: publishedAt ?? new Date(),
+    })
+
+    await db
+      .update(schema.announcements)
+      .set({ currentRevisionId: revisionId })
+      .where(eq(schema.announcements.id, announcementId))
+
+    for (const rule of announcement.audience) {
+      const selectorId =
+        rule.type === 'organization'
+          ? null
+          : rule.type === 'location'
+            ? (locationIds.get(rule.ref ?? '') ?? null)
+            : rule.type === 'department'
+              ? (departmentIds.get(rule.ref ?? '') ?? null)
+              : rule.type === 'job_role'
+                ? (jobRoleIds.get(rule.ref ?? '') ?? null)
+                : rule.type === 'team'
+                  ? (teamIds.get(rule.ref ?? '') ?? null)
+                  : rule.type === 'employment'
+                    ? (employmentIds.get(rule.ref ?? '') ?? null)
+                    : null
+      if (rule.type !== 'organization' && selectorId === null) continue
+
+      await db.insert(schema.announcementAudience).values({
+        id: newId(),
+        organizationId,
+        announcementId,
+        mode: rule.mode ?? 'include',
+        selectorType: rule.type,
+        selectorId,
+      })
+    }
+
+    if (status !== 'published') {
+      announcementCount += 1
+      continue
+    }
+
+    // Recipients, resolved the same way publication does - by rule, not by a
+    // hand-written list - so the demo exercises the real resolver.
+    const recipientKeys = resolveSeedAudience(seed, announcement.audience)
+    const readSet = new Set(announcement.readBy ?? [])
+    const ackSet = new Set(announcement.acknowledgedBy ?? [])
+
+    for (const personKey of recipientKeys) {
+      const employmentId = employmentIds.get(personKey)
+      if (!employmentId) continue
+      const person = seed.people.find((p) => p.key === personKey)
+      const homeLocation = person?.locations[0]
+      const primaryRole = person?.jobRoles?.[0]
+      const roleDefinition = seed.jobRoles.find((r) => r.key === primaryRole)
+
+      const viewed = readSet.has(personKey) || ackSet.has(personKey)
+      const acknowledged = ackSet.has(personKey)
+      const viewedAt = viewed
+        ? new Date((publishedAt ?? new Date()).getTime() + 3 * 60 * 60 * 1000)
+        : null
+
+      await db.insert(schema.announcementRecipients).values({
+        id: newId(),
+        organizationId,
+        announcementId,
+        employmentId,
+        revisionId,
+        locationIdAtPublish: homeLocation ? (locationIds.get(homeLocation) ?? null) : null,
+        departmentIdAtPublish: roleDefinition
+          ? (departmentIds.get(roleDefinition.department) ?? null)
+          : null,
+        jobRoleIdAtPublish: primaryRole ? (jobRoleIds.get(primaryRole) ?? null) : null,
+        deliveryStatus: 'sent',
+        deliveredAt: publishedAt,
+        firstViewedAt: viewedAt,
+        lastViewedAt: viewedAt,
+        viewCount: viewed ? 1 : 0,
+        acknowledgedAt: acknowledged ? viewedAt : null,
+        acknowledgedRevisionId: acknowledged ? revisionId : null,
+        createdAt: publishedAt ?? new Date(),
+      })
+
+      // An unread in-app notification for anyone who has not opened it, so the
+      // bell and the digest have something real to count.
+      if (!viewed) {
+        await db.insert(schema.notifications).values({
+          id: newId(),
+          organizationId,
+          employmentId,
+          category: announcement.category,
+          channel: 'in_app',
+          subjectType: 'announcement',
+          subjectId: announcementId,
+          title: announcement.title,
+          preview: announcement.body.split('\n')[0]?.slice(0, 140) ?? '',
+          href: `/my/inbox/${announcementId}`,
+          status: 'sent',
+          // The same policy publication applies, so seeded rows are honest.
+          mandatory: seedPolicy.overridesPreferences,
+          overridesQuietHours: seedPolicy.overridesQuietHours,
+          sentAt: publishedAt,
+          idempotencyKey: `announcement:${announcementId}:${employmentId}:in_app:initial`,
+          createdAt: publishedAt ?? new Date(),
+        })
+      }
+    }
+
+    announcementCount += 1
+    systemEvent('announcement.published', `Published "${announcement.title}"`, {
+      subjectType: 'announcement',
+      subjectId: announcementId,
+    })
+  }
+
   await db.insert(schema.auditEvents).values(audit)
 
   return {
@@ -616,6 +916,7 @@ async function seedOrganization(
     grants: grantCount,
     credentials: credentialCount,
     onboardingAssignments: onboardingCount,
+    announcements: announcementCount,
   }
 }
 

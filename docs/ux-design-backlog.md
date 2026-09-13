@@ -143,6 +143,83 @@ All fixed in place:
   EverCalm. It has headings now.
 - Due dates broke mid-date across lines on a phone.
 
+### F10 · A location manager could not see an organization-wide announcement — **Blocker**
+
+_Found: Slice 3, writing the browser test for a General Manager's view._
+
+The author list filtered to "announcements naming one of my locations", which
+is the right question for a Downtown-only notice and the wrong one for
+everything else. An organization-wide safety notice reaches a manager's people,
+and they are the person who has to chase the outstanding confirmations — but it
+was invisible to them.
+
+**Fixed:** the rule is now subtractive. An announcement is hidden only when
+**every** include rule points somewhere the manager does not cover. **Lesson
+for the redesign:** a visibility filter written as "show when X" hides
+everything the author of the filter did not think of; written as "hide when
+every Y", the default is to show.
+
+### F11 · Four services asked the organization-wide permission question — **Blocker**
+
+_Found: Slice 3, the first browser test that signed in as a General Manager._
+
+`authorize(actor, cap)` with no location is the STRONGER question, and a
+location-scoped grant cannot satisfy it. Receipts, the author list, reminders
+and the urgent-priority option all used it, so a General Manager was refused
+for their own site — the identical family of bugs to Slice 2, in a new module.
+
+**Fixed:** one documented helper, `authorizeSomewhere`, used at every entry
+point, with the specific location enforced by the audience check instead.
+**Lesson for the redesign:** this has now happened twice. The next module
+should start from the helper rather than rediscover it.
+
+### F12 · A `<details>` disclosure is invisible to tests and to assistive tech — **High**
+
+_Found: Slice 3, and again — it also cost a hunt in Slice 2._
+
+A collapsed `<summary>` is exposed to the accessibility tree as a generic node
+rather than a button with expanded state. Screen readers do not announce that
+it can be opened, and neither `getByRole('button')` nor `getByRole('group')`
+finds it.
+
+**Fixed:** a `Disclosure` primitive — a real button with `aria-expanded` and
+`aria-controls`. Used by the audience picker. **Still to migrate:** the
+onboarding template builder's add-step disclosure, left alone to keep Slice 3's
+blast radius contained. See D13.
+
+### F13 · A malformed id in a URL was a 500 — **High**
+
+_Found: Slice 3, asserting that a message which is not yours is not found._
+
+`/my/inbox/not-an-id` handed a non-UUID to a uuid column, PostgreSQL raised
+22P02, and the result was a 500 with a stack trace. Wrong twice: it is not a
+server fault, and an error page is a _different response_ from "no such thing"
+— exactly the distinction the 404-not-403 rule exists to remove.
+
+**Fixed:** `isUuid` guards the route parameter, and the domain `NotFoundError`
+is mapped to Next's `notFound()`. A malformed id, an id belonging to another
+tenant, and an id that never existed now all answer 404.
+
+### F14 · An empty `<select>` posted an empty string into a uuid column — **Blocker**
+
+_Found: Slice 3, the first attempt to save a draft from the browser._
+
+`readString` returns `''` for a field that is present but empty, so
+`readString(...) ?? null` never fires and "No event" posted `''`. Every draft
+save failed with a generic "we could not save that".
+
+**Fixed:** optional fields use `readOptionalString`, which is `undefined` when
+there is nothing there. **Lesson:** `?? null` on a helper that returns `''` is
+a silent no-op; the two helpers now have clearly different jobs.
+
+### F15 · Smaller things the screenshots caught — **Low**
+
+- List rows used about 40% of their width, with the counts a manager scans for
+  crammed under the title and the rest of the row empty. The stats are now
+  right-aligned on a wide screen and stack on a phone.
+- The receipt report — a table plus three breakdowns — was squeezed into a
+  column while the page had room to spare. It is full width now.
+
 ## Deferred to the product-wide redesign
 
 ### D1 · Navigation will not survive four more slices — **High**
@@ -228,3 +305,37 @@ preview. The `EMPLOYEE VIEW` label is currently doing all the explaining.
 
 _Area: visual design._ In the template builder's Manage card, `Duplicate` is
 auto-width and `Archive` is full-width, in the same stack.
+
+### D13 · The onboarding builder still uses `<details>` — **Medium**
+
+_Area: interaction._ Slice 3 added a `Disclosure` primitive with proper
+`aria-expanded`. The template builder's add-step control still uses a raw
+`<details>`, which announces nothing about being expandable. Migrate it when
+onboarding is next touched.
+
+### D14 · Action feedback is lost whenever the action revalidates — **Fixed**
+
+_Fixed in Slice 3 review._ Publishing, scheduling, cancelling, correcting,
+archiving and acknowledging now hand their result to a notice held by a
+component that survives the refresh (`src/ui/patterns/action-notice.tsx`). It
+takes focus, stays until dismissed or the page is left, and is never stored, so
+it cannot reappear on a later visit. Covered by browser tests.
+
+_Original finding:_
+
+_Area: interaction._ Publishing reports "queued for 38, 2 after quiet hours",
+then `revalidatePath` re-renders the page and the message is gone. The durable
+outcome is visible (the receipt report appears), but the nuance about delayed
+and suppressed deliveries is not. This is D8 with a concrete cost attached.
+
+### D15 · Three badges on one inbox card wrap to two lines — **Low**
+
+_Area: visual design._ An urgent message that also needs confirming and is
+unread carries three marks. Each is legible and each carries a word, but the
+row is busy. A single combined state chip would read better.
+
+### D16 · The announcement detail leaves a tall empty left column — **Low**
+
+_Area: responsive layout._ "What it says" is short while the sidebar carries
+publishing, correction and management panels, so the left column ends well
+above the right. Same shape as D10.

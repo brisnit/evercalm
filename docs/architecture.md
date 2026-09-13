@@ -90,12 +90,20 @@ application code runs — including for the migration role, which bypasses RLS.
 
 Never 403. A 403 confirms the record exists.
 
-## The one sanctioned cross-tenant read
+## The sanctioned cross-tenant reads
 
-Listing which organizations a user belongs to must happen _before_ a tenant
-context exists. Migration `0002` provides a `SECURITY DEFINER` function that
-takes one user id and returns only that user's memberships. It has a pinned
-`search_path` and cannot be used to enumerate a tenant's employees.
+Three questions have to be answered _before_ a tenant context exists, and each
+is a `SECURITY DEFINER` function with a pinned `search_path`, schema-qualified
+objects, and `EXECUTE` granted only to the runtime role:
+
+| Migration | Function                                    | Returns                                                         |
+| --------- | ------------------------------------------- | --------------------------------------------------------------- |
+| `0002`    | membership lookup                           | one user's own memberships                                      |
+| `0005`    | invitation lookup                           | one invitation, by token hash                                   |
+| `0013`    | `evercalm_organizations_with_due_work(now)` | organization ids with background work due — no names, no counts |
+
+None of them can be used to enumerate a tenant's employees. Everything that
+follows each lookup runs inside `withTenant()`, under RLS.
 
 ## The global identity boundary
 
@@ -247,6 +255,251 @@ exhaustively unit-testable. The database-aware half lives in
 Line numbers count the file as a spreadsheet shows it: interior blank rows are
 kept through parsing so that a stray empty line in the middle does not shift
 every later error message onto the wrong row.
+
+## Announcements: audience, receipts, and revisions
+
+Five tables, and the split is the design:
+
+| Table                     | Holds                                                                  |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `announcement_categories` | Tenant-owned rows, not a code enum, so a salon can rename "Operations" |
+| `announcements`           | The durable thing: status, schedule, priority, targeting               |
+| `announcement_revisions`  | Immutable content history. **Content lives on a revision**             |
+| `announcement_audience`   | Explicit include/exclude rules                                         |
+| `announcement_recipients` | The materialised result, one row per person                            |
+
+### Why content lives on a revision
+
+An acknowledgement is a claim about a specific wording — "I read the allergen
+policy". If an author could edit the text in place, every previous
+acknowledgement would silently become a claim about text nobody agreed to. So
+each recipient's acknowledgement records `acknowledged_revision_id`, and a
+**material** revision sets `reacknowledgement_requested_at` on everyone who had
+already confirmed, without erasing what they confirmed or when.
+
+The employee sees this stated: "You confirmed revision 1 on the 3rd. It has
+been revised since, so please read it again."
+
+### The audience model
+
+Rules, not a stored query. Three rules govern how they combine, and the
+authoring screen says them in the same words:
+
+- **includes are a union** — anyone matching any include rule is in
+- **excludes are subtracted** — anyone matching any exclude rule is out
+- **exclude always wins**, even against a more specific include
+
+A union rather than an intersection because that is what a manager means.
+"All bartenders and all hosts" is two groups of people; read as an intersection
+it is the empty set of people who are somehow both. Narrowing is expressed by
+excluding, which reads the way it behaves: "everyone at Riverside, except the
+kitchen".
+
+Seven selector types: `organization`, `location`, `department`, `job_role`,
+`team`, `station`, `employment`. Two are resolved rather than stored:
+
+- a **department** contains job roles, and people belong to roles
+- a **station** is a place to work during a shift, not a roster, so targeting
+  a work position means the people who could be put on it: everyone at that
+  station's location holding its job role. When scheduling lands, this becomes
+  answerable precisely without the selector type changing.
+
+`employment_teams` was added in this slice. Teams existed as a structural unit
+but nobody belonged to one, which made "tell the closing team" impossible to
+express.
+
+### Scope is checked twice
+
+`assertRulesWithinScope` runs when a draft is saved **and again at
+publication**. A manager whose grant is narrowed between the two must not still
+publish the wider audience. A location-scoped author cannot target the
+organization, another location, or a person who does not work somewhere they
+cover; departments and job roles span the organization, so they are refused as
+a standalone include for such an author.
+
+### Why recipients are materialised at publication
+
+Publishing writes one row per person rather than resolving the audience on
+every read. Three reasons, in order of weight:
+
+1. **Receipts need a stable denominator.** "12 of 40 acknowledged" must not
+   change because somebody was hired this morning.
+2. **Reporting must survive people moving.** The row snapshots the location,
+   department and job role the person held _when they were targeted_, so a
+   bartender who transfers next month does not rewrite last month's report.
+   Every receipt query filters on `location_id_at_publish`, never on where the
+   person is today.
+3. **Acknowledgement is a record with consequences.** It has to be pinned to a
+   person, a revision, and a time.
+
+The cost is that somebody hired after publication is not a recipient. That is
+handled explicitly rather than by recomputing: `syncRecipients` re-runs the
+audience and inserts only the people who are missing. It is safe to run
+repeatedly because `(organization_id, announcement_id, employment_id)` is
+unique — which is also what makes publication itself idempotent under retry.
+
+### Reading is never acknowledging
+
+Opening an announcement records a view: `first_viewed_at` once,
+`last_viewed_at` and a counter every time. Acknowledgement only ever happens
+through `acknowledge()`, reached from a button a person deliberately presses.
+"They opened it" is not a defensible answer to "did they agree to the allergen
+policy", and a system that conflates the two produces a record that looks like
+consent and is not.
+
+## Notifications
+
+One queue, many channels. A notification row is the intent to tell somebody
+something on one channel. Announcements, schedules (Slice 4) and messaging
+(Phase 2) all enqueue here rather than each growing a delivery path.
+
+**What a row does not contain:** the announcement body. Delivery records
+outlive the thing they point at, are read by administrators debugging a queue,
+and may one day be handed to a channel provider. A row carries a title, a short
+non-sensitive preview, and a pointer — never the content, and never anything
+about the person beyond their employment id.
+
+Two separate decisions shape a row, each with its own override flag (see
+[the delivery policy](permissions.md#the-delivery-policy) for which messages
+carry which):
+
+1. **Is the category switched off for this person and channel?** Then the row
+   is written as `suppressed` rather than not written — a suppressed row is the
+   evidence that we deliberately did not tell somebody something. Skipped when
+   the message `overrides_preferences` (stored as `mandatory`).
+2. **Are they inside quiet hours?** Then the row is `pending` with
+   `scheduled_for` moved to the end of the window. **Delayed, never dropped.**
+   Skipped only when the message `overrides_quiet_hours` — a narrower flag,
+   because "cannot be muted" and "may wake you" are different promises.
+
+In-app and email rows are queued together for every announcement and reminder,
+under the same policy.
+
+Quiet hours are measured in the person's own timezone, defaulting to their home
+location's, and the overnight case (22:00–07:00, where start > end) is the
+normal shape rather than an edge case.
+
+`idempotency_key` is `(subject, employment, channel, purpose)`, unique per
+organization. A retried publish, a double-clicked button and two racing workers
+converge on one row; a reminder carries its number in `purpose`, so today's
+nudge and tomorrow's are different messages while a double click is not.
+
+**No external mail leaves the machine.** The provider is the development-safe
+console provider; the Resend path still refuses to start without an approved
+sending domain, and no domain is assumed anywhere.
+
+## Background work
+
+Scheduled publishing, expiry, automatic acknowledgement reminders and
+notification delivery are done by one worker, `src/server/jobs/worker.ts`.
+
+### What a tick does
+
+`runWorkerTick(now)` asks `evercalm_organizations_with_due_work(now)` which
+organizations have anything due, then for each, inside `withTenant()` as the
+runtime role:
+
+1. **Publish** each scheduled announcement whose `publish_at` has passed — one
+   transaction per announcement, re-checking the scheduler's permissions and
+   audience scope at that moment.
+2. **Expire** published announcements past `expires_at`, cancelling anything
+   still queued for them.
+3. **Remind** — one "due within a day" and one "overdue" reminder per person
+   who has not confirmed.
+4. **Deliver** queued notifications: claim, send outside any transaction,
+   complete.
+
+The steps run in that order, so an announcement published in step 1 is
+delivered in step 4 of the same tick. A failure in one organization or one
+step is logged and reported; the rest of the tick continues.
+
+### Why it is durable and idempotent
+
+The worker holds no state. Every decision is a row:
+
+| Work              | Claimed by                                                                                     | So a second worker…                      |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Scheduled publish | `UPDATE … SET status='published' WHERE status='scheduled' AND publish_at <= now`               | blocks, then matches nothing             |
+| Recipients        | unique `(organization, announcement, employment)`                                              | inserts nothing                          |
+| Expiry            | `SELECT … FOR UPDATE SKIP LOCKED`, then conditional update                                     | skips the row                            |
+| Reminders         | announcement row `FOR UPDATE SKIP LOCKED`; `WHERE due_soon_reminded_at IS NULL` per recipient  | skips, or matches nothing                |
+| Notifications     | unique `idempotency_key`; delivery **lease** (`locked_until`, `claim_token`) via `SKIP LOCKED` | takes different rows                     |
+| Completion        | `WHERE claim_token = <mine> AND status = 'pending'`                                            | cannot overwrite a result (`lease_lost`) |
+
+Any number of workers can therefore run at once. The integration suite runs
+four concurrently at the same instant and asserts each announcement is
+published once, each person has one recipient row, and no notification is sent
+twice (`tests/integration/worker.test.ts`).
+
+### Starting and stopping
+
+| Command                 | What it does                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `npm run dev`           | web server **and** worker, output prefixed; if either exits, both stop            |
+| `npm run dev:web`       | web server only                                                                   |
+| `npm run worker`        | the worker alone, ticking every `WORKER_INTERVAL_MS` (default 15 s)               |
+| `npm run worker:once`   | one tick, then exit; non-zero exit if any step failed                             |
+| `npm run worker:status` | PID, interval, time since last tick and its counts; warns when ticks look stalled |
+| `npm run worker:stop`   | sends SIGTERM to the running worker and waits for it to exit                      |
+
+The worker refuses to start with a database role that can bypass RLS, the same
+boot guard as the web server. It writes `.tmp/worker.json` (PID, last tick) for
+`worker:status`; a second `npm run worker` finds a live PID there and exits
+rather than starting a duplicate — although a duplicate would be safe.
+
+**Stopping** (Ctrl+C, SIGTERM, `worker:stop`) finishes the tick in progress —
+every step is transactional, so killing it outright is also safe; finishing
+merely avoids waiting out a delivery lease — then closes the pool and exits.
+Ticks in one process never overlap: the next is scheduled only after the
+previous finishes.
+
+### Retries
+
+| Failure                                                        | What happens                                                                                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Transient delivery error (provider timeout)                    | retried after 30 s, 2 m, 8 m, 32 m (capped at 1 h); after **5** attempts the row is `failed` with the reason                                                                         |
+| Permanent delivery error (no email address, channel not built) | `failed` immediately, not retried                                                                                                                                                    |
+| An administrator retries a failed row                          | attempts reset; the next tick picks it up                                                                                                                                            |
+| Scheduler lost permission, left, or audience out of scope      | back to **draft** with `publish_failure_reason`, an `announcement.schedule_failed` audit event, and a banner on the announcement. Not retried: waiting will not restore a permission |
+| Database error during any step                                 | that transaction rolls back; the work is still due, and the next tick retries it                                                                                                     |
+
+Failure reasons are trimmed and have anything shaped like an email address
+removed before they are stored or logged.
+
+### Recovery after downtime
+
+Nothing is lost while no worker runs; on the first tick back:
+
+- A schedule whose time passed is published then — once.
+- A schedule whose **expiry** also passed is marked expired and **not sent**,
+  with an audit event saying why. A notice about something already over is
+  worse than none.
+- A confirmation already past due gets only the "overdue" reminder, not a stale
+  "due soon" first.
+- A **material revision** resets the reminder stamps of the people asked to
+  confirm again, and the reminder key carries the revision number
+  (`auto-due-soon-r2`), so they are reminded afresh while anyone already
+  reminded and still outstanding is not reminded twice for the same stage.
+- A schedule whose author was **suspended or separated** before publish time
+  returns to draft with the reason; reinstating them does not resurrect it.
+- A notification claimed by a worker that crashed becomes claimable again when
+  its 2-minute lease expires, and is delivered once. The crashed worker's late
+  completion is refused.
+- Held quiet-hours notifications whose window ended are delivered.
+
+### Delivery guarantees
+
+In-app delivery is exactly-once: "sending" is recording the row. Email is
+at-least-once in one narrow window — the provider accepted the message and the
+worker died before completing. The lease is far longer than a send, and a real
+provider integration should pass the notification id as its idempotency key to
+close that window.
+
+### Production (not provisioned)
+
+A scheduler — a platform cron, a queue trigger — invokes `npm run worker:once`
+(or `runWorkerTick()` from a route) every minute. Overlapping invocations are
+safe by construction. None is configured; that needs approval.
 
 ## Audit
 

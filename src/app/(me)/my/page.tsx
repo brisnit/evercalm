@@ -5,6 +5,8 @@ import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
 import { getEmployment, listCredentials } from '@/modules/people/service'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
+import { inboxDigest } from '@/modules/comms/inbox'
+import { PriorityMark } from '@/ui/patterns/priority-mark'
 import { Badge, Card, CardHeader, Logo, ProgressBar } from '@/ui/primitives'
 
 export const metadata: Metadata = { title: 'My work' }
@@ -26,6 +28,7 @@ export default async function MyWorkPage() {
     me: await getEmployment(tx, actor, actor.employmentId),
     onboarding: await getProgressForEmployment(tx, actor, actor.employmentId),
     credentials: await listCredentials(tx, actor, actor.employmentId),
+    inbox: await inboxDigest(tx, actor, actor.employmentId),
   }))
 
   const myLocations = data.locations.filter((l) => actor.locationIds.includes(l.id))
@@ -39,7 +42,7 @@ export default async function MyWorkPage() {
     <div className="bg-raise flex min-h-screen flex-col">
       <header className="border-line border-b bg-white px-5 py-3">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Logo height={22} priority />
+          <Logo size="h-8" eager />
           {hasAdminAccess ? (
             <Link href="/app" className="text-muted text-sm underline-offset-4 hover:underline">
               Administration
@@ -61,6 +64,16 @@ export default async function MyWorkPage() {
         </p>
 
         <div className="mt-6 flex flex-col gap-4">
+          {/*
+            Communication comes before onboarding only when it is genuinely
+            more demanding: something needs confirming, or an urgent notice is
+            unread. Otherwise the inbox is a quiet line further down, because
+            "Do this next" must not become a wall of everything.
+          */}
+          {data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0 ? (
+            <InboxCallout digest={data.inbox} />
+          ) : null}
+
           {data.onboarding ? (
             <Card className="overflow-hidden">
               <div className="border-line border-b bg-white px-5 py-4">
@@ -155,18 +168,120 @@ export default async function MyWorkPage() {
             </div>
           </Card>
 
+          <Card>
+            <CardHeader
+              title="Messages"
+              description={inboxDescription(data.inbox)}
+              action={
+                <Link
+                  href="/my/inbox"
+                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
+                >
+                  Open inbox
+                </Link>
+              }
+            />
+            {data.inbox.headline ? (
+              <div className="p-5 pt-4">
+                <Link href={`/my/inbox/${data.inbox.headline.announcementId}`} className="block">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {data.inbox.headline.unread ? <Badge tone="violet">Unread</Badge> : null}
+                    <PriorityMark priority={data.inbox.headline.priority} />
+                    <span className="text-faint text-xs">{data.inbox.headline.categoryName}</span>
+                  </span>
+                  <span className="text-ink mt-2 block font-medium">
+                    {data.inbox.headline.title}
+                  </span>
+                  <span className="text-muted mt-0.5 line-clamp-2 block text-sm">
+                    {data.inbox.headline.preview}
+                  </span>
+                </Link>
+              </div>
+            ) : null}
+          </Card>
+
           <Card className="border-dashed bg-transparent">
             <div className="p-5">
               <h2 className="font-display text-ink text-sm font-bold">Coming in later slices</h2>
               <p className="text-muted mt-1.5 text-sm">
-                Your next shift, announcements to acknowledge, training that is due, and
-                today&rsquo;s responsibilities will appear here. They are not built yet, so nothing
-                on this screen pretends to show them.
+                Your next shift, the training that is due, and today&rsquo;s responsibilities will
+                appear here. They are not built yet, so nothing on this screen pretends to show
+                them.
               </p>
             </div>
           </Card>
         </div>
       </main>
     </div>
+  )
+}
+
+/** The line under the Messages header, in plain words. */
+function inboxDescription(digest: { unreadCount: number; acknowledgementsDue: number }): string {
+  if (digest.acknowledgementsDue > 0) {
+    return `${digest.acknowledgementsDue} ${
+      digest.acknowledgementsDue === 1 ? 'message needs' : 'messages need'
+    } your confirmation.`
+  }
+  if (digest.unreadCount > 0) {
+    return `${digest.unreadCount} unread ${digest.unreadCount === 1 ? 'message' : 'messages'}.`
+  }
+  return 'Everything is read.'
+}
+
+/**
+ * The demanding version, shown above onboarding.
+ *
+ * Deliberately not a modal and not animated: it is a card that states what is
+ * outstanding and links straight to it. An urgent notice earns attention by
+ * being first and staying first, not by interrupting.
+ */
+function InboxCallout({
+  digest,
+}: {
+  digest: {
+    acknowledgementsDue: number
+    overdueAcknowledgements: number
+    urgentUnread: number
+    headline: {
+      announcementId: string
+      title: string
+      priority: string
+      categoryName: string
+    } | null
+  }
+}) {
+  const heading =
+    digest.acknowledgementsDue > 0
+      ? `${digest.acknowledgementsDue} ${
+          digest.acknowledgementsDue === 1 ? 'message needs' : 'messages need'
+        } your confirmation`
+      : `${digest.urgentUnread} urgent ${digest.urgentUnread === 1 ? 'message' : 'messages'} to read`
+
+  return (
+    <Card className="border-violet-300 p-5">
+      <p className="text-xs font-semibold tracking-wide text-violet-700 uppercase">Needs you</p>
+      <h2 className="font-display text-ink mt-1 text-lg font-extrabold">{heading}</h2>
+      {digest.overdueAcknowledgements > 0 ? (
+        <p className="text-warning mt-1.5 text-sm font-semibold">
+          {digest.overdueAcknowledgements} past the due date.
+        </p>
+      ) : null}
+
+      {digest.headline ? (
+        <p className="text-muted mt-2 text-sm">
+          Starting with &ldquo;{digest.headline.title}&rdquo;.
+        </p>
+      ) : null}
+
+      <div className="mt-4">
+        <Link
+          href={digest.headline ? `/my/inbox/${digest.headline.announcementId}` : '/my/inbox'}
+          className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
+        >
+          {digest.acknowledgementsDue > 0 ? 'Read and confirm' : 'Read it'}
+        </Link>
+      </div>
+    </Card>
   )
 }
