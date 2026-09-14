@@ -218,6 +218,42 @@ org-wide form during Slice 3 and were caught by tests signing in as a General
 Manager — the same family of bugs as Slice 2, so the rule is now applied
 through one documented helper, `authorizeSomewhere`.
 
+## Scheduling capabilities
+
+All location-scopable. A General Manager or Scheduler granted at Riverside
+manages Riverside and nothing at Downtown.
+
+| Capability                  | Allows                                               | Owner | HR Admin | General Manager | Scheduler |
+| --------------------------- | ---------------------------------------------------- | :---: | :------: | :-------------: | :-------: |
+| `schedule.view_all`         | See the week board, shifts, templates                |  org  |    —     |    location     | location  |
+| `schedule.draft`            | Add, edit, assign, cancel shifts; apply templates    |  org  |    —     |    location     | location  |
+| `schedule.publish`          | Publish a week or its changes, which notifies people |  org  |    —     |    location     | location  |
+| `schedule.manage_templates` | Create, edit, archive shift templates                |  org  |    —     |    location     | location  |
+| `availability.view_team`    | Read the team's declared availability                |  org  |    —     |    location     | location  |
+| `timeoff.decide`            | Approve or deny time off for people at the location  |  org  |   org    |    location     | location  |
+| `openshift.manage`          | Offer open shifts and decide who gets them           |  org  |    —     |    location     | location  |
+| `swap.decide`               | Approve or deny swaps both colleagues have agreed to |  org  |    —     |    location     | location  |
+
+Employees, Shift Leads and Training Managers hold none of these. Their
+scheduling is self-access, which needs no capability: seeing their own
+published shifts, declaring availability, requesting and cancelling their own
+time off, asking for an open shift at their own locations, asking a named
+colleague to take or trade a shift, and answering a colleague's request.
+
+Rules that hold regardless of role:
+
+- **Outside scope is not found.** A Downtown manager asking for a Riverside
+  shift gets 404, not 403. HR, who may decide time off but not build schedules,
+  is told they lack permission for the week board and is sent to Requests.
+- **Nobody decides their own request.** A manager who also works shifts asks
+  like anyone else; their own time off, claim, or a swap they are part of must
+  be decided by someone else.
+- **Availability belongs to the person.** Managers read it; only the person can
+  change it, so a conflict warning always reflects what they actually said.
+- **A colleague agrees before a manager approves.** No swap reaches a manager,
+  and no shift reaches anyone's schedule, without the receiving person saying
+  yes.
+
 ## Enforcement
 
 Every mutation is a server action whose first act is resolving the actor from

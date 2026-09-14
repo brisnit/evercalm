@@ -501,6 +501,118 @@ A scheduler — a platform cron, a queue trigger — invokes `npm run worker:onc
 (or `runWorkerTick()` from a route) every minute. Overlapping invocations are
 safe by construction. None is configured; that needs approval.
 
+## Scheduling
+
+Slice 4. Everything lives in `src/modules/scheduling`: pure rules in `time.ts`,
+`conflicts.ts` and `changes.ts`; database work in `service.ts` (managers),
+`requests.ts` (time off, availability, claims, swaps), `employee.ts` (the
+employee's reads) and `manager.ts` (one shift's detail); tables in `schema.ts`,
+mirrored by `drizzle/0015_scheduling.sql`.
+
+Industry-neutral by construction. A shift is a period of work at a location,
+optionally for a job role and at a station. The restaurant's rows say "Bar
+close" and "Grill"; the salon's say "Colour bar" and "Chair 2". No code knows
+which.
+
+### Time is the location's wall clock
+
+A manager typing "4:00 PM – 10:30 PM on Tuesday" means those clock times where
+the work happens. `shiftInstants()` turns a local date and two clock times into
+`timestamptz` instants in the location's IANA timezone, and:
+
+- an end time at or before the start means the shift ends the next day;
+- a clock time that does not exist (02:30 when clocks spring forward) is
+  **refused**, not silently moved;
+- the real elapsed time is stored, so a night shift on the night clocks fall
+  back is nine hours, not eight;
+- a week is Monday to Sunday in the location's own calendar.
+
+Boise Bench runs on Denver time and Pearl District on Los Angeles time inside
+the same organization; both are tested.
+
+### Two copies of every shift
+
+A shift carries its **live** columns, which managers edit, and its
+**published** columns (`published_starts_at`, `published_assignee_employment_id`,
+…), which are what employees were last told. Employees only ever read the
+published copy. Editing a published week therefore changes nothing for anyone
+until the manager presses **Publish changes**, and the week shows
+"Changes not published" until then.
+
+Publishing (`publishSchedule`):
+
+1. locks the schedule row, so two managers pressing Publish produce one
+   version;
+2. refuses while any assigned shift has a **blocking** conflict;
+3. diffs live against published per person (`diffPublication`): _added_,
+   _removed_, _changed_; people with no difference are not in the result;
+4. copies live over published in one statement and bumps the version;
+5. notifies exactly the people in the diff, keyed on the version, plus eligible
+   people about newly offered open shifts.
+
+Decisions already agreed by everyone involved — an approved swap, a claimed open
+shift — apply to **both** copies at once (`reassignNow`), because the people
+involved agreed to exactly that change.
+
+### Conflicts
+
+`detectConflicts(shift, person)` is a pure function, and the only place the
+rules live. The assignment picker, publication, open-shift claims and swap
+approvals all call it.
+
+| Severity  | Conflict                                                                            |
+| --------- | ----------------------------------------------------------------------------------- |
+| **Block** | overlaps another active shift (any location)                                        |
+| **Block** | approved time off during the shift                                                  |
+| **Block** | not assigned to the shift's location                                                |
+| **Block** | not an active employment                                                            |
+| Warn      | pending time off                                                                    |
+| Warn      | declared unavailability (a dated exception replaces the weekly pattern for its day) |
+| Warn      | does not hold the shift's job role                                                  |
+| Warn      | less than 8 hours between shifts                                                    |
+| Warn      | more than 40 scheduled hours in the local week                                      |
+
+The 8-hour and 40-hour thresholds are **organization defaults for a warning,
+not labour-law rules.** EverCalm does not encode jurisdiction-specific
+working-time law.
+
+Approving time off never unassigns anyone. Their shifts in that period gain a
+blocking conflict, publication is refused until a manager reassigns or opens
+them, and the approval result lists the affected shifts.
+
+### Concurrency
+
+| Race                                                   | What stops it                                                                                                                    |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| One person booked on two overlapping shifts            | `shifts_no_double_booking` exclusion constraint (btree_gist), deferred inside a trade so both moves are checked together         |
+| Two swap requests for the same shift                   | partial unique indexes on active requests, on both sides of a trade                                                              |
+| Two managers deciding the same swap or claim           | the request row is locked `FOR UPDATE`; the second finds it already decided                                                      |
+| Two approvals that move the same shift                 | each move requires the shift's `version` and assignee to be what was agreed; otherwise the request **expires** and nothing moves |
+| A swap agreed about a shift a manager has since edited | same version check                                                                                                               |
+| Two approvers deciding the same time off               | conditional update on `status = 'pending'`                                                                                       |
+
+Each is exercised with concurrent transactions in
+`tests/integration/scheduling.test.ts`.
+
+### Authorization
+
+Every scheduling capability is location-scopable (see
+[permissions](permissions.md#scheduling-capabilities)). Outside every scheduling
+scope an actor holds, a location, shift or person reads as **not found** — the
+same answer another tenant's rows give under RLS. Inside scope but without the
+specific capability, the answer is **forbidden**. Availability is changed only
+by the person it describes, and nobody decides their own time off, claim or
+swap.
+
+### Notifications and records
+
+Schedule notifications use the `schedule` category, in-app and email, and
+respect preferences and quiet hours: a schedule change is important but is not
+a safety notice. Time off, claims, swaps, schedules and templates are retired
+by status and never deleted — DELETE is revoked from the runtime role — and
+every decision writes an audit event. A time-off reason and note are not copied
+into the audit log.
+
 ## Audit
 
 `recordAuditEvent()` takes the caller's transaction, so an action and its audit

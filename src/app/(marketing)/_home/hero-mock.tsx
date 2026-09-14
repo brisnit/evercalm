@@ -9,14 +9,20 @@
  */
 export function HeroMock() {
   return (
-    <div className="relative">
+    <div data-testid="hero-mock" className="relative">
       <p className="sr-only">
         An illustration of the EverCalm console showing today&rsquo;s coverage, certifications due,
         and onboarding counts, with an employee&rsquo;s phone showing their own checklist for the
         shift.
       </p>
 
-      <div aria-hidden="true" className="relative">
+      {/*
+        The phone's overhang is RESERVED inside this column - left padding for
+        the part that hangs past the console's edge, bottom padding for the
+        part that hangs below it - so the phone can overlap the console but
+        never leave the column and reach the text beside it.
+      */}
+      <div aria-hidden="true" className="relative sm:pb-10 sm:pl-14 lg:pl-12 xl:pl-14">
         <Console />
         <Phone />
       </div>
@@ -26,7 +32,10 @@ export function HeroMock() {
 
 function Console() {
   return (
-    <div className="border-line/70 rounded-[1.15rem] border bg-white shadow-[0_24px_60px_-24px_rgb(23_18_64/0.28)]">
+    <div
+      data-testid="hero-console"
+      className="border-line/70 rounded-[1.15rem] border bg-white shadow-[0_24px_60px_-24px_rgb(23_18_64/0.28)]"
+    >
       <div className="border-line/70 flex items-center gap-2.5 border-b px-4 py-3">
         <span className="flex gap-1.5">
           <Dot />
@@ -132,13 +141,18 @@ function Row({
 }
 
 /**
- * The phone overlaps the console on a wide screen and stacks under it on a
- * narrow one, where an absolutely positioned overlay would simply cover the
- * thing it is meant to sit beside.
+ * From 640px up the phone is pinned to the bottom-left corner of the reserved
+ * space around the console, overlapping the console but staying in the
+ * column. On a phone it stacks under the console instead - centred, kept
+ * phone-sized, and tucked over the console's lower edge so the two still read
+ * as one composition.
  */
 function Phone() {
   return (
-    <div className="mt-5 sm:absolute sm:-bottom-8 sm:-left-10 sm:mt-0 sm:w-[15.5rem] lg:-left-16">
+    <div
+      data-testid="hero-phone"
+      className="relative mx-auto -mt-12 w-full max-w-[16.5rem] sm:absolute sm:bottom-0 sm:left-0 sm:mx-0 sm:mt-0 sm:w-[15.5rem] sm:max-w-none"
+    >
       <div className="border-line/70 rounded-[1.6rem] border bg-white p-3 shadow-[0_24px_50px_-20px_rgb(23_18_64/0.35)]">
         <span className="bg-line mx-auto mb-3 block h-1 w-9 rounded-full" />
         <p className="font-display text-deep text-base font-extrabold">Hey, Maya</p>

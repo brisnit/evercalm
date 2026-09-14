@@ -18,7 +18,31 @@ import { canAtAnyLocation } from '@/server/authz/can'
 export interface NavItem {
   href: string
   label: string
-  requires: Capability | null
+  /** One capability, ANY of several, or null for anyone signed in. */
+  requires: Capability | readonly Capability[] | null
+}
+
+/**
+ * Everything that makes some part of scheduling reachable. HR decides time
+ * off without building schedules; a Scheduler builds them without deciding
+ * people matters. Either is enough to open the section - each page then asks
+ * for exactly what it shows.
+ */
+export const SCHEDULING_CAPABILITIES: readonly Capability[] = [
+  'schedule.view_all',
+  'schedule.draft',
+  'schedule.publish',
+  'schedule.manage_templates',
+  'availability.view_team',
+  'timeoff.decide',
+  'swap.decide',
+  'openshift.manage',
+]
+
+function allowed(actor: Actor, requires: NavItem['requires']): boolean {
+  if (requires === null) return true
+  const list: readonly Capability[] = typeof requires === 'string' ? [requires] : requires
+  return list.some((capability) => canAtAnyLocation(actor, capability))
 }
 
 const ITEMS: NavItem[] = [
@@ -26,11 +50,12 @@ const ITEMS: NavItem[] = [
   { href: '/app/people', label: 'People', requires: 'people.view' },
   { href: '/app/onboarding', label: 'Onboarding', requires: 'onboarding.view_progress' },
   { href: '/app/comms', label: 'Communication', requires: 'announcement.create' },
+  { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
 
 export function visibleNavItems(actor: Actor): NavItem[] {
-  return ITEMS.filter((item) => item.requires === null || canAtAnyLocation(actor, item.requires))
+  return ITEMS.filter((item) => allowed(actor, item.requires))
 }
 
 /** True when the person has no administrative capability at all. */
@@ -47,7 +72,21 @@ export const SETTINGS_NAV: NavItem[] = [
 ]
 
 export function visibleSettingsNav(actor: Actor): NavItem[] {
-  return SETTINGS_NAV.filter(
-    (item) => item.requires === null || canAtAnyLocation(actor, item.requires),
-  )
+  return SETTINGS_NAV.filter((item) => allowed(actor, item.requires))
+}
+
+/** Sub-navigation inside Schedule. */
+export const SCHEDULE_NAV: NavItem[] = [
+  { href: '/app/schedule', label: 'Week', requires: 'schedule.view_all' },
+  {
+    href: '/app/schedule/requests',
+    label: 'Requests',
+    requires: ['timeoff.decide', 'swap.decide', 'openshift.manage'],
+  },
+  { href: '/app/schedule/availability', label: 'Availability', requires: 'availability.view_team' },
+  { href: '/app/schedule/templates', label: 'Templates', requires: 'schedule.view_all' },
+]
+
+export function visibleScheduleNav(actor: Actor): NavItem[] {
+  return SCHEDULE_NAV.filter((item) => allowed(actor, item.requires))
 }

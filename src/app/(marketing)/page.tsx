@@ -365,8 +365,14 @@ function Hero() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(52rem_26rem_at_-2%_-14%,#d8f2ff_0%,#e9f8ff_38%,transparent_72%),radial-gradient(48rem_28rem_at_104%_-8%,#e9e1ff_0%,#f3efff_40%,transparent_74%)]"
       />
-      <Container className="relative grid items-center gap-12 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-26 [&>*]:min-w-0">
-        <div>
+      {/*
+        Two columns with a firm gutter between them. The mockups are laid out
+        entirely inside their own column (see hero-mock.tsx) - nothing in the
+        illustration may reach into the text, at any width. Guarded by a
+        browser test that measures the bounds.
+      */}
+      <Container className="relative grid items-center gap-12 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-26 xl:gap-16 [&>*]:min-w-0">
+        <div data-testid="hero-copy">
           <p className="border-line/70 inline-flex items-center gap-2.5 rounded-full border bg-white/80 py-1.5 pr-4 pl-1.5 text-[0.8125rem] font-medium">
             <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-full">
               <Icon name="check" className="h-3.5 w-3.5 text-white" />
@@ -374,7 +380,12 @@ function Hero() {
             <span className="text-deep">Built for shift-based teams, not desk-based ones</span>
           </p>
 
-          <h1 className="font-display text-deep mt-6 text-[2.75rem] leading-[1.02] font-extrabold tracking-[-0.015em] sm:text-[4.125rem]">
+          {/* Steps down only between 1024 and 1280px, where the column is too
+              narrow for "Everyone walks" at full size and would break it. */}
+          <h1
+            data-testid="hero-headline"
+            className="font-display text-deep mt-6 text-[2.75rem] leading-[1.02] font-extrabold tracking-[-0.015em] sm:text-[4.125rem] lg:text-[3.625rem] xl:text-[4.125rem]"
+          >
             Everyone walks
             <br />
             in knowing
@@ -384,13 +395,16 @@ function Hero() {
             </span>
           </h1>
 
-          <p className="text-quiet mt-7 max-w-[34rem] text-[1.0625rem] leading-[1.7]">
+          <p
+            data-testid="hero-description"
+            className="text-quiet mt-7 max-w-[34rem] text-[1.0625rem] leading-[1.7]"
+          >
             EverCalm is one platform for onboarding, training, scheduling, communication, and the
             daily run of the floor. Managers stop rebuilding the same spreadsheet every week. Staff
             open one app and see their shift, their tasks, and their progress.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div data-testid="hero-actions" className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/signin"
               className="bg-accent hover:bg-accent-strong inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold text-white"
@@ -406,7 +420,10 @@ function Hero() {
             </Link>
           </div>
 
-          <p className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[0.8125rem]">
+          <p
+            data-testid="hero-proof"
+            className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[0.8125rem]"
+          >
             <span>
               <strong className="text-deep font-semibold">Free</strong> for your first location
             </span>

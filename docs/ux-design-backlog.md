@@ -220,6 +220,77 @@ a silent no-op; the two helpers now have clearly different jobs.
 - The receipt report — a table plus three breakdowns — was squeezed into a
   column while the page had room to spare. It is full width now.
 
+## Scheduling: known gaps (Slice 4)
+
+Deliberate limits of the first scheduling slice, recorded so they are chosen
+rather than forgotten.
+
+### S1 · No drag-and-drop on the week board — **Medium**
+
+_Area: interaction._ Shifts are added from a form and assigned from the shift's
+own page, where every candidate's conflicts are stated. Keyboard-accessible and
+explicit, but slower than dragging for a manager building a busy week.
+
+### S2 · One availability window per day in the employee editor — **Low**
+
+_Area: form design._ The data model and service accept several windows a day;
+the phone editor shows one and warns that saving keeps only the one shown.
+
+### S3 · Managers are not notified of new requests — **Medium**
+
+_Area: notifications._ Time off, claims and swaps appear on the Requests page
+for the people who can decide them, but nothing is pushed to those managers
+yet. Resolving "who should be told" per location is its own small feature.
+
+### S4 · No calendar export (.ics) — **Low**
+
+_Area: integration._ Planned in the original slice outline; not built.
+
+### S5 · Requests on shifts that have started are closed lazily — **Low**
+
+_Area: background work._ A pending claim or swap for a shift that has already
+started is shown as expired and cannot be approved, but its row is only closed
+when someone acts on it. A worker step could close them on schedule.
+
+### S6 · The assignment candidate list includes managers without the role — **Low**
+
+_Area: information design._ Everyone assigned to the location is listed, sorted
+best fit first, with "different role" stated. Filtering to role holders by
+default would shorten long lists.
+
+## Test reliability
+
+Browser-suite failures seen once and not yet investigated. Recorded so they are
+not rediscovered from scratch; neither blocks feature work.
+
+### T1 · Employee-profile accessibility scan intermittently sees no `<title>` — **Low**
+
+_Seen 2026-09-12, during the homepage hero fix._
+`tests/e2e/accessibility.spec.ts` › "an employee profile with management panels
+has no accessibility violations" failed on desktop with axe
+`document-title: Documents must have <title> element`. It ran with
+`E2E_SKIP_REFRESH=true` against a database already changed by earlier runs, and
+immediately after a `next build` in the same checkout, while the dev server was
+serving. Re-run after a normal reseed: passed on desktop and mobile.
+
+_Suspected:_ the scan ran before the page's metadata was applied, while the dev
+server recompiled. _To investigate:_ wait for the page heading and a non-empty
+`document.title` before scanning; check whether a concurrent build affects the
+dev server.
+
+### T2 · Invitations table overflows at 390px on accumulated data — **Low**
+
+_Seen 2026-09-12, same run as T1._
+`tests/e2e/layout.spec.ts` › "administration screens fit a phone screen" failed:
+`/app/people/invitations scrolls sideways at 390px`, widest element the table
+(`min-w-[46rem]`, right edge 757px). Same conditions as T1. Re-run after a
+normal reseed: passed.
+
+_Suspected:_ a row created by earlier runs rendered the table outside its
+horizontal scroll container, or the container did not constrain it for that
+content. _To investigate:_ reproduce with `E2E_SKIP_REFRESH=true` after a full
+suite run; confirm the table always sits inside `ScrollArea`.
+
 ## Deferred to the product-wide redesign
 
 ### D1 · Navigation will not survive four more slices — **High**

@@ -8,6 +8,7 @@ import * as schema from '../full-schema'
 import { DEFAULT_ANNOUNCEMENT_CATEGORIES } from '@/modules/comms/categories'
 import { deliveryPolicy } from '@/modules/comms/delivery-policy'
 import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data'
+import { seedScheduling } from './scheduling'
 
 /**
  * Idempotent seed.
@@ -42,6 +43,7 @@ export interface SeedOrganizationSummary {
   credentials: number
   onboardingAssignments: number
   announcements: number
+  shifts: number
 }
 
 export interface SeedSummary {
@@ -124,6 +126,7 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
     credentials: 0,
     onboardingAssignments: 0,
     announcements: 0,
+    shifts: 0,
   }
 }
 
@@ -898,6 +901,17 @@ async function seedOrganization(
     })
   }
 
+  // --- scheduling ------------------------------------------------------------
+  const scheduling = await seedScheduling(db, {
+    organizationId,
+    slug: seed.slug,
+    locationIds,
+    locationTimeZones: new Map(seed.locations.map((l) => [l.key, l.timezone])),
+    jobRoleIds,
+    employmentIds,
+    systemEvent,
+  })
+
   await db.insert(schema.auditEvents).values(audit)
 
   return {
@@ -917,6 +931,7 @@ async function seedOrganization(
     credentials: credentialCount,
     onboardingAssignments: onboardingCount,
     announcements: announcementCount,
+    shifts: scheduling.shifts,
   }
 }
 

@@ -6,6 +6,7 @@ import { listLocations } from '@/modules/org/service'
 import { getEmployment, listCredentials } from '@/modules/people/service'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
 import { inboxDigest } from '@/modules/comms/inbox'
+import { nextShift } from '@/modules/scheduling/employee'
 import { PriorityMark } from '@/ui/patterns/priority-mark'
 import { Badge, Card, CardHeader, Logo, ProgressBar } from '@/ui/primitives'
 
@@ -29,6 +30,7 @@ export default async function MyWorkPage() {
     onboarding: await getProgressForEmployment(tx, actor, actor.employmentId),
     credentials: await listCredentials(tx, actor, actor.employmentId),
     inbox: await inboxDigest(tx, actor, actor.employmentId),
+    nextShift: await nextShift(tx, actor),
   }))
 
   const myLocations = data.locations.filter((l) => actor.locationIds.includes(l.id))
@@ -73,6 +75,56 @@ export default async function MyWorkPage() {
           {data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0 ? (
             <InboxCallout digest={data.inbox} />
           ) : null}
+
+          <Card>
+            <CardHeader
+              title="Your schedule"
+              description={
+                data.nextShift
+                  ? 'Your next shift'
+                  : 'No upcoming shifts have been published for you yet.'
+              }
+              action={
+                <Link
+                  href="/my/schedule"
+                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
+                >
+                  Open schedule
+                </Link>
+              }
+            />
+            {data.nextShift ? (
+              <Link href={`/my/schedule/shifts/${data.nextShift.id}`} className="block p-5 pt-4">
+                <span className="text-ink block font-medium">
+                  {data.nextShift.day} · {data.nextShift.time}
+                  {data.nextShift.endsNextDay ? ' (next day)' : ''}
+                </span>
+                <span className="text-muted block text-sm">
+                  {[
+                    data.nextShift.jobRoleName,
+                    data.nextShift.stationName,
+                    data.nextShift.locationName,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </Link>
+            ) : null}
+            <div className="border-line flex flex-wrap gap-x-4 gap-y-1 border-t px-5 py-3 text-sm">
+              <Link
+                href="/my/time-off"
+                className="text-violet-700 underline-offset-4 hover:underline"
+              >
+                Time off
+              </Link>
+              <Link
+                href="/my/availability"
+                className="text-violet-700 underline-offset-4 hover:underline"
+              >
+                Availability
+              </Link>
+            </div>
+          </Card>
 
           {data.onboarding ? (
             <Card className="overflow-hidden">
@@ -204,9 +256,8 @@ export default async function MyWorkPage() {
             <div className="p-5">
               <h2 className="font-display text-ink text-sm font-bold">Coming in later slices</h2>
               <p className="text-muted mt-1.5 text-sm">
-                Your next shift, the training that is due, and today&rsquo;s responsibilities will
-                appear here. They are not built yet, so nothing on this screen pretends to show
-                them.
+                The training that is due and today&rsquo;s responsibilities will appear here. They
+                are not built yet, so nothing on this screen pretends to show them.
               </p>
             </div>
           </Card>

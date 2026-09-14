@@ -6,7 +6,7 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slices 1–3 complete.**
+**Status: Slices 1–3 approved. Slice 4 built and awaiting review.**
 
 - **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
   locations, capability permissions with location scope, three-layer tenant
@@ -31,6 +31,12 @@ businesses.
   the locations a manager is responsible for; reminders; an internal
   notification queue with per-person preferences, quiet hours and idempotent
   delivery; and a small event record that announcements can point at.
+- **Slice 4 — Scheduling & shift management.** Shift templates, a week board
+  per location with staffing totals and conflict detection, publication that
+  notifies only the people whose shifts changed, availability, time off with
+  approval, open shifts and claims, and colleague-agreed swaps with manager
+  approval. Location-scoped permissions, location-timezone times, audit history,
+  and restaurant and salon demo schedules.
 
 Scheduling, training, and daily shift operations arrive in later slices and are
 not built — nothing in the interface pretends otherwise. Two-way messaging is
@@ -57,6 +63,7 @@ Open <http://localhost:3000>. Seeded accounts share the development password
 | `priya@harborvine.test`  | HR Administrator                     | Harbor & Vine              |
 | `marcus@harborvine.test` | General Manager — **Riverside only** | Harbor & Vine              |
 | `tess@harborvine.test`   | General Manager — **Downtown only**  | Harbor & Vine              |
+| `omar@harborvine.test`   | Scheduler — **Riverside only**       | Harbor & Vine              |
 | `jordan@harborvine.test` | Shift Lead — Riverside               | Harbor & Vine              |
 | `sam@harborvine.test`    | Employee                             | Harbor & Vine              |
 | `ana@lumensalon.test`    | Owner                                | Lumen Salon & Spa (salon)  |

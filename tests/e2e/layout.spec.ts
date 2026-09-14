@@ -54,6 +54,10 @@ test('administration screens fit a phone screen', async ({ page }) => {
     '/app/onboarding/templates',
     '/app/comms',
     '/app/comms/new',
+    '/app/schedule',
+    '/app/schedule/requests',
+    '/app/schedule/availability',
+    '/app/schedule/templates',
     '/app/settings',
     '/app/settings/structure',
     '/app/settings/values',
@@ -113,6 +117,29 @@ test('the communication surfaces fit a phone screen', async ({ page }) => {
 
   await page.goto('/my/notifications')
   await expectNoHorizontalOverflow(page, '/my/notifications')
+})
+
+test('the schedule surfaces fit a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborEmployee.email)
+  for (const path of ['/my/schedule', '/my/time-off', '/my/availability']) {
+    await page.goto(path)
+    await expectNoHorizontalOverflow(page, path)
+  }
+  await page.goto('/my/schedule')
+  const shift = page.locator('a[href^="/my/schedule/shifts/"]').first()
+  if ((await shift.count()) > 0) {
+    await shift.click()
+    await expect(page.getByText('Paid time')).toBeVisible()
+    await expectNoHorizontalOverflow(page, '/my/schedule/shifts/[id]')
+  }
+})
+
+test('a manager’s shift page fits a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  await page.goto('/app/schedule')
+  await page.locator('a[href^="/app/schedule/shifts/"]').first().click()
+  await expect(page.getByRole('heading', { name: 'Who is on it' })).toBeVisible()
+  await expectNoHorizontalOverflow(page, '/app/schedule/shifts/[id]')
 })
 
 test('the receipt report fits a phone screen', async ({ page }) => {

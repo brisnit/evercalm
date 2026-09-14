@@ -57,6 +57,50 @@ test('administration screens have no accessibility violations', async ({ page })
   }
 })
 
+test('scheduling screens have no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  for (const path of [
+    '/app/schedule',
+    '/app/schedule/requests',
+    '/app/schedule/availability',
+    '/app/schedule/templates',
+  ]) {
+    await page.goto(path)
+    const results = await scan(page)
+    expect(
+      results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`),
+      `Violations on ${path}`,
+    ).toEqual([])
+  }
+
+  // A shift's own page, where the candidate list and conflicts are.
+  await page.goto('/app/schedule')
+  await page.locator('a[href^="/app/schedule/shifts/"]').first().click()
+  await expect(page.getByRole('heading', { name: 'Who is on it' })).toBeVisible()
+  const detail = await scan(page)
+  expect(detail.violations.map((v) => `shift -> ${v.id}: ${v.help}`)).toEqual([])
+})
+
+test('the employee schedule has no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborEmployee.email)
+  for (const path of ['/my/schedule', '/my/time-off', '/my/availability']) {
+    await page.goto(path)
+    const results = await scan(page)
+    expect(
+      results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`),
+      `Violations on ${path}`,
+    ).toEqual([])
+  }
+  const shift = page.locator('a[href^="/my/schedule/shifts/"]').first()
+  await page.goto('/my/schedule')
+  if ((await shift.count()) > 0) {
+    await shift.click()
+    await expect(page.getByText('Paid time')).toBeVisible()
+    const detail = await scan(page)
+    expect(detail.violations.map((v) => `my shift -> ${v.id}: ${v.help}`)).toEqual([])
+  }
+})
+
 test('the employee surface has no accessibility violations', async ({ page }) => {
   // signIn already lands an employee on /my; navigating again races the
   // client router's own redirect.
