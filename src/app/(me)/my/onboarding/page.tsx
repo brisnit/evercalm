@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
 import { Badge, Card, EmptyState, Logo, ProgressBar } from '@/ui/primitives'
+import { LinkedTrainingCard } from './linked-training'
 import { StepActions } from './step-actions'
 
 export const metadata: Metadata = { title: 'Your onboarding' }
@@ -90,13 +92,18 @@ export default async function MyOnboardingPage() {
                         <p className="text-muted mt-0.5 text-xs">
                           {step.awaitingPlatform
                             ? 'Waiting on EverCalm'
-                            : !step.selfCompletable && step.status === 'pending'
-                              ? 'A manager confirms this one'
-                              : step.required
-                                ? 'Required'
-                                : 'Optional'}
+                            : step.training
+                              ? 'Completes with the course'
+                              : !step.selfCompletable && step.status === 'pending'
+                                ? 'A manager confirms this one'
+                                : step.required
+                                  ? 'Required'
+                                  : 'Optional'}
                           {step.dueOn ? (
-                            <span className="whitespace-nowrap"> · due {step.dueOn}</span>
+                            <span className="whitespace-nowrap">
+                              {' '}
+                              · due {formatCalendarDate(step.dueOn)}
+                            </span>
                           ) : null}
                         </p>
                         {step.instructions ? (
@@ -112,6 +119,8 @@ export default async function MyOnboardingPage() {
                       </p>
                     ) : null}
 
+                    {step.training ? <LinkedTrainingCard training={step.training} /> : null}
+
                     {step.verifiedBy ? (
                       <p className="text-success mt-2 text-xs">Verified by {step.verifiedBy}</p>
                     ) : null}
@@ -120,7 +129,7 @@ export default async function MyOnboardingPage() {
                       <div className="mt-3">
                         <StepActions stepProgressId={step.id} />
                       </div>
-                    ) : step.status === 'pending' && !step.awaitingPlatform ? (
+                    ) : step.status === 'pending' && !step.awaitingPlatform && !step.training ? (
                       <p className="text-muted mt-3 text-sm">
                         Ask your manager to confirm this when you are ready.
                       </p>

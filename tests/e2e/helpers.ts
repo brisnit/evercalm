@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { isFrameworkDevInstrumentationError } from './console-noise'
 
 /** Matches src/server/db/seed/data.ts. */
 export const SEED_PASSWORD = 'EverCalmDev!2026'
@@ -12,6 +13,10 @@ export const PEOPLE = {
   salonGmPearl: { email: 'kofi@lumensalon.test', name: 'Kofi Mensah' },
   salonNewStylist: { email: 'elodie@lumensalon.test', name: 'Elodie Garnier' },
   harborNewServer: { email: 'ava@harborvine.test', name: 'Ava Lindqvist' },
+  salonTrainer: { email: 'yuki@lumensalon.test', name: 'Yuki Tanaka' },
+  salonGmBench: { email: 'sierra@lumensalon.test', name: 'Sierra Whitehorse' },
+  salonApprentice: { email: 'tomas@lumensalon.test', name: 'Tomas Reyes' },
+  salonMassage: { email: 'ruben@lumensalon.test', name: 'Ruben Castillo' },
 } as const
 
 /**
@@ -103,9 +108,19 @@ export async function signOut(page: Page): Promise<void> {
 export function trackConsoleErrors(page: Page): string[] {
   const errors: string[] = []
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text())
+    if (message.type() !== 'error') return
+    const { url, lineNumber } = message.location()
+    const entry = { text: message.text(), source: url ? `${url}:${lineNumber}` : '' }
+    if (isFrameworkDevInstrumentationError(entry)) return
+    errors.push(
+      entry.source ? `${entry.text}\n    at ${entry.source} (on ${page.url()})` : entry.text,
+    )
   })
-  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('pageerror', (error) => {
+    const entry = { text: error.message, source: error.stack ?? '' }
+    if (isFrameworkDevInstrumentationError(entry)) return
+    errors.push(`${error.message}\n${error.stack ?? ''} (on ${page.url()})`)
+  })
   return errors
 }
 

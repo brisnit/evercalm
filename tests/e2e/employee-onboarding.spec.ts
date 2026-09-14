@@ -14,7 +14,7 @@ test('a new hire lands on their next action', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/my$/)
   await expect(page.getByText('Do this next')).toBeVisible()
-  await expect(page.getByRole('progressbar')).toBeVisible()
+  await expect(page.getByRole('progressbar', { name: /required steps done/ })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Open your onboarding' })).toBeVisible()
 
   expectNoConsoleErrors(errors)
@@ -41,16 +41,20 @@ test('they can open the checklist and mark a step done', async ({ page }) => {
   await expect(doneButtons).toHaveCount(before - 1)
 })
 
-test('a step waiting on a later slice is visibly blocked, not completable', async ({ page }) => {
+test('a training step shows its course and completes with it, not by hand', async ({ page }) => {
   await signIn(page, PEOPLE.salonNewStylist.email)
   // Navigate by link rather than page.goto: a direct goto races the
   // client-side router that sign-in just started.
   await page.getByRole('link', { name: 'Open your onboarding' }).click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
 
-  // The salon checklist has training steps whose system has not shipped.
-  const waiting = page.getByText(/Waiting on the training system/).first()
-  await expect(waiting).toBeVisible()
+  const step = page
+    .getByRole('listitem')
+    .filter({ hasText: 'Patch testing and colour consultation' })
+    .first()
+  await expect(step.getByText('Completes with the course')).toBeVisible()
+  await expect(step.getByRole('link', { name: 'Continue the course' })).toBeVisible()
+  await expect(step.getByRole('button', { name: 'Mark done' })).toHaveCount(0)
 })
 
 test('an employee cannot complete their own manager-verified step', async ({ page }) => {

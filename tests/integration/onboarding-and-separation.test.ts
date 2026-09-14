@@ -178,7 +178,7 @@ describe('manager verification', () => {
 })
 
 describe('the integration boundary with later slices', () => {
-  it('starts training and policy steps BLOCKED rather than quietly completable', async () => {
+  it('starts policy steps BLOCKED, and never lets a training step be ticked off by hand', async () => {
     const kofi = await actorFor(lumenId, 'kofi@lumensalon.test')
     const elodieId = await employmentIdFor(lumenId, 'Elodie Garnier')
     const progress = await asTenant(lumenId, (tx) => getProgressForEmployment(tx, kofi, elodieId))
@@ -186,11 +186,13 @@ describe('the integration boundary with later slices', () => {
     const trainingSteps = progress!.steps.filter((s) => s.kind === 'training_assignment')
     expect(trainingSteps.length).toBeGreaterThan(0)
     for (const step of trainingSteps) {
-      expect(step.status, 'a training step cannot be completable before the system exists').toBe(
-        'blocked',
-      )
-      expect(step.blockedReason).toMatch(/training system/i)
+      expect(step.training, 'a seeded training step is linked to a course').not.toBeNull()
       expect(step.selfCompletable).toBe(false)
+      if (step.status !== 'completed') {
+        await expect(asTenant(lumenId, (tx) => completeStep(tx, kofi, step.id))).rejects.toThrow(
+          /completes itself/,
+        )
+      }
     }
   })
 
@@ -532,7 +534,7 @@ describe('the directory reflects employment changes', () => {
 
 describe('waiting on EverCalm is not the same as blocked', () => {
   it('does not mark someone blocked purely because a later slice has not shipped', () => {
-    // Only training/policy steps are waiting, and nobody here can clear them.
+    // Only a policy step is waiting on EverCalm, and nobody here can clear it.
     expect(
       deriveState(
         [
@@ -541,13 +543,6 @@ describe('waiting on EverCalm is not the same as blocked', () => {
             blocksCompletion: true,
             kind: 'employee_task',
             status: 'completed',
-            dueOn: null,
-          },
-          {
-            required: true,
-            blocksCompletion: true,
-            kind: 'training_assignment',
-            status: 'blocked',
             dueOn: null,
           },
           {
@@ -599,8 +594,11 @@ describe('waiting on EverCalm is not the same as blocked', () => {
     const elodieId = await employmentIdFor(lumenId, 'Elodie Garnier')
     const progress = await asTenant(lumenId, (tx) => getProgressForEmployment(tx, kofi, elodieId))
 
+    // Training has shipped: a training step follows its linked course, and is
+    // never "waiting on EverCalm".
     const training = progress!.steps.find((s) => s.kind === 'training_assignment')!
-    expect(training.awaitingPlatform).toBe(true)
+    expect(training.awaitingPlatform).toBe(false)
+    expect(training.training).not.toBeNull()
 
     // Elodie's licence verification is blocked by the state board - a real
     // world dependency, not ours.
@@ -610,6 +608,6 @@ describe('waiting on EverCalm is not the same as blocked', () => {
 
     // So she reads as blocked, and the next action names the real blocker.
     expect(progress!.state).toBe('blocked')
-    expect(progress!.nextAction).toMatch(/Licence verified|Sanitation|Colour line|Consultation/)
+    expect(progress!.nextAction).toMatch(/Licence verified|Patch testing|Consultation/)
   })
 })

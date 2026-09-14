@@ -39,6 +39,16 @@ export const SCHEDULING_CAPABILITIES: readonly Capability[] = [
   'openshift.manage',
 ]
 
+/** Everything that opens some part of training administration. */
+export const TRAINING_CAPABILITIES: readonly Capability[] = [
+  'training.author',
+  'training.publish',
+  'training.assign',
+  'training.view_progress_team',
+  'training.view_progress_org',
+  'skill.verify',
+]
+
 function allowed(actor: Actor, requires: NavItem['requires']): boolean {
   if (requires === null) return true
   const list: readonly Capability[] = typeof requires === 'string' ? [requires] : requires
@@ -51,6 +61,7 @@ const ITEMS: NavItem[] = [
   { href: '/app/onboarding', label: 'Onboarding', requires: 'onboarding.view_progress' },
   { href: '/app/comms', label: 'Communication', requires: 'announcement.create' },
   { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
+  { href: '/app/training', label: 'Training', requires: TRAINING_CAPABILITIES },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
 
@@ -89,4 +100,19 @@ export const SCHEDULE_NAV: NavItem[] = [
 
 export function visibleScheduleNav(actor: Actor): NavItem[] {
   return SCHEDULE_NAV.filter((item) => allowed(actor, item.requires))
+}
+
+/** Sub-navigation inside Training. */
+export const TRAINING_NAV: NavItem[] = [
+  { href: '/app/training', label: 'Courses', requires: TRAINING_CAPABILITIES },
+  {
+    href: '/app/training/progress',
+    label: 'Progress',
+    requires: ['training.view_progress_team', 'training.view_progress_org'],
+  },
+  { href: '/app/training/sign-offs', label: 'Sign-offs', requires: 'skill.verify' },
+]
+
+export function visibleTrainingNav(actor: Actor): NavItem[] {
+  return TRAINING_NAV.filter((item) => allowed(actor, item.requires))
 }

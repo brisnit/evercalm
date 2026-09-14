@@ -9,6 +9,7 @@ import { DEFAULT_ANNOUNCEMENT_CATEGORIES } from '@/modules/comms/categories'
 import { deliveryPolicy } from '@/modules/comms/delivery-policy'
 import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data'
 import { seedScheduling } from './scheduling'
+import { linkSeededOnboardingTraining, seedTraining } from './training'
 
 /**
  * Idempotent seed.
@@ -44,6 +45,8 @@ export interface SeedOrganizationSummary {
   onboardingAssignments: number
   announcements: number
   shifts: number
+  courses: number
+  trainingAssignments: number
 }
 
 export interface SeedSummary {
@@ -127,6 +130,8 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
     onboardingAssignments: 0,
     announcements: 0,
     shifts: 0,
+    courses: 0,
+    trainingAssignments: 0,
   }
 }
 
@@ -631,7 +636,7 @@ async function seedOrganization(
         status = 'blocked'
         blockedReason =
           step.kind === 'training_assignment'
-            ? 'Waiting on the training system, which arrives in a later release.'
+            ? 'No course is linked to this step. A manager can assign the course under Training.'
             : 'Waiting on policy documents, which arrive in a later release.'
       }
 
@@ -912,6 +917,24 @@ async function seedOrganization(
     systemEvent,
   })
 
+  // --- training --------------------------------------------------------------
+  const training = await seedTraining(db, {
+    organizationId,
+    slug: seed.slug,
+    timezone: seed.timezone,
+    locationIds,
+    employmentIds,
+    systemEvent,
+  })
+
+  // Onboarding training steps point at real courses, the way assignment would link them.
+  await linkSeededOnboardingTraining(db, {
+    organizationId,
+    seed,
+    courseIds: training.courseIds,
+    systemEvent,
+  })
+
   await db.insert(schema.auditEvents).values(audit)
 
   return {
@@ -932,6 +955,8 @@ async function seedOrganization(
     onboardingAssignments: onboardingCount,
     announcements: announcementCount,
     shifts: scheduling.shifts,
+    courses: training.courses,
+    trainingAssignments: training.assignments,
   }
 }
 

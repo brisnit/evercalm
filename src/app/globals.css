@@ -152,3 +152,16 @@
     border-radius: var(--radius-control);
   }
 }
+
+/* A short, calm entrance for a moment of progress. Only ever used behind
+   `motion-safe:`, so people who prefer reduced motion see it at rest. */
+@keyframes ec-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

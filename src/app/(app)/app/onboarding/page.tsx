@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -137,7 +138,7 @@ export default async function OnboardingBoardPage() {
                           ) : null}
                           {person.dueOn ? (
                             <p className="text-faint mt-2 text-xs tabular-nums">
-                              Due {person.dueOn}
+                              Due {formatCalendarDate(person.dueOn)}
                             </p>
                           ) : null}
                         </div>

@@ -6,7 +6,7 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slices 1–3 approved. Slice 4 built and awaiting review.**
+**Status: Slices 1–4 approved. Slice 5 built and awaiting review.**
 
 - **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
   locations, capability permissions with location scope, three-layer tenant
@@ -37,9 +37,21 @@ businesses.
   approval, open shifts and claims, and colleague-agreed swaps with manager
   approval. Location-scoped permissions, location-timezone times, audit history,
   and restaurant and salon demo schedules.
+- **Slice 5 — Training.** Course authoring with reading, checklist,
+  knowledge-check and practical lessons; an employee-view preview; **versioned
+  publication**, where a published version can never change and every
+  assignment keeps the version it was given; assignment to people or a job role
+  at a location with due dates; a phone-first training player that always says
+  what is done, what is next and how far there is to go; server-scored
+  knowledge checks with attempt limits; manager practical sign-off that nobody
+  can give themselves; and progress reporting scoped to the locations a manager
+  looks after. Onboarding checklists link to published courses: starting
+  onboarding assigns the course pinned to a version, and the checklist step
+  completes when the course does. Quiet moments of progress, no points, badges
+  or leaderboards.
 
-Scheduling, training, and daily shift operations arrive in later slices and are
-not built — nothing in the interface pretends otherwise. Two-way messaging is
+Daily shift operations arrive in a later slice and are not built — nothing in
+the interface pretends otherwise. Two-way messaging is
 deliberately absent: the architecture supports it, and no half-built chat is
 exposed.
 
@@ -68,6 +80,8 @@ Open <http://localhost:3000>. Seeded accounts share the development password
 | `sam@harborvine.test`    | Employee                             | Harbor & Vine              |
 | `ana@lumensalon.test`    | Owner                                | Lumen Salon & Spa (salon)  |
 | `kofi@lumensalon.test`   | General Manager — Pearl District     | Lumen Salon & Spa          |
+| `yuki@lumensalon.test`   | Training Manager                     | Lumen Salon & Spa          |
+| `elodie@lumensalon.test` | Employee — new stylist, in training  | Lumen Salon & Spa          |
 | `riley@lumensalon.test`  | Employee                             | Lumen Salon & Spa          |
 
 Sign in as Dana and then as Ana to see tenant isolation. Sign in as Marcus and

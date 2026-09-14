@@ -99,9 +99,10 @@ test('the preview shows what a new hire would see', async ({ page }) => {
   await page.getByRole('link', { name: 'Preview as a new hire' }).click()
 
   await expect(page.getByRole('heading', { name: 'What a new hire sees' })).toBeVisible()
-  // Salon language, and the platform-waiting steps are honest about why.
+  // Salon language, and training steps name the course they give a new hire.
   await expect(page.getByText('Licence and paperwork')).toBeVisible()
-  await expect(page.getByText('Waiting on EverCalm')).toBeVisible()
+  await expect(page.getByText('Course: Patch testing and colour consultation')).toBeVisible()
+  await expect(page.getByText('Training', { exact: true }).first()).toBeVisible()
   expectNoConsoleErrors(errors)
 })
 

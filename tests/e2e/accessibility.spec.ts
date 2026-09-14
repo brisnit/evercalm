@@ -255,3 +255,86 @@ test('the receipt report has no accessibility violations', async ({ page }) => {
   const results = await scan(page)
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
 })
+
+test('training administration has no accessibility violations', async ({ page }) => {
+  test.setTimeout(120_000)
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/training')
+  const course = await page
+    .getByRole('link', { name: 'Allergen awareness for service' })
+    .getAttribute('href')
+  const draft = await page
+    .getByRole('link', { name: 'Wine service fundamentals' })
+    .getAttribute('href')
+  await page.goto(draft!)
+  const lesson = await page
+    .getByRole('link', { name: /^Edit / })
+    .first()
+    .getAttribute('href')
+  for (const path of [
+    '/app/training',
+    '/app/training/courses/new',
+    course!,
+    `${course}/people`,
+    `${course}/preview`,
+    draft!,
+    lesson!,
+    '/app/training/progress',
+    '/app/training/sign-offs',
+  ]) {
+    await page.goto(path)
+    const results = await scan(page)
+    expect(
+      results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`),
+      `Violations on ${path}`,
+    ).toEqual([])
+  }
+})
+
+test('the employee training screens have no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.salonMassage.email)
+  await page.goto('/my/training')
+  const course = await page.locator('a[href^="/my/training/"]').first().getAttribute('href')
+  await page.goto(course!)
+  const lessons = await page
+    .locator('a[href*="/lessons/"]')
+    .evaluateAll((links) => links.map((l) => l.getAttribute('href')!))
+  for (const path of ['/my/training', course!, ...lessons]) {
+    await page.goto(path)
+    const results = await scan(page)
+    expect(
+      results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`),
+      `Violations on ${path}`,
+    ).toEqual([])
+  }
+})
+
+test('linked onboarding training has no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.salonOwner.email)
+  await page.goto('/app/onboarding/templates')
+  await page.getByRole('link', { name: 'New Stylist Onboarding' }).click()
+  // The other project may already have started a draft; either way, edit it.
+  const startDraft = page.getByRole('button', { name: 'Start a new draft' })
+  await expect(
+    startDraft.or(page.getByText('Add a step to', { exact: false }).first()),
+  ).toBeVisible()
+  if (await startDraft.isVisible()) await startDraft.click()
+  await page.getByText('Add a step to', { exact: false }).first().click()
+  await page
+    .getByRole('combobox', { name: /Step type/ })
+    .first()
+    .selectOption('training_assignment')
+  await expect(page.getByRole('combobox', { name: /^Course/ }).first()).toBeVisible()
+  const builder = await scan(page)
+  expect(builder.violations.map((v) => `builder -> ${v.id}: ${v.help}`)).toEqual([])
+
+  await page.goto(`${page.url()}/preview`)
+  const preview = await scan(page)
+  expect(preview.violations.map((v) => `preview -> ${v.id}: ${v.help}`)).toEqual([])
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.salonNewStylist.email)
+  await page.goto('/my/onboarding')
+  const employee = await scan(page)
+  expect(employee.violations.map((v) => `my onboarding -> ${v.id}: ${v.help}`)).toEqual([])
+})

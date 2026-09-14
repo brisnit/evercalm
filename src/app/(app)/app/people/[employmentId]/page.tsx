@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
 import { and, eq, isNull } from 'drizzle-orm'
 import { requireActorContext } from '@/server/auth/session'
@@ -173,10 +174,12 @@ export default async function EmployeeProfilePage({
             <dl className="divide-line divide-y">
               {[
                 ['Status', person.status],
-                ['Hired', person.hiredOn ?? 'Not recorded'],
+                ['Hired', person.hiredOn ? formatCalendarDate(person.hiredOn) : 'Not recorded'],
                 ['Home location', person.homeLocationName ?? 'None'],
                 ['Reports to', person.managerName ?? 'Nobody'],
-                ...(person.separatedOn ? [['Separated', person.separatedOn]] : []),
+                ...(person.separatedOn
+                  ? [['Separated', formatCalendarDate(person.separatedOn)]]
+                  : []),
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-4 px-5 py-3">
                   <dt className="text-muted text-sm">{label}</dt>
@@ -302,6 +305,20 @@ export default async function EmployeeProfilePage({
                         <StepMark status={step.status} />
                         <span className="min-w-0 flex-1">
                           <span className="text-ink block text-sm">{step.title}</span>
+                          {step.training ? (
+                            <span className="text-muted block text-xs">
+                              {step.training.courseTitle}
+                              {step.training.versionNumber !== null
+                                ? `, version ${step.training.versionNumber}`
+                                : ''}
+                              {step.training.totalLessons > 0
+                                ? ` · ${step.training.completedLessons} of ${step.training.totalLessons} lessons`
+                                : ''}
+                              {step.training.state === 'awaiting_signoff'
+                                ? ' · waiting for sign-off'
+                                : ''}
+                            </span>
+                          ) : null}
                           {step.blockedReason ? (
                             <span className="text-warning block text-xs">{step.blockedReason}</span>
                           ) : step.verifiedBy ? (
@@ -444,8 +461,9 @@ function CredentialBadge({
   days: number | null
   expiresOn: string | null
 }) {
-  if (state === 'expired') return <Badge tone="danger">Expired {expiresOn}</Badge>
+  if (state === 'expired')
+    return <Badge tone="danger">Expired {expiresOn ? formatCalendarDate(expiresOn) : ''}</Badge>
   if (state === 'expiring_soon') return <Badge tone="warning">Expires in {days} days</Badge>
   if (state === 'no_expiry') return <Badge tone="neutral">No expiry</Badge>
-  return <Badge tone="success">Valid to {expiresOn}</Badge>
+  return <Badge tone="success">Valid to {expiresOn ? formatCalendarDate(expiresOn) : ''}</Badge>
 }

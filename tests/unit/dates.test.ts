@@ -4,6 +4,8 @@ import {
   businessDate,
   hasDstTransition,
   utcOffsetMinutes,
+  formatCalendarDate,
+  formatDateInZone,
   formatInZone,
   instantToZonedWallTime,
   zonedParts,
@@ -121,5 +123,23 @@ describe('wall-clock times entered in an organization timezone', () => {
 
   it('formats with the zone abbreviation, so nobody guesses', () => {
     expect(formatInZone(new Date('2026-07-01T16:30:00Z'), LA)).toMatch(/9:30.*PDT/)
+  })
+})
+
+describe('date wording', () => {
+  it('writes dates one way everywhere: month first, with the year', () => {
+    expect(formatCalendarDate('2026-09-19')).toBe('Sep 19, 2026')
+    expect(formatDateInZone(new Date('2026-09-13T15:00:00Z'), LA)).toBe('Sep 13, 2026')
+  })
+
+  it('uses the calendar date where the reader is, not in UTC', () => {
+    // 06:30 UTC on the 14th is still the evening of the 13th in Los Angeles.
+    expect(formatDateInZone(new Date('2026-09-14T06:30:00Z'), LA)).toBe('Sep 13, 2026')
+    expect(formatDateInZone(new Date('2026-09-14T06:30:00Z'), 'UTC')).toBe('Sep 14, 2026')
+  })
+
+  it('never shifts a calendar date, whatever the machine timezone', () => {
+    expect(formatCalendarDate('2026-03-08')).toBe('Mar 8, 2026')
+    expect(formatCalendarDate('2026-12-31')).toBe('Dec 31, 2026')
   })
 })

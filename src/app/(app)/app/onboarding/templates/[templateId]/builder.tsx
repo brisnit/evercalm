@@ -40,18 +40,26 @@ const STEP_KINDS = Object.entries(STEP_KIND_LABELS)
 const RESPONSIBILITIES = Object.entries(RESPONSIBILITY_LABELS)
 
 /** Kinds whose backing system has not shipped. */
-const PLACEHOLDER_KINDS = new Set(['training_assignment', 'policy_ack'])
+const PLACEHOLDER_KINDS = new Set(['policy_ack'])
+
+interface CourseOption {
+  id: string
+  title: string
+  versionNumber: number
+}
 
 export function TemplateBuilder({
   template,
   impact,
   jobRoles,
   locations,
+  courses,
 }: {
   template: TemplateDetail
   impact: { activeRuns: number; completedRuns: number; targetedRoles: number }
   jobRoles: { id: string; name: string }[]
   locations: { id: string; name: string }[]
+  courses: CourseOption[]
 }) {
   const archived = template.archivedAt !== null
   const draft = template.draftVersion
@@ -62,7 +70,7 @@ export function TemplateBuilder({
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
       <div className="flex flex-col gap-5">
         {editable ? (
-          <DraftEditor template={template} />
+          <DraftEditor template={template} courses={courses} />
         ) : (
           <ReadOnlyContent template={template} archived={archived} />
         )}
@@ -308,6 +316,9 @@ function ReadOnlyContent({ template, archived }: { template: TemplateDetail; arc
                         : ''}
                     </span>
                   </span>
+                  {step.courseTitle ? (
+                    <span className="text-muted block text-xs">Course: {step.courseTitle}</span>
+                  ) : null}
                   <span className="flex flex-wrap gap-1.5">
                     {!step.required ? <Badge tone="neutral">Optional</Badge> : null}
                     {step.awaitingPlatform ? (
@@ -324,7 +335,7 @@ function ReadOnlyContent({ template, archived }: { template: TemplateDetail; arc
   )
 }
 
-function DraftEditor({ template }: { template: TemplateDetail }) {
+function DraftEditor({ template, courses }: { template: TemplateDetail; courses: CourseOption[] }) {
   const draft = template.draftVersion!
   const [openStep, setOpenStep] = useState<string | null>(null)
 
@@ -394,6 +405,13 @@ function DraftEditor({ template }: { template: TemplateDetail }) {
                             ? ` · day ${step.dueOffsetDays} after ${step.dueOffsetBasis === 'hire_date' ? 'hire date' : 'start'}`
                             : ' · no due date'}
                         </span>
+                        {step.kind === 'training_assignment' ? (
+                          <span className="text-muted mt-1 block text-xs">
+                            {step.courseTitle
+                              ? `Course: ${step.courseTitle}`
+                              : 'No course linked yet'}
+                          </span>
+                        ) : null}
                         <span className="mt-1.5 flex flex-wrap gap-1.5">
                           {!step.required ? <Badge tone="neutral">Optional</Badge> : null}
                           {!step.blocksCompletion ? (
@@ -404,6 +422,9 @@ function DraftEditor({ template }: { template: TemplateDetail }) {
                           ) : null}
                           {step.awaitingPlatform ? (
                             <Badge tone="warning">Waiting on EverCalm</Badge>
+                          ) : null}
+                          {step.kind === 'training_assignment' && !step.courseTitle ? (
+                            <Badge tone="warning">Link a course</Badge>
                           ) : null}
                         </span>
                       </span>
@@ -444,6 +465,7 @@ function DraftEditor({ template }: { template: TemplateDetail }) {
                           submitLabel="Save step"
                           hidden={{ stepId: step.id }}
                           defaults={step}
+                          courses={courses}
                         />
                         <form
                           action={deleteStepAction as unknown as (fd: FormData) => void}
@@ -475,6 +497,7 @@ function DraftEditor({ template }: { template: TemplateDetail }) {
                   action={addStepAction}
                   submitLabel="Add step"
                   hidden={{ sectionId: section.id }}
+                  courses={courses}
                 />
               </div>
             </details>
@@ -549,6 +572,7 @@ interface StepDefaults {
   dueOffsetBasis: string
   requiresManagerVerification: boolean
   blocksCompletion: boolean
+  courseId: string | null
 }
 
 function StepFields({
@@ -557,12 +581,14 @@ function StepFields({
   submitLabel,
   hidden,
   defaults,
+  courses,
 }: {
   templateId: string
   action: Parameters<typeof ActionForm>[0]['action']
   submitLabel: string
   hidden: Record<string, string>
   defaults?: StepDefaults
+  courses: CourseOption[]
 }) {
   const [kind, setKind] = useState(defaults?.kind ?? 'employee_task')
   const placeholder = PLACEHOLDER_KINDS.has(kind)
@@ -685,11 +711,45 @@ function StepFields({
             </Field>
           </div>
 
+          {kind === 'training_assignment' ? (
+            <Field
+              id={`${idPrefix}-course`}
+              label="Course"
+              required
+              hint="The published course this person is given when onboarding starts. They keep that version even if the course is updated later."
+              error={state.fieldErrors?.courseId?.[0]}
+            >
+              {(p) =>
+                courses.length === 0 ? (
+                  <p id={p.id} className="text-muted text-sm">
+                    No published courses yet. Publish one under Training first.
+                  </p>
+                ) : (
+                  <select
+                    {...p}
+                    name="courseId"
+                    className={SELECT}
+                    defaultValue={defaults?.courseId ?? ''}
+                    required
+                  >
+                    <option value="" disabled>
+                      Choose a course
+                    </option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.title} (version {course.versionNumber})
+                      </option>
+                    ))}
+                  </select>
+                )
+              }
+            </Field>
+          ) : null}
+
           {placeholder ? (
             <p className="rounded-control border-warning/30 bg-warning-soft text-ink border px-3 py-2.5 text-sm">
-              You can configure this step now. It will show as waiting on EverCalm until the
-              {kind === 'training_assignment' ? ' training system' : ' policy library'} ships, so a
-              new hire is never marked down for something we have not built.
+              You can configure this step now. It will show as waiting on EverCalm until the policy
+              library ships, so a new hire is never marked down for something we have not built.
             </p>
           ) : null}
 

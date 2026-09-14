@@ -18,7 +18,15 @@ import { authorize, can, canAtAnyLocation, isSelf } from '@/server/authz/can'
 import type { Actor } from '@/server/authz/actor'
 import { AUDIT_ACTIONS, recordAuditEvent } from '@/server/audit'
 import { addCalendarDays } from '@/lib/dates'
-import { MANAGER_ONLY_KINDS, UNRESOLVED_KINDS } from './templates'
+import { MANAGER_ONLY_KINDS, UNRESOLVED_KINDS, linkedCourseTitles } from './templates'
+import { refreshOnboardingCompletion } from './completion'
+import {
+  UNLINKED_TRAINING_REASON,
+  linkTrainingOnStart,
+  linkedTrainingViews,
+  type LinkedTraining,
+  type StepToLink,
+} from './training-link'
 
 /**
  * ONBOARDING RUNS.
@@ -65,6 +73,8 @@ export interface OnboardingStepView {
   awaitingVerification: boolean
   /** True when it waits on an EverCalm feature rather than on a person. */
   awaitingPlatform: boolean
+  /** For a training step: the linked course and how it stands. */
+  training: LinkedTraining | null
 }
 
 export interface OnboardingProgress {
@@ -143,10 +153,9 @@ export function deriveState(
   return 'not_started'
 }
 
-function blockedReasonFor(kind: string): string | null {
-  if (kind === 'training_assignment') {
-    return 'Waiting on the training system, which arrives in a later release.'
-  }
+function blockedReasonFor(kind: string, courseId: string | null = null): string | null {
+  // A linked training step is satisfied by its course; an unlinked one needs a person.
+  if (kind === 'training_assignment') return courseId ? null : UNLINKED_TRAINING_REASON
   if (kind === 'policy_ack') {
     return 'Waiting on policy documents, which arrive in a later release.'
   }
@@ -353,10 +362,17 @@ export async function assignOnboarding(
     dueOn: latestDue,
   })
 
+  const toLink: StepToLink[] = []
   for (const step of steps) {
-    const reason = blockedReasonFor(step.kind)
+    const courseId = step.kind === 'training_assignment' ? step.courseId : null
+    const reason = blockedReasonFor(step.kind, courseId)
+    const progressId = newId()
+    if (courseId) {
+      toLink.push({ progressId, courseId, stepTitle: step.title, dueOn: dueFor(step) })
+    }
     await tx.insert(onboardingStepProgress).values({
-      id: newId(),
+      id: progressId,
+      courseId,
       organizationId: actor.organizationId,
       assignmentId,
       stepId: step.id,
@@ -384,12 +400,21 @@ export async function assignOnboarding(
     metadata: { assignmentId, versionId: template.versionId, steps: steps.length },
   })
 
+  // The linked courses: assigned (or found) and pinned, now.
+  await linkTrainingOnStart(tx, actor, {
+    employmentId,
+    locationId: person.homeLocationId,
+    steps: toLink,
+  })
+
   return assignmentId
 }
 
 function nextActionFor(steps: OnboardingStepView[]): string | null {
+  // A step whose course waits for a manager's sign-off is not the person's next action.
+  const waitingOnSignoff = (s: OnboardingStepView) => s.training?.state === 'awaiting_signoff'
   const pending = steps
-    .filter((s) => s.status === 'pending')
+    .filter((s) => s.status === 'pending' && !waitingOnSignoff(s))
     .sort((a, b) => a.position - b.position)
   if (pending[0]) return pending[0].title
 
@@ -397,6 +422,9 @@ function nextActionFor(steps: OnboardingStepView[]): string | null {
     .filter((s) => s.status === 'blocked' && !s.awaitingPlatform)
     .sort((a, b) => a.position - b.position)
   if (actionable[0]) return `Blocked: ${actionable[0].title}`
+
+  const signoff = steps.filter(waitingOnSignoff).sort((a, b) => a.position - b.position)
+  if (signoff[0]) return `Waiting for sign-off: ${signoff[0].title}`
 
   const waiting = steps.filter((s) => s.awaitingPlatform).sort((a, b) => a.position - b.position)
   if (waiting[0]) return `Waiting on EverCalm: ${waiting[0].title}`
@@ -459,6 +487,7 @@ export async function getProgressForEmployment(
 
   const mayVerify = can(actor, 'onboarding.verify', { locationId: subjectLocationId })
   const viewingSelf = isSelf(actor, employmentId)
+  const training = await linkedTrainingViews(tx, actor.organizationId, rows)
 
   const steps: OnboardingStepView[] = rows.map((r) => {
     const managerRequired = needsManagerToComplete(r)
@@ -485,9 +514,16 @@ export async function getProgressForEmployment(
       verifiedBy: r.verifiedByEmploymentId ? (nameOf.get(r.verifiedByEmploymentId) ?? null) : null,
       // The employee may complete their own ordinary steps, never one a
       // manager has to confirm.
-      selfCompletable: viewingSelf && r.status === 'pending' && !managerRequired,
-      awaitingVerification: mayVerify && r.status === 'pending' && managerRequired,
+      // A training step completes with its course, never by hand.
+      selfCompletable:
+        viewingSelf &&
+        r.status === 'pending' &&
+        !managerRequired &&
+        r.kind !== 'training_assignment',
+      awaitingVerification:
+        mayVerify && r.status === 'pending' && managerRequired && r.kind !== 'training_assignment',
       awaitingPlatform: r.status === 'blocked' && UNRESOLVED_KINDS.has(r.kind),
+      training: training.get(r.id) ?? null,
     }
   })
 
@@ -549,42 +585,6 @@ export async function listProgress(tx: Tx, actor: Actor): Promise<OnboardingProg
   return results.sort((a, b) => order[a.state] - order[b.state])
 }
 
-async function refreshAssignmentCompletion(
-  tx: Tx,
-  actor: Actor,
-  assignmentId: string,
-): Promise<boolean> {
-  const rows = await tx
-    .select({
-      required: onboardingStepProgress.required,
-      blocksCompletion: onboardingStepProgress.blocksCompletion,
-      status: onboardingStepProgress.status,
-    })
-    .from(onboardingStepProgress)
-    .where(
-      and(
-        eq(onboardingStepProgress.organizationId, actor.organizationId),
-        eq(onboardingStepProgress.assignmentId, assignmentId),
-      ),
-    )
-
-  const gating = rows.filter((r) => r.required && r.blocksCompletion)
-  const done =
-    gating.length > 0 && gating.every((r) => r.status === 'completed' || r.status === 'waived')
-
-  await tx
-    .update(onboardingAssignments)
-    .set({ completedAt: done ? new Date() : null, updatedAt: new Date() })
-    .where(
-      and(
-        eq(onboardingAssignments.organizationId, actor.organizationId),
-        eq(onboardingAssignments.id, assignmentId),
-      ),
-    )
-
-  return done
-}
-
 export async function completeStep(
   tx: Tx,
   actor: Actor,
@@ -635,6 +635,12 @@ export async function completeStep(
     authorize(actor, 'onboarding.verify', { locationId })
   }
 
+  if (row.kind === 'training_assignment') {
+    throw new ValidationError(
+      {},
+      'This step completes itself when the linked course is finished in Training.',
+    )
+  }
   if (row.status === 'blocked') {
     throw new ValidationError(
       {},
@@ -673,7 +679,11 @@ export async function completeStep(
     metadata: { stepProgressId, kind: row.kind },
   })
 
-  const finished = await refreshAssignmentCompletion(tx, actor, assignment.id)
+  const { justCompleted: finished } = await refreshOnboardingCompletion(
+    tx,
+    actor.organizationId,
+    assignment.id,
+  )
   if (finished) {
     await recordAuditEvent(tx, actor, {
       action: AUDIT_ACTIONS.ONBOARDING_COMPLETED,
@@ -785,13 +795,18 @@ export async function previewVersion(
     .orderBy(asc(onboardingSteps.position))
 
   const start = startedOn ?? today()
+  const courseTitles = await linkedCourseTitles(
+    tx,
+    actor.organizationId,
+    steps.map((s) => s.courseId),
+  )
 
   return sections.map((section) => ({
     sectionTitle: section.title,
     steps: steps
       .filter((s) => s.sectionId === section.id)
       .map((s) => {
-        const reason = blockedReasonFor(s.kind)
+        const reason = blockedReasonFor(s.kind, s.courseId)
         return {
           id: s.id,
           stepId: s.id,
@@ -812,9 +827,24 @@ export async function previewVersion(
           completedBy: null,
           verifiedBy: null,
           // In a preview the viewer stands in for the new hire.
-          selfCompletable: reason === null && !needsManagerToComplete(s),
+          selfCompletable:
+            reason === null && !needsManagerToComplete(s) && s.kind !== 'training_assignment',
           awaitingVerification: false,
-          awaitingPlatform: reason !== null,
+          awaitingPlatform: reason !== null && UNRESOLVED_KINDS.has(s.kind),
+          training:
+            s.kind === 'training_assignment' && s.courseId
+              ? {
+                  courseId: s.courseId,
+                  courseTitle: courseTitles.get(s.courseId) ?? 'Training',
+                  assignmentId: null,
+                  versionNumber: null,
+                  state: 'not_started' as const,
+                  completedLessons: 0,
+                  totalLessons: 0,
+                  percent: 0,
+                  nextLessonId: null,
+                }
+              : null,
         }
       }),
   }))

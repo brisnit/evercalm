@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -149,16 +150,20 @@ export default async function TemplatePreviewPage({
                                 <p className="text-muted mt-0.5 text-xs">
                                   {step.awaitingPlatform
                                     ? 'Waiting'
-                                    : !step.selfCompletable
-                                      ? 'A manager confirms this one'
-                                      : step.required
-                                        ? 'Required'
-                                        : 'Optional'}
-                                  {step.dueOn ? ` · due ${step.dueOn}` : ''}
+                                    : step.training
+                                      ? `Course: ${step.training.courseTitle}`
+                                      : !step.selfCompletable
+                                        ? 'A manager confirms this one'
+                                        : step.required
+                                          ? 'Required'
+                                          : 'Optional'}
+                                  {step.dueOn ? ` · due ${formatCalendarDate(step.dueOn)}` : ''}
                                 </p>
                               </div>
                               {step.awaitingPlatform ? (
                                 <Badge tone="warning">Waiting</Badge>
+                              ) : step.training ? (
+                                <Badge tone="info">Training</Badge>
                               ) : step.selfCompletable ? (
                                 <Badge tone="violet">To do</Badge>
                               ) : (
@@ -198,9 +203,12 @@ export default async function TemplatePreviewPage({
                   [
                     'A manager must confirm',
                     String(
-                      allSteps.filter((s) => !s.selfCompletable && !s.awaitingPlatform).length,
+                      allSteps.filter(
+                        (s) => !s.selfCompletable && !s.awaitingPlatform && !s.training,
+                      ).length,
                     ),
                   ],
+                  ['Completes with a course', String(allSteps.filter((s) => s.training).length)],
                   ['Waiting on EverCalm', String(waiting.length)],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-3">

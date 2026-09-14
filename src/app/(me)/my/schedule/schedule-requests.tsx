@@ -31,55 +31,67 @@ const CLAIM_STATUS: Record<string, { label: string; tone: 'warning' | 'success' 
   expired: { label: 'No longer offered', tone: 'neutral' },
 }
 
-/** A colleague asking you to take (or trade) a shift. Answering removes it from here. */
+/**
+ * A colleague asking you to take (or trade) a shift. Answering removes it from here.
+ *
+ * Rendered even when there is nothing to answer, so the confirmation of the
+ * LAST answer survives: the section disappears with the refresh, and a notice
+ * held inside it used to disappear with it (see action-notice.tsx).
+ */
 export function IncomingSwaps({ swaps }: { swaps: MySwap[] }) {
   const { notice, show, dismiss } = useActionNotice()
   return (
-    <section aria-labelledby="needs-you-heading" className="flex flex-col gap-3">
-      <h2 id="needs-you-heading" className="font-display text-ink text-lg font-bold">
-        Needs you
-      </h2>
+    <>
       <ActionNotice notice={notice} onDismiss={dismiss} />
-      {swaps.map((swap) => (
-        <Card key={swap.id} className="border-violet-200 p-4">
-          <p className="text-ink font-medium">
-            {swap.kind === 'trade'
-              ? `${swap.otherName} wants to trade shifts with you`
-              : `${swap.otherName} asked you to take their shift`}
-          </p>
-          <p className="text-ink mt-1 text-sm">
-            {swap.kind === 'trade' ? 'You would work: ' : ''}
-            <span className="font-semibold">{swap.shiftLabel}</span>
-          </p>
-          {swap.recipientShiftLabel ? (
-            <p className="text-muted text-sm">They would work your {swap.recipientShiftLabel}</p>
-          ) : null}
-          {swap.note ? <p className="text-muted mt-1 text-sm">“{swap.note}”</p> : null}
-          <p className="text-faint mt-2 text-xs">If you agree, a manager still confirms it.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <ActionForm
-              action={respondToSwapAction}
-              submitLabel="I’ll take it"
-              className="flex"
-              onSuccess={show}
-            >
-              <input type="hidden" name="requestId" value={swap.id} />
-              <input type="hidden" name="accept" value="true" />
-            </ActionForm>
-            <ActionForm
-              action={respondToSwapAction}
-              submitLabel="I can’t"
-              variant="secondary"
-              className="flex"
-              onSuccess={show}
-            >
-              <input type="hidden" name="requestId" value={swap.id} />
-              <input type="hidden" name="accept" value="false" />
-            </ActionForm>
-          </div>
-        </Card>
-      ))}
-    </section>
+      {swaps.length > 0 ? (
+        <section aria-labelledby="needs-you-heading" className="flex flex-col gap-3">
+          <h2 id="needs-you-heading" className="font-display text-ink text-lg font-bold">
+            Needs you
+          </h2>
+          {swaps.map((swap) => (
+            <Card key={swap.id} className="border-violet-200 p-4">
+              <p className="text-ink font-medium">
+                {swap.kind === 'trade'
+                  ? `${swap.otherName} wants to trade shifts with you`
+                  : `${swap.otherName} asked you to take their shift`}
+              </p>
+              <p className="text-ink mt-1 text-sm">
+                {swap.kind === 'trade' ? 'You would work: ' : ''}
+                <span className="font-semibold">{swap.shiftLabel}</span>
+              </p>
+              {swap.recipientShiftLabel ? (
+                <p className="text-muted text-sm">
+                  They would work your {swap.recipientShiftLabel}
+                </p>
+              ) : null}
+              {swap.note ? <p className="text-muted mt-1 text-sm">“{swap.note}”</p> : null}
+              <p className="text-faint mt-2 text-xs">If you agree, a manager still confirms it.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <ActionForm
+                  action={respondToSwapAction}
+                  submitLabel="I’ll take it"
+                  className="flex"
+                  onSuccess={show}
+                >
+                  <input type="hidden" name="requestId" value={swap.id} />
+                  <input type="hidden" name="accept" value="true" />
+                </ActionForm>
+                <ActionForm
+                  action={respondToSwapAction}
+                  submitLabel="I can’t"
+                  variant="secondary"
+                  className="flex"
+                  onSuccess={show}
+                >
+                  <input type="hidden" name="requestId" value={swap.id} />
+                  <input type="hidden" name="accept" value="false" />
+                </ActionForm>
+              </div>
+            </Card>
+          ))}
+        </section>
+      ) : null}
+    </>
   )
 }
 

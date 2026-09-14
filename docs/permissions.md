@@ -254,6 +254,47 @@ Rules that hold regardless of role:
   and no shift reaches anyone's schedule, without the receiving person saying
   yes.
 
+## Training capabilities
+
+Course content belongs to the organization; people belong to locations.
+
+| Capability                    | Allows                                                      | Owner | HR Admin | General Manager | Training Manager |
+| ----------------------------- | ----------------------------------------------------------- | :---: | :------: | :-------------: | :--------------: |
+| `training.author`             | Create courses, edit drafts, start new drafts               |  org  |    —     |        —        |       org        |
+| `training.publish`            | Publish a draft, archive and restore courses                |  org  |    —     |        —        |       org        |
+| `training.assign`             | Assign, withdraw, move not-started people, allow an attempt |  org  |   org    |    location     |       org        |
+| `training.view_progress_team` | Read progress for people at the location                    |  org  |   org    |    location     |       org        |
+| `training.view_progress_org`  | Read progress across the organization                       |  org  |   org    |        —        |       org        |
+| `skill.verify`                | Sign off a practical for someone at the location            |  org  |    —     |    location     |       org        |
+
+Schedulers, Shift Leads and Employees hold none of these. An employee's own
+training is self-access: seeing what they were assigned, doing lessons, taking
+knowledge checks and asking for sign-off need no capability.
+
+`skill.define` and `skill.revoke` exist in the catalogue but nothing uses them
+yet: there is no separate skills catalogue in this slice (see the UX backlog).
+
+Rules that hold regardless of role:
+
+- **Outside scope is not found.** A Downtown manager asking about a Riverside
+  person's training, or for a Riverside sign-off, gets 404. Inside scope but
+  without the capability, the answer is "you do not have permission".
+- **Drafts are for content managers.** A General Manager sees only published
+  courses; an unpublished course reads as not found.
+- **Nobody signs off their own practical,** including owners. HR is not given
+  `skill.verify` on purpose: a sign-off means someone watched the work.
+- **Managers read reports, not the employee's screens.** An employee's
+  answers, checklist ticks and notes are reachable only by that employee's own
+  pages; managers see scores, status and decisions through progress reports.
+- **An assignment keeps its version.** Nobody's version is changed by
+  publishing; moving people who have not started is a separate, audited action.
+- **Linking a course to onboarding** needs `onboarding.manage`, and only
+  offers this organization's published courses. Starting onboarding needs
+  `people.manage_employment` and gives the linked course as part of that
+  action, so an onboarding administrator does not also need `training.assign`.
+  Reading the linked course's progress on someone's onboarding follows the
+  onboarding rules (`onboarding.view_progress` at the person's location).
+
 ## Enforcement
 
 Every mutation is a server action whose first act is resolving the actor from

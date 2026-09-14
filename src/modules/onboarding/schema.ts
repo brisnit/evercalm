@@ -52,7 +52,7 @@ export const ONBOARDING_STEP_KINDS = [
   'document_request',
   /** Placeholder for policy acknowledgement records. */
   'policy_ack',
-  /** Placeholder for the learning system. */
+  /** A published training course, assigned and tracked in Training. */
   'training_assignment',
   /** A manager watches them do it and signs off. */
   'practical_verification',
@@ -257,6 +257,12 @@ export const onboardingSteps = pgTable(
     /** Integration boundary with later slices. Null until those exist. */
     referenceType: text('reference_type'),
     referenceId: uuid('reference_id'),
+    /**
+     * The published course a `training_assignment` step gives the new hire.
+     * Composite foreign key to courses in migration 0017, so it can never
+     * name another organization's course.
+     */
+    courseId: uuid('course_id'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -356,6 +362,14 @@ export const onboardingStepProgress = pgTable(
     status: text('status').notNull().default('pending'),
     note: text('note'),
     blockedReason: text('blocked_reason'),
+
+    /** The course this step was linked to when onboarding started. */
+    courseId: uuid('course_id'),
+    /**
+     * The training assignment that satisfies this step. It pins the course
+     * version, so the version was fixed the moment onboarding started.
+     */
+    trainingAssignmentId: uuid('training_assignment_id'),
 
     completedAt: timestamp('completed_at', { withTimezone: true }),
     completedByEmploymentId: uuid('completed_by_employment_id'),

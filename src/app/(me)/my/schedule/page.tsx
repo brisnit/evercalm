@@ -51,7 +51,7 @@ export default async function MySchedulePage({
       <ScheduleTabs current="schedule" />
 
       <div className="mt-6 flex flex-col gap-6">
-        {incoming.length > 0 ? <IncomingSwaps swaps={incoming} /> : null}
+        <IncomingSwaps swaps={incoming} />
 
         <section aria-labelledby="shifts-heading">
           <div className="flex items-baseline justify-between gap-3">

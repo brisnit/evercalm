@@ -248,6 +248,9 @@ test('a swap: asked by one employee, accepted by the colleague, approved by a ma
     .getByRole('button', { name: /I.ll take it/ })
     .first()
     .click()
+  // Regression: answering the last request removes the "Needs you" section.
+  // The confirmation must outlive it, rather than unmounting with it.
+  await expect(page.getByRole('heading', { name: 'Needs you' })).toHaveCount(0)
   await expect(notice(page)).toContainText('You agreed.')
 
   await as(page, MANAGER)

@@ -155,12 +155,36 @@ export function formatInZone(instant: Date, timeZone: string): string {
   }).format(instant)
 }
 
-/** "15 Sep 2026" - a date as a person at that location reads it. */
+/*
+ * DATE WORDING, product-wide: month first, as the US-based organizations
+ * using EverCalm write it.
+ *
+ *   formatDateInZone(instant, zone)   "Sep 15, 2026"   when something happened
+ *   formatCalendarDate("2026-09-15")  "Sep 15, 2026"   a date with no time (due dates)
+ *   formatInZone(instant, zone)       "Tue, Sep 15, 2:00 PM PDT"   a moment
+ *
+ * Schedules label the days inside a week "Tue, Sep 15"
+ * (modules/scheduling/time.ts): the same order, without the year the week
+ * heading already gives. Pages never format dates themselves.
+ */
+const DATE_FORMATS = new Map<string, Intl.DateTimeFormat>()
+
+/** "Sep 15, 2026" - an instant, as the calendar date where it is read. */
 export function formatDateInZone(instant: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(instant)
+  let format = DATE_FORMATS.get(timeZone)
+  if (!format) {
+    format = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    DATE_FORMATS.set(timeZone, format)
+  }
+  return format.format(instant)
+}
+
+/** "Sep 15, 2026" - a calendar date. No timezone applies: it is already a date. */
+export function formatCalendarDate(isoDate: string): string {
+  return formatDateInZone(new Date(`${isoDate}T12:00:00Z`), 'UTC')
 }

@@ -322,10 +322,12 @@ const stepSchema = z.object({
   dueOffsetBasis: z.enum(DUE_DATE_BASES),
   requiresManagerVerification: z.boolean(),
   blocksCompletion: z.boolean(),
+  courseId: z.string().trim().max(64).optional(),
 })
 
 function parseStep(formData: FormData) {
   return stepSchema.safeParse({
+    courseId: readString(formData, 'courseId'),
     title: readString(formData, 'title'),
     instructions: readString(formData, 'instructions'),
     kind: readString(formData, 'kind'),

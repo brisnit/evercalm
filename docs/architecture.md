@@ -197,8 +197,9 @@ waiting on EverCalm rather than on a person. The onboarding board counts only
 human-actionable blocks as "blocked", because a board where every new hire is
 blocked by our own roadmap tells a manager nothing.
 
-When Slice 5 lands, a training step points at a real assignment through the
-`reference_type` / `reference_id` pair with no schema change here.
+Training steps are no longer a boundary: they link to real courses, described
+in [Onboarding and training](#onboarding-and-training). `policy_ack` still
+waits on the policy library, through the `reference_type` / `reference_id` pair.
 
 ## Onboarding templates are versioned, and published versions are immutable
 
@@ -612,6 +613,182 @@ a safety notice. Time off, claims, swaps, schedules and templates are retired
 by status and never deleted — DELETE is revoked from the runtime role — and
 every decision writes an audit event. A time-off reason and note are not copied
 into the audit log.
+
+## Training
+
+Slice 5. Everything lives in `src/modules/training`: pure rules in `content.ts`
+(what a lesson holds, what can be published, how a quiz is scored) and
+`progress.ts` (progress, due dates, milestones); database work in
+`authoring.ts` (courses, drafts, publication), `assignments.ts` (assigning,
+following up, reports, practical sign-off) and `learner.ts` (the employee's
+own training); tables in `schema.ts`, mirrored by `drizzle/0016_training.sql`.
+
+Industry-neutral in the same way as scheduling. The restaurant's seeded
+courses are allergen service and cooling stock; the salon's are patch testing
+before colour and disinfecting a station between guests. Same tables, same
+code.
+
+### A course is versioned, and a published version never changes
+
+| Table                      | Holds                                                     |
+| -------------------------- | --------------------------------------------------------- |
+| `courses`                  | The identity people name, archive and assign              |
+| `course_versions`          | One editable draft, or one frozen published version       |
+| `course_lessons`           | The content, owned by a **version**                       |
+| `training_assignments`     | One person, one course, pinned to the exact version given |
+| `training_lesson_progress` | What they have done, lesson by lesson                     |
+| `training_quiz_attempts`   | Every knowledge-check attempt, as submitted (append-only) |
+| `training_signoffs`        | Every practical decision and who made it (append-only)    |
+
+The promise that what somebody was assigned never changes underneath them is
+held three times over:
+
+1. **The service** edits content only through `requireDraft()`, which locks the
+   version and refuses anything published. "Start a new draft" copies the
+   published lessons; publishing it changes only what **new** assignments get.
+2. **Triggers** refuse any `UPDATE` or `DELETE` of a published version and any
+   insert, update or delete of its lessons, whatever issued the statement.
+   Deleting the whole organization is the one path let through.
+3. **Composite foreign keys** tie progress and attempts to
+   `(assignment_id, version_id)` and `(lesson_id, version_id)`, so a lesson from
+   another version cannot be recorded against an assignment, and an assignment
+   with any progress cannot be moved to another version.
+
+Moving people to a newer version is a deliberate manager action ("Move to
+version 2" on the course's People page) that applies only to people who have
+not started. Everyone else finishes the version they began, and the version
+history keeps every published version readable.
+
+### Lessons
+
+Four kinds, chosen for work done on a floor rather than at a desk: **reading**,
+**checklist**, **knowledge check** and **practical sign-off**. Bodies use the
+announcement renderer (plain text, bullets, bold, safe links; no HTML).
+Structured content lives in `content` jsonb and is always read through
+`parseLessonContent()`, which never throws: a malformed row becomes an empty
+lesson that cannot be published.
+
+Video, images and documents are not supported. They need file storage, which
+arrives with evidence uploads in shift operations.
+
+### Knowledge checks
+
+- Scored on the **server**, against the version the person was assigned, with
+  integer arithmetic: 66.7% is not a pass at 67%.
+- A question is right only when exactly the correct options were chosen.
+  Unknown option ids are ignored and unanswered questions refused.
+- The answer key and explanations never reach the browser until the person has
+  passed; after a failed attempt they see which questions they missed, not the
+  answers.
+- An optional attempt limit. A manager who may assign the person can allow one
+  more attempt; the grant is audited.
+- Attempts are numbered under a lock on the assignment row and are
+  append-only, so a double tap is two ordered attempts, never a duplicate pass.
+
+### Practical sign-off
+
+A person asks for sign-off when they are ready; a manager holding
+`skill.verify` at one of that person's locations watches and decides. Signing
+off requires confirming every listed point; sending it back requires a note
+saying what to practise. Nobody signs off their own practical: the service
+refuses, their own requests never appear in their queue, and a `CHECK`
+constraint on `training_signoffs` refuses it again.
+
+### Progress is computed, and nobody is compared
+
+Percentages, the next lesson, time left and the course state are derived by
+pure functions from the pinned lessons and the progress rows, on every read.
+Nothing is stored that could drift.
+
+Accomplishment is shown as a quiet moment after each step (what was achieved,
+how far along the course now is, one button to the next thing) and a
+completion panel that says what was finished, when, the knowledge-check
+result and who signed it off. **There are no points, levels, badges or
+leaderboards.** The implementation plan sketched an XP ledger; it was left out
+on purpose, because the employee experience here is meant to be adult and
+private: nobody's progress is ranked against anyone else's, and a missed due
+date is shown to the employee as the date, never as a judgement. Managers see
+"Overdue", because following up is their job.
+
+Page reads never write. An assignment becomes "in progress" when the person
+first does something, not when a page is rendered or prefetched.
+
+### Dates
+
+Every date is written one way, month first: "Sep 15, 2026", from
+`formatDateInZone` (an instant, in the reader's organization or location
+timezone) and `formatCalendarDate` (a calendar date such as a due date, with no
+timezone to apply). Schedules label days inside a week "Tue, Sep 15". Pages
+never format dates themselves; stored values are unchanged.
+
+### Authorization, notifications and records
+
+Course content is organization-wide (`training.author`, `training.publish`);
+everything about people is location-scoped (`training.assign`,
+`training.view_progress_team`, `skill.verify`), with
+`training.view_progress_org` as the organization-wide read. Outside every
+training scope, a person, assignment or location is **not found**. Drafts are
+invisible to anyone who does not manage content. Managers never use the
+employee's own read functions: they read progress through reports, so there
+is no path by which one person's answers reach another employee. See
+[permissions](permissions.md#training-capabilities).
+
+Notifications use the `training` category, in-app and email, respecting
+preferences and quiet hours: being assigned a course, having one withdrawn or
+moved to a newer version, and a sign-off decision. Courses, assignments and
+progress are retired by status and never deleted; attempts and sign-offs are
+insert-only for the runtime role. Creating, publishing, drafting, archiving,
+assigning, withdrawing, moving versions, allowing an attempt, each attempt,
+each sign-off request and decision, and completion all write audit events.
+
+### Onboarding and training
+
+A `training_assignment` step in an onboarding checklist names a **published
+course** (`onboarding_steps.course_id`, with a composite foreign key so it can
+only name the same organization's course). Drafts and archived courses cannot
+be linked, and a checklist version with an unlinked or no-longer-published
+course refuses to publish.
+
+When someone's onboarding starts, each linked step is tied to exactly one
+training assignment (`onboarding_step_progress.training_assignment_id`). The
+assignment pins the course version, so the version is fixed at that moment.
+Which assignment, decided once:
+
+| The person already has…                               | What happens                                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| an open assignment of the course, on any version      | The step links to it. It keeps its version and is never duplicated.                       |
+| a completed assignment of the course                  | The step links to it and is complete immediately.                                         |
+| nothing                                               | A new assignment of the published version, source `onboarding`, due when the step is due. |
+| nothing, and the course was archived since publishing | Nothing is assigned; the step is blocked and says why.                                    |
+
+After that, the step follows the course (`modules/onboarding/training-link.ts`,
+called by every training action that changes progress):
+
+| Course                          | Step                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| not started or in progress      | pending, "completes with the course"                                     |
+| practical waiting for sign-off  | pending, shown as waiting; not the person's next action                  |
+| out of knowledge-check attempts | blocked, "a manager can allow another attempt"                           |
+| withdrawn                       | blocked, "was withdrawn"; never complete                                 |
+| completed                       | completed, recorded against the person; onboarding completion re-checked |
+
+Rules that keep the record honest:
+
+- **Completion is one-way.** Nothing later in Training reopens a completed step.
+- **Nobody ticks a training step off by hand**, a manager included.
+- **Publishing a newer course version moves nobody**, exactly as for any other
+  assignment. A manager can still move people who have not started.
+- **A new checklist version moves nobody.** Runs keep the steps, links and
+  assignments they started with.
+- **Assigning the course again after a withdrawal** relinks the blocked step
+  to the new assignment.
+
+Starting onboarding still needs `people.manage_employment` for the
+organization; the course assignment it creates is part of that action and is
+audited as `training.assigned` with source `onboarding`, and the new hire is
+notified like any other assignment. The home screen shows one next action: when
+onboarding's next step is a course, the onboarding card links to the lesson and
+the training card does not repeat it.
 
 ## Audit
 

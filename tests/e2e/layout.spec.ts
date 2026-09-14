@@ -152,3 +152,39 @@ test('the receipt report fits a phone screen', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Who has read it' })).toBeVisible()
   await expectNoHorizontalOverflow(page, '/app/comms/[id]')
 })
+
+test('the training surfaces fit a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/training')
+  const course = await page
+    .getByRole('link', { name: 'Allergen awareness for service' })
+    .getAttribute('href')
+  for (const path of [
+    '/app/training',
+    course!,
+    `${course}/people`,
+    `${course}/preview`,
+    '/app/training/progress',
+    '/app/training/sign-offs',
+  ]) {
+    await page.goto(path)
+    await expectNoHorizontalOverflow(page, path)
+  }
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.salonMassage.email)
+  await page.goto('/my/training')
+  await expectNoHorizontalOverflow(page, '/my/training')
+  await page.locator('a[href^="/my/training/"]').first().click()
+  await expectNoHorizontalOverflow(page, '/my/training/[id]')
+  await page.locator('a[href*="/lessons/"]').first().click()
+  await expectNoHorizontalOverflow(page, '/my/training/[id]/lessons/[id]')
+})
+
+test('linked onboarding training fits a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.salonNewStylist.email)
+  await page.goto('/my/onboarding')
+  await expectNoHorizontalOverflow(page, '/my/onboarding')
+  await page.goto('/my')
+  await expectNoHorizontalOverflow(page, '/my')
+})

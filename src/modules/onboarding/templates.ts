@@ -1,5 +1,7 @@
 import { and, asc, count, eq, inArray, isNull, max } from 'drizzle-orm'
 import {
+  courseVersions,
+  courses,
   jobRoles,
   locations,
   onboardingAssignments,
@@ -12,6 +14,7 @@ import {
 } from '@/server/db/schema'
 import type { Tx } from '@/server/db'
 import { newId } from '@/lib/ids'
+import { isUuid } from '@/lib/uuid'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { authorize } from '@/server/authz/can'
 import type { Actor } from '@/server/authz/actor'
@@ -67,7 +70,8 @@ export const RESPONSIBILITY_LABELS: Record<OnboardingResponsibility, string> = {
  * them today; they surface as waiting on EverCalm rather than as something the
  * new hire failed to do.
  */
-export const UNRESOLVED_KINDS = new Set<string>(['training_assignment', 'policy_ack'])
+/** Kinds whose backing system has not shipped. Training shipped in Slice 5. */
+export const UNRESOLVED_KINDS = new Set<string>(['policy_ack'])
 
 /** Kinds that only a manager can ever complete. */
 export const MANAGER_ONLY_KINDS = new Set<string>(['practical_verification', 'manager_task'])
@@ -102,6 +106,9 @@ export interface StepDetail {
   requiresManagerVerification: boolean
   blocksCompletion: boolean
   awaitingPlatform: boolean
+  /** The published course a training step gives the new hire. */
+  courseId: string | null
+  courseTitle: string | null
 }
 
 export interface SectionDetail {
@@ -278,6 +285,12 @@ async function loadVersionDetail(
     )
     .orderBy(asc(onboardingSteps.position))
 
+  const courseTitles = await linkedCourseTitles(
+    tx,
+    actor.organizationId,
+    steps.map((s) => s.courseId),
+  )
+
   return {
     id: version.id,
     versionNumber: version.versionNumber,
@@ -301,6 +314,8 @@ async function loadVersionDetail(
           requiresManagerVerification: s.requiresManagerVerification,
           blocksCompletion: s.blocksCompletion,
           awaitingPlatform: UNRESOLVED_KINDS.has(s.kind),
+          courseId: s.courseId,
+          courseTitle: s.courseId ? (courseTitles.get(s.courseId) ?? null) : null,
         })),
     })),
   }
@@ -666,7 +681,12 @@ export async function publishVersion(tx: Tx, actor: Actor, versionId: string): P
   const template = await getTemplateRow(tx, actor, version.templateId)
 
   const steps = await tx
-    .select({ id: onboardingSteps.id })
+    .select({
+      id: onboardingSteps.id,
+      kind: onboardingSteps.kind,
+      title: onboardingSteps.title,
+      courseId: onboardingSteps.courseId,
+    })
     .from(onboardingSteps)
     .where(
       and(
@@ -679,6 +699,23 @@ export async function publishVersion(tx: Tx, actor: Actor, versionId: string): P
       { steps: ['Add at least one step before publishing.'] },
       'Add at least one step before publishing.',
     )
+  }
+
+  // A training step reaches a new hire as a real course, so it must name one
+  // that can actually be assigned at the moment this version goes live.
+  const training = steps.filter((s) => s.kind === 'training_assignment')
+  const unlinked = training.find((s) => !s.courseId)
+  if (unlinked) {
+    const message = `Link a course to “${unlinked.title}” before publishing.`
+    throw new ValidationError({ steps: [message] }, message)
+  }
+  if (training.length > 0) {
+    const live = new Set((await listLinkableCourses(tx, actor)).map((c) => c.id))
+    const stale = training.find((s) => !live.has(s.courseId!))
+    if (stale) {
+      const message = `The course linked to “${stale.title}” is no longer published. Link a published course before publishing.`
+      throw new ValidationError({ steps: [message] }, message)
+    }
   }
 
   await tx
@@ -845,6 +882,7 @@ async function copyVersionContent(
         blocksCompletion: step.blocksCompletion,
         referenceType: step.referenceType,
         referenceId: step.referenceId,
+        courseId: step.courseId,
       })
     }
   }
@@ -1088,6 +1126,8 @@ export interface StepInput {
   dueOffsetBasis?: DueDateBasis
   requiresManagerVerification?: boolean
   blocksCompletion?: boolean
+  /** Only for `training_assignment`: the published course it assigns. */
+  courseId?: string | null
 }
 
 function validateStep(input: StepInput): void {
@@ -1109,7 +1149,85 @@ function validateStep(input: StepInput): void {
       errors.dueOffsetDays = ['Use a whole number of days between 0 and 365.']
     }
   }
+  if (input.courseId && input.kind !== 'training_assignment') {
+    errors.courseId = ['Only a training step can link a course.']
+  }
   if (Object.keys(errors).length > 0) throw new ValidationError(errors, 'Please check the step')
+}
+
+/**
+ * The course a training step links to, checked now rather than trusted: it
+ * must be this organization's, active, and published. A draft can never be
+ * linked, because a new hire could never be given it.
+ */
+async function resolveCourseLink(tx: Tx, actor: Actor, input: StepInput): Promise<string | null> {
+  if (input.kind !== 'training_assignment' || !input.courseId) return null
+  const refuse = () =>
+    new ValidationError(
+      { courseId: ['Choose a published course.'] },
+      'Choose a published course for this training step.',
+    )
+  if (!isUuid(input.courseId)) throw refuse()
+  const [course] = await tx
+    .select({
+      id: courses.id,
+      status: courses.status,
+      publishedVersionId: courses.publishedVersionId,
+    })
+    .from(courses)
+    .where(and(eq(courses.organizationId, actor.organizationId), eq(courses.id, input.courseId)))
+    .limit(1)
+  if (!course || course.status !== 'active' || !course.publishedVersionId) throw refuse()
+  return course.id
+}
+
+export interface LinkableCourse {
+  id: string
+  title: string
+  versionNumber: number
+}
+
+/** Courses a training step may link: published and active, in this organization. */
+export async function listLinkableCourses(tx: Tx, actor: Actor): Promise<LinkableCourse[]> {
+  authorize(actor, 'onboarding.manage')
+  return tx
+    .select({
+      id: courses.id,
+      title: courseVersions.title,
+      versionNumber: courseVersions.versionNumber,
+    })
+    .from(courses)
+    .innerJoin(
+      courseVersions,
+      and(
+        eq(courseVersions.organizationId, courses.organizationId),
+        eq(courseVersions.id, courses.publishedVersionId),
+      ),
+    )
+    .where(and(eq(courses.organizationId, actor.organizationId), eq(courses.status, 'active')))
+    .orderBy(asc(courseVersions.title))
+}
+
+/** Each linked course's published title (its working title once archived). */
+export async function linkedCourseTitles(
+  tx: Tx,
+  organizationId: string,
+  ids: readonly (string | null)[],
+): Promise<Map<string, string>> {
+  const clean = [...new Set(ids.filter((id): id is string => !!id))]
+  if (clean.length === 0) return new Map()
+  const rows = await tx
+    .select({ id: courses.id, title: courses.title, publishedTitle: courseVersions.title })
+    .from(courses)
+    .leftJoin(
+      courseVersions,
+      and(
+        eq(courseVersions.organizationId, courses.organizationId),
+        eq(courseVersions.id, courses.publishedVersionId),
+      ),
+    )
+    .where(and(eq(courses.organizationId, organizationId), inArray(courses.id, clean)))
+  return new Map(rows.map((r) => [r.id, r.publishedTitle ?? r.title]))
 }
 
 export async function addStep(
@@ -1133,6 +1251,7 @@ export async function addStep(
     .limit(1)
   if (!section) throw new NotFoundError('Section not found')
   const version = await requireDraftVersion(tx, actor, section.versionId)
+  const courseId = await resolveCourseLink(tx, actor, input)
 
   const existing = await tx
     .select({ total: count() })
@@ -1160,6 +1279,7 @@ export async function addStep(
     dueOffsetBasis: input.dueOffsetBasis ?? 'onboarding_start',
     requiresManagerVerification: input.requiresManagerVerification ?? false,
     blocksCompletion: input.blocksCompletion ?? true,
+    courseId,
   })
 
   await touchTemplate(tx, actor, version.templateId)
@@ -1184,10 +1304,12 @@ export async function updateStep(
     .limit(1)
   if (!step) throw new NotFoundError('Step not found')
   await requireDraftVersion(tx, actor, step.versionId)
+  const courseId = await resolveCourseLink(tx, actor, input)
 
   await tx
     .update(onboardingSteps)
     .set({
+      courseId,
       title: input.title.trim(),
       instructions: input.instructions?.trim() ?? '',
       kind: input.kind,

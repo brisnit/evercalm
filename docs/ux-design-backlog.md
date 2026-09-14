@@ -258,6 +258,73 @@ _Area: information design._ Everyone assigned to the location is listed, sorted
 best fit first, with "different role" stated. Filtering to role holders by
 default would shorten long lists.
 
+## Training: known gaps (Slice 5)
+
+Deliberate limits of the first training slice, recorded so they are chosen
+rather than forgotten.
+
+### L1 · Onboarding training steps are not linked to courses — **Fixed**
+
+_Area: workflow._ Fixed before Slice 5 review: a checklist's training step
+links a published course, onboarding assigns it pinned to a version, and the
+step follows the course (see docs/architecture.md, Onboarding and training).
+Still open: a step can link one course, not a learning path.
+
+### L2 · No skills catalogue or learning paths — **Medium**
+
+_Area: scope._ Practical sign-off lives inside a course. There is no separate
+list of skills a person holds, no expiry on a sign-off, and no path that
+unlocks one course after another. `skill.define` and `skill.revoke` are unused.
+
+### L3 · Assignment by job role is a one-time action — **Medium**
+
+_Area: workflow._ "Everyone who is a Server" assigns the people who hold the
+role today. Someone hired into the role next week is not assigned
+automatically.
+
+### L4 · No reminders, and managers are not told about sign-off requests — **Medium**
+
+_Area: notifications._ People are notified when training is assigned, moved or
+withdrawn, and when a sign-off is decided. Nothing reminds them as a due date
+approaches, and a manager finds sign-off requests on the Sign-offs page and the
+training overview rather than in a notification (the same gap as S3).
+
+### L5 · Text-only lessons — **Medium**
+
+_Area: content._ No video, image or document lessons until file storage exists.
+
+### L6 · Training is not on the employee profile — **Medium**
+
+_Area: information architecture._ Managers see a person's training on the
+Progress page and each course's People page, not on the person's profile.
+
+### L7 · Questions cannot be reordered, and editing has no live preview — **Low**
+
+_Area: authoring._ Questions are added to the end of a knowledge check, and
+formatting is checked in the Preview tab rather than while typing.
+
+### L9 · Not-found and loading states are the framework defaults — **Low**
+
+_Area: states._ An assignment or lesson that is not yours (or does not exist)
+returns a correct 404, but the page is Next's unbranded default with no way
+back. Training pages render on the server with no loading skeleton, so a slow
+connection shows the previous page until the next one arrives. Both are
+product-wide, not training-specific.
+
+### L10 · A blocked course still offers "Continue the course" — **Low**
+
+_Area: wording._ When someone is out of knowledge-check attempts, their
+onboarding step says so and the course card shows "Needs your manager", but
+still offers "Continue the course", because the course's other lessons can be
+done meanwhile. Accurate, but it could say which lessons remain open.
+
+### L8 · Points and levels are intentionally absent — **Decision**
+
+_Area: product._ The implementation plan sketched XP, levels and idempotent
+awards. They were left out: progress and accomplishment are shown privately
+and plainly, and nothing ranks one person against another. Recorded so the
+choice is visible, not so it is revisited by default.
+
 ## Test reliability
 
 Browser-suite failures seen once and not yet investigated. Recorded so they are
@@ -291,6 +358,66 @@ horizontal scroll container, or the container did not constrain it for that
 content. _To investigate:_ reproduce with `E2E_SKIP_REFRESH=true` after a full
 suite run; confirm the table always sits inside `ScrollArea`.
 
+### T3 · Inbox home-screen test sees a React development timing error — **Resolved (test environment)**
+
+_Seen 2026-09-13, in two consecutive full browser runs during Slice 5._
+`tests/e2e/employee-inbox.spec.ts` › "what needs confirming is surfaced on the
+home screen" failed only its no-console-errors check, on desktop, with:
+
+    Failed to execute 'measure' on 'Performance': '​AppLayout' cannot have a negative time stamp.
+
+Once, on the phone project, it instead logged WebKit's `Type error` and
+`__nextjs_original-stack-frames due to access control checks`: the Next dev
+overlay's attempt to symbolicate an error, cut off by the test navigating away.
+Every functional assertion in the test passed both times.
+
+_What produces the message._ In development only, React's Server Components
+client (`react-server-dom-webpack-client.browser.development.js`, bundled by
+Next) draws each server component on the browser's Performance panel with
+`performance.measure`. It clamps a negative start time to 0 but not a negative
+end time; the browser throws on a negative end. The `​` prefix is React's
+marker for a Server Components track entry, and `AppLayout` is simply the
+component being drawn. The production client contains no `performance.measure`
+calls at all (0, against 9 in development). No EverCalm code is involved.
+
+_What was ruled out, with evidence._
+
+| Hypothesis                                                   | Test                                                                                          | Result                                                                                                              |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| A real bug from Slice 5's extra `/my` queries                | The failing component is the `/app` layout, not `/my`; 5 instrumented runs with Slice 5 code  | Not reproduced                                                                                                      |
+| Clock skew between a long-running dev server and the browser | Measured the dev server clock 121 ms behind wall time after 41 h; read React/Next timing code | Next and React use the same server clock, so skew cancels; simulating up to 400 ms browser skew produced no failure |
+| First render after a recompile                               | Forced 10 recompiles, then loaded `/app` pages and the employee `/app` → `/my` redirect       | Not reproduced                                                                                                      |
+| Order within the suite                                       | The four preceding spec files plus the inbox spec, instrumented, 4 times                      | 208 of 208 passed                                                                                                   |
+| Anything in the full suite                                   | Full browser run with `performance.measure` instrumented                                      | Not reproduced                                                                                                      |
+
+The exact state that produced a negative end was not reproduced again, so the
+triggering request is not known.
+
+_Resolution._ It is framework development instrumentation, not an application
+error, so the suite's console check excludes exactly that message
+(`tests/e2e/console-noise.ts`): the React Server Components marker and the
+negative-time-stamp wording, nothing else. `tests/unit/console-noise.test.ts`
+fails if the exclusion is removed or widened. The console check now records
+each error's source location and, for uncaught errors, the stack, so a future
+occurrence of anything else arrives with its trace.
+
+### T4 · The swap confirmation vanished with the "Needs you" section — **Fixed (application bug)**
+
+_Seen 2026-09-13 and 2026-09-14, in two full browser runs._
+`tests/e2e/scheduling.spec.ts` › "a swap: asked by one employee, accepted by
+the colleague, approved by a manager" waited for "You agreed." and found no
+notice, although the page showed the swap "Waiting for a manager": the answer
+had been saved.
+
+_Cause._ The employee schedule rendered `IncomingSwaps` only while requests
+were waiting, and that component owned its confirmation notice. Answering the
+last request removed the section in the same refresh, and the notice with it,
+unless the notice happened to paint first. A real bug, of the D14 kind.
+
+_Fix._ `IncomingSwaps` is always rendered and owns the notice outside the
+section that disappears. The test now asserts the notice is visible after the
+"Needs you" heading has gone, which fails every time with the old structure.
+
 ## Deferred to the product-wide redesign
 
 ### D1 · Navigation will not survive four more slices — **High**
@@ -314,12 +441,10 @@ because onboarding and credentials are the only live systems. Once shifts,
 training, and announcements land, "what needs my attention" has to be a ranked,
 cross-domain feed rather than one tile per subsystem.
 
-### D3 · "Coming in later slices" cards on the employee home — **Medium**
+### D3 · "Coming in later slices" cards on the employee home — **Fixed**
 
-_Area: usability._
-
-Honest, and better than fake data, but a dashed placeholder card is not a
-finished experience. It goes when the real sections arrive.
+_Area: usability._ Removed before Slice 5 review. The home screen shows only
+sections that exist; shift operations will add its own section when it ships.
 
 ### D4 · Employee surface has no navigation — **Medium**
 

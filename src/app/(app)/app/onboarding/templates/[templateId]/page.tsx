@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
-import { getTemplate, templateImpact } from '@/modules/onboarding/templates'
+import { getTemplate, listLinkableCourses, templateImpact } from '@/modules/onboarding/templates'
 import { listJobRoles } from '@/modules/structure/service'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
@@ -56,6 +56,7 @@ export default async function TemplateBuilderPage({
         impact: await templateImpact(tx, actor, templateId),
         jobRoles: await listJobRoles(tx, actor),
         locations: await listLocations(tx, actor),
+        courses: await listLinkableCourses(tx, actor),
       }
     } catch (error) {
       if (error instanceof NotFoundError) return 'not_found' as const
@@ -144,6 +145,7 @@ export default async function TemplateBuilderPage({
         impact={data.impact}
         jobRoles={data.jobRoles.map((r) => ({ id: r.id, name: r.name }))}
         locations={data.locations.map((l) => ({ id: l.id, name: l.name }))}
+        courses={data.courses}
       />
     </>
   )

@@ -67,6 +67,8 @@ export interface SeedStep {
   dueBasis?: 'hire_date' | 'onboarding_start'
   requiresManagerVerification?: boolean
   blocksCompletion?: boolean
+  /** Key of a course in seed/training.ts, for a `training_assignment` step. */
+  course?: string
 }
 
 export interface SeedSection {
@@ -416,7 +418,12 @@ const HARBOR: SeedOrganization = {
         {
           title: 'Your first week',
           steps: [
-            { title: 'Menu and allergen training', kind: 'training_assignment', dueDays: 7 },
+            {
+              title: 'Allergen awareness training',
+              kind: 'training_assignment',
+              course: 'allergens',
+              dueDays: 7,
+            },
             {
               title: 'Shadow two dinner services',
               instructions: 'Follow a senior server through a full turn, including close.',
@@ -474,7 +481,12 @@ const HARBOR: SeedOrganization = {
         {
           title: 'Learning the kitchen',
           steps: [
-            { title: 'Kitchen safety and knife handling', kind: 'training_assignment', dueDays: 5 },
+            {
+              title: 'Hot holding and cooling training',
+              kind: 'training_assignment',
+              course: 'cooling',
+              dueDays: 5,
+            },
             {
               title: 'Walk the walk-in, dry store, and par sheets',
               instructions:
@@ -1155,11 +1167,13 @@ const LUMEN: SeedOrganization = {
             {
               title: 'Sanitation and disinfection procedure',
               kind: 'training_assignment',
+              course: 'disinfection',
               dueDays: 5,
             },
             {
-              title: 'Colour line and formulation overview',
+              title: 'Patch testing and colour consultation',
               kind: 'training_assignment',
+              course: 'patch-test',
               dueDays: 7,
             },
             {
@@ -1217,7 +1231,12 @@ const LUMEN: SeedOrganization = {
         {
           title: 'Working the desk',
           steps: [
-            { title: 'Retail and product knowledge', kind: 'training_assignment', dueDays: 7 },
+            {
+              title: 'Rebooking and retail training',
+              kind: 'training_assignment',
+              course: 'desk',
+              dueDays: 7,
+            },
             {
               title: 'Handle a full opening shift with support',
               kind: 'practical_verification',

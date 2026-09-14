@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -7,6 +8,8 @@ import { getEmployment, listCredentials } from '@/modules/people/service'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
 import { inboxDigest } from '@/modules/comms/inbox'
 import { nextShift } from '@/modules/scheduling/employee'
+import { myTraining, type MyTraining } from '@/modules/training/learner'
+import { dueLabel } from '@/modules/training/progress'
 import { PriorityMark } from '@/ui/patterns/priority-mark'
 import { Badge, Card, CardHeader, Logo, ProgressBar } from '@/ui/primitives'
 
@@ -19,7 +22,7 @@ export const dynamic = 'force-dynamic'
  *
  * Ordered by the product promise: what do I need to do next, then what have I
  * finished, then where do I work. Sections whose systems have not shipped are
- * absent rather than shown empty.
+ * simply absent: no placeholder card stands in for them.
  */
 export default async function MyWorkPage() {
   const { actor, activeOrganization } = await requireActorContext()
@@ -31,7 +34,32 @@ export default async function MyWorkPage() {
     credentials: await listCredentials(tx, actor, actor.employmentId),
     inbox: await inboxDigest(tx, actor, actor.employmentId),
     nextShift: await nextShift(tx, actor),
+    training: await myTraining(tx, actor),
   }))
+
+  // When onboarding's next step IS a course, there is one next action, not two:
+  // the onboarding card links straight to the lesson and the training card
+  // does not repeat it.
+  const onboardingStep = data.onboarding?.steps.find(
+    (s) => s.status === 'pending' && s.title === data.onboarding?.nextAction,
+  )
+  const onboardingLesson =
+    onboardingStep?.training?.assignmentId && onboardingStep.training.nextLessonId
+      ? {
+          assignmentId: onboardingStep.training.assignmentId,
+          href: `/my/training/${onboardingStep.training.assignmentId}/lessons/${onboardingStep.training.nextLessonId}`,
+          courseTitle: onboardingStep.training.courseTitle,
+        }
+      : null
+
+  // Something blocked elsewhere in onboarding must not read as "stop" when the
+  // next action is one the person can do now. The whole run is still blocked
+  // for their manager's board; here it is counted, and the next action leads.
+  const waitingItems = data.onboarding?.steps.filter((s) => s.status === 'blocked').length ?? 0
+  const nextIsActionable =
+    !!data.onboarding?.nextAction &&
+    !/^(Blocked|Waiting for sign-off|Waiting on EverCalm):/.test(data.onboarding.nextAction)
+  const carryOn = data.onboarding?.state === 'blocked' && nextIsActionable && waitingItems > 0
 
   const myLocations = data.locations.filter((l) => actor.locationIds.includes(l.id))
   const hasAdminAccess = actor.grants.some((g) => g.capabilities.size > 0)
@@ -127,47 +155,83 @@ export default async function MyWorkPage() {
           </Card>
 
           {data.onboarding ? (
-            <Card className="overflow-hidden">
-              <div className="border-line border-b bg-white px-5 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-muted text-xs font-semibold tracking-wide uppercase">
-                      {data.onboarding.nextAction ? 'Do this next' : 'Onboarding'}
-                    </p>
-                    <p className="font-display text-ink mt-1 text-lg font-bold text-balance">
-                      {data.onboarding.nextAction ?? 'You are all caught up'}
-                    </p>
+            <div data-testid="onboarding-card">
+              <Card className="overflow-hidden">
+                <div className="border-line border-b bg-white px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+                        {data.onboarding.nextAction ? 'Do this next' : 'Onboarding'}
+                      </p>
+                      <p className="font-display text-ink mt-1 text-lg font-bold text-balance">
+                        {data.onboarding.nextAction ?? 'You are all caught up'}
+                      </p>
+                    </div>
+                    {carryOn ? (
+                      <Badge tone="neutral">
+                        {waitingItems} {waitingItems === 1 ? 'item' : 'items'} waiting
+                      </Badge>
+                    ) : data.onboarding.state === 'blocked' ? (
+                      <Badge tone="warning">Waiting</Badge>
+                    ) : data.onboarding.state === 'overdue' ? (
+                      <Badge tone="danger">Overdue</Badge>
+                    ) : data.onboarding.state === 'completed' ? (
+                      <Badge tone="success">Complete</Badge>
+                    ) : null}
                   </div>
-                  {data.onboarding.state === 'blocked' ? (
-                    <Badge tone="warning">Waiting</Badge>
-                  ) : data.onboarding.state === 'overdue' ? (
-                    <Badge tone="danger">Overdue</Badge>
-                  ) : data.onboarding.state === 'completed' ? (
-                    <Badge tone="success">Complete</Badge>
-                  ) : null}
                 </div>
-              </div>
-              <div className="px-5 py-4">
-                <ProgressBar
-                  value={data.onboarding.percentComplete}
-                  label={`${data.onboarding.requiredDone} of ${data.onboarding.requiredTotal} required steps done`}
-                  tone={
-                    data.onboarding.state === 'completed'
-                      ? 'success'
-                      : data.onboarding.state === 'blocked'
-                        ? 'danger'
-                        : 'violet'
-                  }
-                />
-                <Link
-                  href="/my/onboarding"
-                  className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
-                >
-                  Open your onboarding
-                </Link>
-              </div>
-            </Card>
+                <div className="px-5 py-4">
+                  <ProgressBar
+                    value={data.onboarding.percentComplete}
+                    label={`${data.onboarding.requiredDone} of ${data.onboarding.requiredTotal} required steps done`}
+                    tone={
+                      data.onboarding.state === 'completed'
+                        ? 'success'
+                        : data.onboarding.state === 'blocked' && !carryOn
+                          ? 'danger'
+                          : 'violet'
+                    }
+                  />
+                  {carryOn ? (
+                    <p className="text-muted mt-2 text-sm">
+                      {waitingItems === 1
+                        ? '1 other item is waiting on someone else.'
+                        : `${waitingItems} other items are waiting on someone else.`}{' '}
+                      You can carry on with this in the meantime.
+                    </p>
+                  ) : null}
+                  {onboardingLesson ? (
+                    <>
+                      <Link
+                        href={onboardingLesson.href}
+                        className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+                      >
+                        Continue {onboardingLesson.courseTitle}
+                      </Link>
+                      <Link
+                        href="/my/onboarding"
+                        className="rounded-control border-line-strong text-ink hover:bg-sunk mt-2 inline-flex min-h-11 w-full items-center justify-center border bg-white px-4 text-sm font-medium"
+                      >
+                        Open your onboarding
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      href="/my/onboarding"
+                      className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+                    >
+                      Open your onboarding
+                    </Link>
+                  )}
+                </div>
+              </Card>
+            </div>
           ) : null}
+
+          <TrainingCard
+            training={data.training}
+            onboardingAssignmentId={onboardingLesson?.assignmentId ?? null}
+          />
 
           {attentionCredentials.length > 0 ? (
             <Card>
@@ -188,7 +252,7 @@ export default async function MyWorkPage() {
                     </span>
                     <Badge tone={credential.expiryState === 'expired' ? 'danger' : 'warning'}>
                       {credential.expiryState === 'expired'
-                        ? `Expired ${credential.expiresOn}`
+                        ? `Expired ${formatCalendarDate(credential.expiresOn!)}`
                         : `${credential.daysUntilExpiry} days`}
                     </Badge>
                   </li>
@@ -250,16 +314,6 @@ export default async function MyWorkPage() {
                 </Link>
               </div>
             ) : null}
-          </Card>
-
-          <Card className="border-dashed bg-transparent">
-            <div className="p-5">
-              <h2 className="font-display text-ink text-sm font-bold">Coming in later slices</h2>
-              <p className="text-muted mt-1.5 text-sm">
-                The training that is due and today&rsquo;s responsibilities will appear here. They
-                are not built yet, so nothing on this screen pretends to show them.
-              </p>
-            </div>
           </Card>
         </div>
       </main>
@@ -333,6 +387,78 @@ function InboxCallout({
           {digest.acknowledgementsDue > 0 ? 'Read and confirm' : 'Read it'}
         </Link>
       </div>
+    </Card>
+  )
+}
+
+/**
+ * Training on the home screen: the one lesson to do next, and the tally.
+ * The full picture is a tap away, under Training.
+ */
+function TrainingCard({
+  training,
+  onboardingAssignmentId,
+}: {
+  training: MyTraining
+  /** The course onboarding already points at, so it is not offered twice. */
+  onboardingAssignmentId: string | null
+}) {
+  const { overview } = training
+  const upNext =
+    overview.upNext && overview.upNext.id !== onboardingAssignmentId
+      ? overview.upNext
+      : (overview.active.find((a) => a.progress.next && a.id !== onboardingAssignmentId) ?? null)
+  const lesson = upNext?.progress.next ?? null
+  const due = upNext ? dueLabel(upNext.dueOn, upNext.due) : null
+  const active = overview.active.length
+  const completed = overview.completed.length
+
+  const description =
+    active > 0
+      ? `${active} to finish · ${completed} completed`
+      : completed > 0
+        ? `All caught up · ${completed} completed`
+        : 'Nothing assigned to you yet.'
+
+  return (
+    <Card>
+      <CardHeader
+        title="Your training"
+        description={description}
+        action={
+          <Link
+            href="/my/training"
+            className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
+          >
+            Open training
+          </Link>
+        }
+      />
+      {upNext && lesson ? (
+        <div className="p-5 pt-4">
+          <p className="text-muted text-xs font-semibold tracking-wide uppercase">Next up</p>
+          <Link href={`/my/training/${upNext.id}/lessons/${lesson.id}`} className="mt-1 block">
+            <span className="text-ink block font-medium">{lesson.title}</span>
+            <span className="text-muted block text-sm">
+              {upNext.courseTitle}
+              {due ? ` · ${due}` : ''}
+            </span>
+          </Link>
+          <ProgressBar
+            className="mt-3"
+            value={upNext.progress.percent}
+            label={`${upNext.progress.completed} of ${upNext.progress.total} lessons done`}
+          />
+        </div>
+      ) : onboardingAssignmentId ? (
+        <p className="text-muted p-5 pt-4 text-sm">
+          Your next lesson is part of your onboarding, above.
+        </p>
+      ) : active > 0 ? (
+        <p className="text-muted p-5 pt-4 text-sm">
+          Waiting for a manager to sign off your practical. Nothing else to do right now.
+        </p>
+      ) : null}
     </Card>
   )
 }
