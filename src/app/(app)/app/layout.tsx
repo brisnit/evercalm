@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { Badge, Logo } from '@/ui/primitives'
@@ -27,9 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="bg-canvas flex min-h-screen flex-col">
-      <Suspense fallback={null}>
-        <NavigationProgress />
-      </Suspense>
+      <NavigationProgress />
       <header className="border-line border-b bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center gap-x-4 px-5 py-2.5">
           <Link href="/app" aria-label="EverCalm overview" className="shrink-0">

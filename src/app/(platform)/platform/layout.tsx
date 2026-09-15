@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { AppNav } from '@/ui/patterns/app-nav'
 import { NavigationProgress } from '@/ui/patterns/navigation-progress'
 import { PLATFORM_ROLE_LABELS, requirePlatformStaff } from '@/server/auth/platform-staff'
@@ -21,9 +20,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
   const staff = await requirePlatformStaff('directory')
   return (
     <div className="bg-canvas flex min-h-screen flex-col">
-      <Suspense fallback={null}>
-        <NavigationProgress />
-      </Suspense>
+      <NavigationProgress />
       <header className="border-line border-b bg-white">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3">
           <Link href="/platform" aria-label="EverCalm team home" className="shrink-0">

@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 /**
@@ -8,16 +8,20 @@ import { useEffect, useState } from 'react'
  * way. Pages here are rendered on the server, so without it a slow query
  * looks like a click that did nothing.
  *
- * Starts on a same-origin link click and stops when the URL changes. Purely
- * visual (aria-hidden): each route's loading skeleton announces loading to
- * assistive technology. Reduced motion shows a still bar.
+ * Deliberately reads neither search params nor anything else that needs a
+ * Suspense boundary: a boundary in a layout makes every page below it stream,
+ * and a streamed response is committed to 200 before a page can answer 404 -
+ * which would turn another tenant's record into a soft 404.
+ *
+ * Starts on a same-origin link click; stops when the address changes (checked
+ * cheaply while it runs) or after a few seconds. Purely visual (aria-hidden).
+ * Reduced motion shows a still bar.
  */
 export function NavigationProgress() {
   const pathname = usePathname()
-  const search = useSearchParams()
   const [active, setActive] = useState(false)
 
-  useEffect(() => setActive(false), [pathname, search])
+  useEffect(() => setActive(false), [pathname])
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -34,6 +38,19 @@ export function NavigationProgress() {
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
   }, [])
+
+  useEffect(() => {
+    if (!active) return
+    const started = window.location.href
+    const poll = window.setInterval(() => {
+      if (window.location.href !== started) setActive(false)
+    }, 120)
+    const giveUp = window.setTimeout(() => setActive(false), 8000)
+    return () => {
+      window.clearInterval(poll)
+      window.clearTimeout(giveUp)
+    }
+  }, [active])
 
   if (!active) return null
   return (
