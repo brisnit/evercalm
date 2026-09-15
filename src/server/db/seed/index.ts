@@ -108,12 +108,20 @@ function resolveSeedAudience(
   return [...included]
 }
 
-export async function seedAll(db: SeedDb): Promise<SeedSummary> {
+export interface SeedOptions {
+  /**
+   * The password for one seeded account. Defaults to the shared development
+   * password; the stakeholder demo passes a unique generated one per account.
+   */
+  passwordFor?: (email: string) => string
+}
+
+export async function seedAll(db: SeedDb, options: SeedOptions = {}): Promise<SeedSummary> {
   const summary: SeedSummary = { organizations: [] }
   // EverCalm staff first: they have no employment, and seeded cases name them.
-  await seedPlatformStaff(db)
+  await seedPlatformStaff(db, options)
   for (const org of SEED_ORGANIZATIONS) {
-    summary.organizations.push(await seedOrganization(db, org))
+    summary.organizations.push(await seedOrganization(db, org, options))
   }
   await seedWorkerRuns(db)
   return summary
@@ -149,6 +157,7 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
 async function seedOrganization(
   db: SeedDb,
   seed: SeedOrganization,
+  options: SeedOptions = {},
 ): Promise<SeedOrganizationSummary> {
   const existing = await db
     .select({ id: schema.organizations.id })
@@ -468,7 +477,7 @@ async function seedOrganization(
   }
 
   // --- people --------------------------------------------------------------
-  const passwordHash = await argon2Hash(SEED_PASSWORD, ARGON2_OPTIONS)
+  const sharedHash = options.passwordFor ? null : await argon2Hash(SEED_PASSWORD, ARGON2_OPTIONS)
   const employmentIds = new Map<string, string>()
   let grantCount = 0
   let credentialCount = 0
@@ -496,7 +505,8 @@ async function seedOrganization(
         accountId: userId,
         providerId: 'credential',
         userId,
-        password: passwordHash,
+        password:
+          sharedHash ?? (await argon2Hash(options.passwordFor!(person.email), ARGON2_OPTIONS)),
       })
     }
 

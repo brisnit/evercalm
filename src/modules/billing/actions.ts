@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { readString } from '@/lib/form'
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors'
@@ -50,6 +51,8 @@ export async function updateBillingContactAction(
   _p: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   return run(
     (tx, actor) =>
       updateBillingContact(tx, actor, {
@@ -62,6 +65,8 @@ export async function updateBillingContactAction(
 }
 
 export async function changePlanAction(_p: ActionState, formData: FormData): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   return run(
     (tx, actor) => changePlan(tx, actor, readString(formData, 'plan')),
     'Plan updated. Nothing is charged: payments are not connected yet.',
@@ -70,6 +75,8 @@ export async function changePlanAction(_p: ActionState, formData: FormData): Pro
 }
 
 export async function requestCancellationAction(_p: ActionState): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   return run(
     (tx, actor) => requestCancellation(tx, actor),
     'Cancellation requested. Everything keeps working until the date shown.',
@@ -78,6 +85,8 @@ export async function requestCancellationAction(_p: ActionState): Promise<Action
 }
 
 export async function withdrawCancellationAction(_p: ActionState): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   return run(
     (tx, actor) => withdrawCancellation(tx, actor),
     'Cancellation withdrawn.',

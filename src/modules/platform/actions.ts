@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -54,6 +55,8 @@ export async function retryDeliveriesAction(
   _p: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const staff = await requirePlatformStaff('retry_deliveries')
   const organizationId = readString(formData, 'organizationId')
   const reason = readString(formData, 'reason').trim()
@@ -132,6 +135,8 @@ export async function setSubscriptionStatusAction(
   _p: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const staff = await requirePlatformStaff('set_subscription_status')
   const organizationId = readString(formData, 'organizationId')
   const status = readString(formData, 'status')

@@ -68,6 +68,26 @@ describe('environment', () => {
   })
 })
 
+describe('stakeholder demo environment', () => {
+  const production = {
+    NODE_ENV: 'production',
+    BILLING_PROVIDER: 'manual',
+  }
+
+  it('allows email to be switched off explicitly in production, and still refuses the console stub', () => {
+    expect(envWith({ ...production, EMAIL_PROVIDER: 'disabled' })().EMAIL_PROVIDER).toBe('disabled')
+    expect(envWith({ ...production, EMAIL_PROVIDER: 'console' })).toThrow(/EMAIL_PROVIDER/)
+  })
+
+  it('recognises only the stakeholder-demo environment label', () => {
+    expect(envWith({ EVERCALM_ENVIRONMENT: 'stakeholder-demo' })().EVERCALM_ENVIRONMENT).toBe(
+      'stakeholder-demo',
+    )
+    expect(envWith({})().EVERCALM_ENVIRONMENT).toBeUndefined()
+    expect(envWith({ EVERCALM_ENVIRONMENT: 'production' })).toThrow(/EVERCALM_ENVIRONMENT/)
+  })
+})
+
 describe('database pool', () => {
   it('stays small and lets idle serverless instances go', () => {
     expect(poolSettings(undefined, true)).toEqual({

@@ -44,7 +44,14 @@ const serverSchema = z
 
     BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
 
-    EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
+    /**
+     * console   development only: logged, never sent. Refused in production.
+     * resend    real delivery; needs RESEND_API_KEY and a verified EMAIL_FROM.
+     * disabled  an explicit choice to send no email at all: email
+     *           notifications are not created, invitations are handed over by
+     *           an operator, and password-reset email is unavailable.
+     */
+    EMAIL_PROVIDER: z.enum(['console', 'resend', 'disabled']).default('console'),
     EMAIL_FROM: z.string().min(1).default('EverCalm <no-reply@example.invalid>'),
     RESEND_API_KEY: z.string().optional(),
 
@@ -68,6 +75,14 @@ const serverSchema = z
     CRON_SECRET: z.string().min(32, 'CRON_SECRET must be at least 32 characters').optional(),
 
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+
+    /**
+     * Set only on the stakeholder-demo deployment. Labels every page
+     * "Stakeholder Demo" and switches off destructive and externally
+     * consequential actions. Unset everywhere else, including customer
+     * production.
+     */
+    EVERCALM_ENVIRONMENT: z.enum(['stakeholder-demo']).optional(),
   })
   .superRefine((v, ctx) => {
     if (v.EMAIL_PROVIDER === 'resend' && !isRealSender(v.EMAIL_FROM)) {

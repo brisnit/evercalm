@@ -6,6 +6,7 @@ production system yet. Each runbook says what must exist first.
 
 | Runbook                                                   | When you need it                                           |
 | --------------------------------------------------------- | ---------------------------------------------------------- |
+| [Stakeholder demo](stakeholder-demo.md)                   | Resetting or explaining the public demo                    |
 | [Production readiness](production-readiness.md)           | Before the first real customer: what is not yet configured |
 | [Launch checklist](launch-checklist.md)                   | Security, privacy and abuse protection, item by item       |
 | [Provisioning an organization](provision-organization.md) | Creating a pilot customer's workspace in production        |

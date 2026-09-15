@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 import { ValidationError } from '@/lib/errors'
@@ -43,6 +44,8 @@ export async function acceptInvitationAction(
   _previous: AcceptState,
   formData: FormData,
 ): Promise<AcceptState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const parsed = acceptSchema.safeParse({
     token: formData.get('token'),
     password: formData.get('password'),

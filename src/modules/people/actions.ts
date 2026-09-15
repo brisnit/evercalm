@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { readString } from '@/lib/form'
@@ -171,6 +172,8 @@ export async function changeEmploymentStatusAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const parsed = statusSchema.safeParse({
     employmentId: formData.get('employmentId'),
     status: formData.get('status'),
@@ -212,6 +215,8 @@ export async function grantRoleAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const parsed = grantSchema.safeParse({
     employmentId: formData.get('employmentId'),
     roleKey: formData.get('roleKey'),
@@ -243,6 +248,8 @@ export async function revokeRoleAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const employmentId = readString(formData, 'employmentId', '')
   const grantId = readString(formData, 'grantId', '')
   return run(
@@ -331,6 +338,8 @@ export async function requestSeparationAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const expected = readString(formData, 'expectedConfirmation', '')
   const parsed = separationSchema.safeParse({
     employmentId: formData.get('employmentId'),
@@ -375,6 +384,8 @@ export async function separationDecisionAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const employmentId = readString(formData, 'employmentId', '')
   const separationId = readString(formData, 'separationId', '')
   const intent = readString(formData, 'intent', '')

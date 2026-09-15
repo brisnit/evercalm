@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { ForbiddenError } from '@/lib/errors'
 import { withTenant } from '@/server/db'
@@ -8,6 +9,8 @@ import type { ActionState } from '@/modules/people/actions'
 import { retryFailedNotifications } from './service'
 
 export async function retryFailedNotificationsAction(_p: ActionState): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const { actor } = await requireActorContext()
   try {
     const n = await withTenant(actor.organizationId, (tx) => retryFailedNotifications(tx, actor))

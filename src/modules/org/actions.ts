@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { ForbiddenError, ValidationError } from '@/lib/errors'
 import { withTenant } from '@/server/db'
@@ -25,6 +26,8 @@ export async function createLocationAction(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const { actor } = await requireActorContext()
 
   const parsed = createLocationSchema.safeParse({

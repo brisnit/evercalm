@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
+import { isStakeholderDemo } from '@/server/demo'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -39,12 +40,22 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const demo = isStakeholderDemo()
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable} ${fraunces.variable}`}>
       <body>
         <a href="#main" className="skip-link">
           Skip to main content
         </a>
+        {demo ? (
+          <div
+            role="note"
+            className="bg-ink relative z-50 px-4 py-1.5 text-center text-xs font-medium text-white"
+          >
+            <span className="font-semibold">Stakeholder Demo</span> · Fictional organizations and
+            people. No email is sent and no payments are taken.
+          </div>
+        ) : null}
         {children}
       </body>
     </html>

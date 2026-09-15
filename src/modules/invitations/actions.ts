@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { readString } from '@/lib/form'
@@ -48,6 +49,8 @@ export async function sendInvitationAction(
   _previous: InviteActionState,
   formData: FormData,
 ): Promise<InviteActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const { actor } = await requireActorContext()
 
   const parsed = inviteSchema.safeParse({
@@ -132,6 +135,8 @@ export async function invitationLifecycleAction(
   _previous: InviteActionState,
   formData: FormData,
 ): Promise<InviteActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const { actor } = await requireActorContext()
   const invitationId = readString(formData, 'invitationId', '')
   const intent = readString(formData, 'intent', '')

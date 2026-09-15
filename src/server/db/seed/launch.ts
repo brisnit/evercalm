@@ -383,8 +383,11 @@ export async function seedBillingAndSupport(
 }
 
 /** EverCalm staff accounts. Run BEFORE organizations, so cases can name an assignee. */
-export async function seedPlatformStaff(db: SeedDb): Promise<number> {
-  const passwordHash = await argon2Hash(SEED_PASSWORD, ARGON2_OPTIONS)
+export async function seedPlatformStaff(
+  db: SeedDb,
+  options: { passwordFor?: (email: string) => string } = {},
+): Promise<number> {
+  const sharedHash = options.passwordFor ? null : await argon2Hash(SEED_PASSWORD, ARGON2_OPTIONS)
   for (const staff of SEED_STAFF) {
     const [existing] = await db
       .select({ id: schema.users.id })
@@ -402,7 +405,8 @@ export async function seedPlatformStaff(db: SeedDb): Promise<number> {
         accountId: userId,
         providerId: 'credential',
         userId,
-        password: passwordHash,
+        password:
+          sharedHash ?? (await argon2Hash(options.passwordFor!(staff.email), ARGON2_OPTIONS)),
       })
     }
     await db

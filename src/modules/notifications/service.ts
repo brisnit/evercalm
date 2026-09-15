@@ -1,3 +1,4 @@
+import { getEnv } from '@/lib/env'
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Tx } from '@/server/db/types'
 import type { Actor } from '@/server/authz/actor'
@@ -211,6 +212,11 @@ export async function enqueue(
   now = new Date(),
 ): Promise<EnqueueOutcome> {
   const outcome: EnqueueOutcome = { created: 0, suppressed: 0, delayed: 0, duplicates: 0 }
+  // With email switched off for the deployment, email deliveries are never
+  // queued, so nothing reports as "could not deliver". In-app is unaffected.
+  if (getEnv().EMAIL_PROVIDER === 'disabled') {
+    inputs = inputs.filter((input) => input.channel !== 'email')
+  }
   if (inputs.length === 0) return outcome
 
   const profiles = await loadDeliveryProfiles(tx, organizationId, [

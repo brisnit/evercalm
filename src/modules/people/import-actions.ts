@@ -1,5 +1,6 @@
 'use server'
 
+import { demoRestriction } from '@/server/demo'
 import { revalidatePath } from 'next/cache'
 import { getEnv } from '@/lib/env'
 import { readString } from '@/lib/form'
@@ -122,6 +123,8 @@ export async function confirmImportAction(
   _previous: ImportActionState,
   formData: FormData,
 ): Promise<ImportActionState> {
+  const restricted = demoRestriction()
+  if (restricted) return restricted
   const { actor } = await requireActorContext()
   const csvText = readString(formData, 'csvText')
   const sendInvitations = readString(formData, 'sendInvitations') === 'on'

@@ -1,5 +1,6 @@
 import { getEnv } from '@/lib/env'
 import { ConsoleEmailProvider } from './console-provider'
+import { DisabledEmailProvider } from './disabled-provider'
 import { ResendEmailProvider } from './resend-provider'
 import type { EmailProvider } from './provider'
 
@@ -19,6 +20,11 @@ export function emailProvider(): EmailProvider {
     case 'resend':
       // The environment check guarantees a key and a real sender here.
       cached = new ResendEmailProvider({ apiKey: env.RESEND_API_KEY!, from: env.EMAIL_FROM })
+      return cached
+    case 'disabled':
+      // No email notifications are created when email is disabled (see
+      // notifications enqueue); anything that still asks refuses loudly.
+      cached = new DisabledEmailProvider()
       return cached
   }
 }

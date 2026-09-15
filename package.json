@@ -36,6 +36,7 @@
     "secrets:scan": "tsx scripts/secret-scan.ts",
     "db:refresh": "tsx scripts/refresh-data.ts",
     "provision:organization": "tsx scripts/provision-organization.ts",
+    "demo:environment": "tsx scripts/demo-environment.ts",
     "test:e2e:only": "E2E_SKIP_REFRESH=true playwright test"
   },
   "dependencies": {
