@@ -82,10 +82,15 @@ export const CAPABILITIES = def({
   },
   'billing.manage': {
     label: 'Manage billing',
-    description: 'Subscription and payment settings.',
+    description: 'Subscription, plan, billing contact and cancellation.',
     group: 'organization',
     locationScopable: false,
-    plannedSlice: 7,
+  },
+  'support.manage': {
+    label: 'Contact EverCalm support',
+    description: 'Open support cases for the organization and follow their replies.',
+    group: 'organization',
+    locationScopable: false,
   },
 
   // --- people --------------------------------------------------------------
@@ -393,24 +398,33 @@ export const CAPABILITIES = def({
   // --- reporting -----------------------------------------------------------
   'report.operations': {
     label: 'Operations reporting',
-    description: 'Coverage and checklist completion.',
+    description: 'Schedule coverage, requests, and shift work completion.',
     group: 'reporting',
     locationScopable: true,
-    plannedSlice: 7,
   },
   'report.training': {
     label: 'Training reporting',
     description: 'Completion, readiness, and overdue training.',
     group: 'reporting',
     locationScopable: true,
-    plannedSlice: 7,
   },
   'report.people': {
     label: 'People reporting',
-    description: 'Headcount, onboarding funnel, and status.',
+    description: 'Onboarding progress, credentials, acknowledgements and employment changes.',
     group: 'reporting',
-    locationScopable: false,
-    plannedSlice: 7,
+    locationScopable: true,
+  },
+  'report.communications': {
+    label: 'Communication reporting',
+    description: 'What was sent, read, confirmed, overdue and undelivered.',
+    group: 'reporting',
+    locationScopable: true,
+  },
+  'report.export': {
+    label: 'Export reports',
+    description: 'Download the reports you can see as spreadsheets.',
+    group: 'reporting',
+    locationScopable: true,
   },
 })
 

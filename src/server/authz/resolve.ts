@@ -12,6 +12,8 @@ import { isCapability, type Capability } from './capabilities'
 import { isLocationScopable } from './capabilities'
 import type { Actor, ResolvedGrant } from './actor'
 import type { GrantScope } from './role-presets'
+import { capabilitiesFor } from '@/modules/billing/policy'
+import { organizationAccessMode } from '@/modules/billing/service'
 
 /**
  * Resolve an Actor: one person's effective permissions inside one tenant.
@@ -104,9 +106,12 @@ export async function resolveActor(
     entry.caps.add(cap)
   }
 
+  // A suspended or canceled subscription leaves administration read-only.
+  // Self-access needs no capability, so employees keep their own records.
+  const accessMode = await organizationAccessMode(tx, organizationId)
   const grants: ResolvedGrant[] = [...byGrant.values()].map((e) => ({
     ...e.meta,
-    capabilities: e.caps,
+    capabilities: capabilitiesFor(e.caps, accessMode),
   }))
 
   const locationRows = await tx
@@ -126,6 +131,7 @@ export async function resolveActor(
     displayName: employment.displayName,
     grants,
     locationIds: locationRows.map((r) => r.locationId),
+    accessMode,
   }
 }
 

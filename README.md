@@ -6,7 +6,7 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slices 1–5 approved. Slice 6 built and awaiting review.**
+**Status: Slices 1–6 approved. Slice 7 built and awaiting review.**
 
 - **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
   locations, capability permissions with location scope, three-layer tenant
@@ -61,9 +61,28 @@ businesses.
   location handoffs with acknowledgement and resolution. Restaurant and salon
   demo days.
 
+- **Slice 7 — Reporting, billing foundation, support and launch readiness.**
+  Five reports (people and compliance, training, schedule and coverage, shift
+  operations, communication) built on exceptions rather than charts, with
+  location, department, job role and date filters, every figure linked to
+  the records behind it, and permission-controlled, audited, formula-safe CSV
+  exports. A subscription model with trial, active, past-due, suspended and
+  canceled states, an immutable billing history, owner Billing screens and a
+  development-only mock provider behind a provider interface - **no payments
+  are connected**. Customer support cases, and a separate EverCalm team
+  dashboard with an organization directory, audited diagnostics and a support
+  queue, with **no impersonation**. Owner-facing system status, readiness
+  checks, recorded worker runs, safe retries, and operational runbooks.
+
 Two-way messaging is
 deliberately absent: the architecture supports it, and no half-built chat is
 exposed.
+
+## Before production
+
+Nothing is deployed, and email delivery, payments, production scheduling and
+self-service signup are not configured. [docs/runbooks](docs/runbooks/README.md)
+lists exactly what each needs.
 
 ## Quick start
 

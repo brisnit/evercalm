@@ -1,0 +1,128 @@
+import { readFile } from 'node:fs/promises'
+import AxeBuilder from '@axe-core/playwright'
+import { expect, test, type Page } from '@playwright/test'
+import { PEOPLE, expectNoConsoleErrors, signIn, trackConsoleErrors } from './helpers'
+
+/**
+ * The customer owner's side of Slice 7: reports and exports, billing, system
+ * status and support - and the boundaries around each. Runs on desktop and
+ * phone; every test leaves things as it found them or creates its own rows.
+ */
+
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+
+async function expectFitsAndAccessible(page: Page, path: string) {
+  const { scrollWidth, viewport } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+  }))
+  expect(scrollWidth, `${path} scrolls sideways`).toBeLessThanOrEqual(viewport + 1)
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
+  expect(results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`)).toEqual([])
+}
+
+test('an owner reads reports, follows a figure, and downloads a safe CSV', async ({ page }) => {
+  const errors = trackConsoleErrors(page)
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/reports')
+  await expect(page.getByRole('heading', { name: 'Reports', level: 1 })).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/reports')
+
+  await page.getByRole('link', { name: 'Open report' }).nth(3).click()
+  await expect(page.getByRole('heading', { name: 'Shift operations', level: 1 })).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/reports/operations')
+
+  await page.getByLabel('Location').selectOption({ label: 'Riverside' })
+  await page.getByRole('button', { name: 'Apply' }).click()
+  await expect(page).toHaveURL(/location=/)
+
+  const table = page.locator('section', { has: page.locator('#templates') })
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    table.getByRole('link', { name: /Download CSV/ }).click(),
+  ])
+  expect(download.suggestedFilename()).toMatch(/^evercalm-operations-templates-.*\.csv$/)
+  const csv = await readFile(await download.path(), 'utf8')
+  expect(csv.split('\r\n')[0]).toContain('Template,Tasks,Done,Skipped,Blocked')
+  expect(csv).not.toMatch(UUID)
+  expectNoConsoleErrors(errors)
+})
+
+test('a location manager reports on their own location only', async ({ page }) => {
+  // The owner can see Downtown's id; the Riverside manager must not be able to use it.
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/reports/schedule')
+  const downtown = await page
+    .getByLabel('Location')
+    .locator('option', { hasText: 'Downtown' })
+    .getAttribute('value')
+  expect(downtown).toBeTruthy()
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  await page.goto('/app/reports/schedule')
+  const options = await page.getByLabel('Location').locator('option').allTextContents()
+  expect(options).toEqual(['All of yours', 'Riverside'])
+
+  expect((await page.goto(`/app/reports/schedule?location=${downtown}`))?.status()).toBe(404)
+  const response = await page.request.get(
+    `/app/reports/schedule/export?table=coverage&location=${downtown}`,
+  )
+  expect(response.status()).toBe(404)
+})
+
+test('an owner sees billing honestly, and the status follows provider events', async ({ page }) => {
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/settings/billing')
+  await expect(page.getByText('Payments are not connected.')).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/settings/billing')
+
+  const simulate = page.locator('section', { hasText: 'Development: simulate the provider' })
+  await simulate.getByRole('button', { name: 'Payment failed' }).click()
+  await expect(page.getByTestId('action-notice')).toContainText('Simulated')
+  await page.reload()
+  await expect(page.getByRole('status').filter({ hasText: 'Payment is overdue' })).toBeVisible()
+
+  await page
+    .locator('section', { hasText: 'Development: simulate the provider' })
+    .getByRole('button', { name: 'Payment succeeded' })
+    .click()
+  await expect(page.getByTestId('action-notice')).toContainText('Simulated')
+  await page.reload()
+  await expect(page.getByRole('status').filter({ hasText: 'Payment is overdue' })).toHaveCount(0)
+  await expect(page.getByText('Payment failed').first()).toBeVisible()
+})
+
+test('an owner checks system status and opens a support case', async ({ page }) => {
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/settings/status')
+  await expect(page.getByRole('heading', { name: 'Background work' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Notification delivery' })).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/settings/status')
+
+  await page.goto('/app/support/new')
+  await expectFitsAndAccessible(page, '/app/support/new')
+  const subject = `Reminder arrived late ${Math.random().toString(36).slice(2, 6)}`
+  await page.getByLabel('What is it about').selectOption({ label: 'Something is not working' })
+  await page.getByLabel('In a few words').fill(subject)
+  await page
+    .getByLabel('What happened')
+    .fill('The pre-shift reminder for Sam arrived after his shift had started.')
+  await page.getByRole('button', { name: 'Open case' }).click()
+  await expect(page.getByRole('heading', { name: subject })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'is open' })).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/support/[caseId]')
+
+  await page.goto('/app/support')
+  await expect(page.getByRole('link', { name: subject })).toBeVisible()
+})
+
+test('customers never reach the EverCalm team dashboard', async ({ page }) => {
+  await signIn(page, PEOPLE.harborOwner.email)
+  expect((await page.goto('/platform'))?.status()).toBe(404)
+  expect((await page.goto('/platform/support'))?.status()).toBe(404)
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.harborEmployee.email)
+  expect((await page.goto('/platform'))?.status()).toBe(404)
+})

@@ -406,10 +406,10 @@ function Hero() {
 
           <div data-testid="hero-actions" className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/signin"
+              href="/contact"
               className="bg-accent hover:bg-accent-strong inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold text-white"
             >
-              Start free
+              Ask about a pilot
               <Icon name="arrow" className="h-4 w-4" />
             </Link>
             <Link
@@ -425,7 +425,7 @@ function Hero() {
             className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[0.8125rem]"
           >
             <span>
-              <strong className="text-deep font-semibold">Free</strong> for your first location
+              <strong className="text-deep font-semibold">Pilot</strong> pricing agreed with you
             </span>
             <span>
               <strong className="text-deep font-semibold">14 min</strong> to import a roster
@@ -859,15 +859,15 @@ function FinalCta() {
             Give every shift the same answer.
           </h2>
           <p className="mx-auto mt-4 max-w-[38rem] text-[0.9375rem] leading-[1.7] text-white/85">
-            Set up your first location free. Import a roster, publish a week, and let your team see
-            what’s happening, what’s expected, what they’ve finished, and what comes next.
+            Pilot businesses are set up with our team. Import a roster, publish a week, and let your
+            team see what’s happening, what’s expected, what they’ve finished, and what comes next.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href="/signin"
+              href="/contact"
               className="text-deep inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-semibold hover:bg-white/90"
             >
-              Start free
+              Ask about a pilot
               <Icon name="arrow" className="h-4 w-4" />
             </Link>
             <Link
@@ -878,7 +878,8 @@ function FinalCta() {
             </Link>
           </div>
           <p className="mt-6 text-[0.8125rem] text-white/75">
-            No credit card · Cancel anytime · Your data exports whenever you ask
+            Pricing agreed with each pilot · No card taken online · Your data exports whenever you
+            ask
           </p>
         </div>
       </Container>

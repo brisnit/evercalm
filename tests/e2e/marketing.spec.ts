@@ -17,7 +17,12 @@ test('the home page renders and offers real calls to action', async ({ page }) =
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Everyone walks')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('What’s next.')
-  await expect(page.getByRole('link', { name: 'Start free' }).first()).toBeVisible()
+  // No self-service signup exists yet, so no call to action may suggest one.
+  await expect(page.getByRole('link', { name: 'Ask about a pilot' }).first()).toHaveAttribute(
+    'href',
+    '/contact',
+  )
+  await expect(page.getByRole('link', { name: /start free|sign up|free trial/i })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Book a 20-minute walkthrough' })).toBeVisible()
 
   expectNoConsoleErrors(errors)

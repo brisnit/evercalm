@@ -27,6 +27,12 @@ export interface Actor {
   readonly grants: readonly ResolvedGrant[]
   /** Locations this person is assigned to, independent of permissions. */
   readonly locationIds: readonly string[]
+  /**
+   * What the organization's subscription allows. Read-only removes every
+   * capability that changes something; see modules/billing/policy.ts.
+   * Absent means full access.
+   */
+  readonly accessMode?: 'full' | 'grace' | 'read_only'
 }
 
 /** A system actor for background jobs. Used for attribution, never to skip checks. */

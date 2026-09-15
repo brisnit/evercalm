@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from './index'
+import { getPlatformStaff } from './platform-staff'
 import { withTenant } from '@/server/db'
 import { withGlobal } from '@/server/db/global'
 import { listMemberships, resolveActor, type Membership } from '@/server/authz/resolve'
@@ -75,7 +76,13 @@ export const getActorContext = cache(async (): Promise<ActorContext | null> => {
 /** Redirects to sign-in when there is no usable session. */
 export async function requireActorContext(): Promise<ActorContext> {
   const context = await getActorContext()
-  if (!context) redirect('/signin')
+  if (!context) {
+    // EverCalm staff have no employment anywhere; their home is the team
+    // dashboard, not a sign-in loop.
+    const user = await getSessionUser()
+    if (user && (await getPlatformStaff(user.id))) redirect('/platform')
+    redirect('/signin')
+  }
   return context
 }
 

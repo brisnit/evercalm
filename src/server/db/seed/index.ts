@@ -11,6 +11,7 @@ import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data
 import { seedScheduling } from './scheduling'
 import { linkSeededOnboardingTraining, seedTraining } from './training'
 import { seedOperations } from './operations'
+import { seedBillingAndSupport, seedPlatformStaff, seedWorkerRuns } from './launch'
 
 /**
  * Idempotent seed.
@@ -109,9 +110,12 @@ function resolveSeedAudience(
 
 export async function seedAll(db: SeedDb): Promise<SeedSummary> {
   const summary: SeedSummary = { organizations: [] }
+  // EverCalm staff first: they have no employment, and seeded cases name them.
+  await seedPlatformStaff(db)
   for (const org of SEED_ORGANIZATIONS) {
     summary.organizations.push(await seedOrganization(db, org))
   }
+  await seedWorkerRuns(db)
   return summary
 }
 
@@ -953,6 +957,9 @@ async function seedOrganization(
     employmentIds,
     systemEvent,
   })
+
+  // --- billing, support and delivery history --------------------------------
+  await seedBillingAndSupport(db, { organizationId, slug: seed.slug, employmentIds })
 
   await db.insert(schema.auditEvents).values(audit)
 

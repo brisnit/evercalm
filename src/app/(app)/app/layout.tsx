@@ -4,6 +4,8 @@ import { requireActorContext } from '@/server/auth/session'
 import { Badge, Logo } from '@/ui/primitives'
 import { isEmployeeOnly, visibleNavItems } from './navigation'
 import { SignOutButton } from './sign-out-button'
+import { withTenant } from '@/server/db'
+import { billingBanner } from '@/modules/billing/service'
 
 /**
  * Company administration shell.
@@ -18,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (isEmployeeOnly(actor)) redirect('/my')
 
   const nav = visibleNavItems(actor)
+  const banner = await withTenant(actor.organizationId, (tx) => billingBanner(tx, actor))
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -60,6 +63,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </ul>
         </nav>
       </header>
+
+      {banner ? (
+        <div
+          role="status"
+          className={
+            banner.tone === 'danger'
+              ? 'border-danger/30 bg-danger-soft border-b'
+              : banner.tone === 'warning'
+                ? 'border-warning/30 bg-warning-soft border-b'
+                : 'border-info/25 bg-info-soft border-b'
+          }
+        >
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-2.5 text-sm">
+            <p className="text-ink min-w-0">
+              <span className="font-semibold">{banner.title}.</span> {banner.body}
+            </p>
+            {banner.href ? (
+              <Link
+                href={banner.href}
+                className="text-ink shrink-0 font-medium underline underline-offset-4"
+              >
+                Billing
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         {children}

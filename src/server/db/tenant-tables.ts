@@ -61,6 +61,12 @@ export const RLS_EXEMPT_TABLES: Record<string, string> = {
   session: 'Authentication state, resolved before any organization context exists.',
   account: 'Credential storage bound to a global user.',
   verification: 'Email verification and reset tokens, used pre-authentication.',
+  platform_staff:
+    'EverCalm staff, not customer data. Read-only to the runtime role; used only by the authentication adapter.',
+  support_internal_notes:
+    'EverCalm-internal case notes. The runtime role holds no privileges on it; reached only through staff functions.',
+  worker_runs:
+    'Background worker tick records. Customers see only their own error count, through a function keyed on the tenant setting.',
   evercalm_migrations:
     'Migration bookkeeping owned by the migration role; not part of the Drizzle schema.',
 }

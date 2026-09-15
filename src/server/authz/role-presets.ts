@@ -42,6 +42,7 @@ const OWNER_CAPABILITIES: Capability[] = [
   'org.manage_roles',
   'org.view_audit',
   'billing.manage',
+  'support.manage',
   'people.view',
   'people.view_sensitive',
   'people.invite',
@@ -88,6 +89,8 @@ const OWNER_CAPABILITIES: Capability[] = [
   'report.operations',
   'report.training',
   'report.people',
+  'report.communications',
+  'report.export',
 ]
 
 export const ROLE_PRESETS: Record<RoleKey, RolePreset> = {
@@ -134,6 +137,9 @@ export const ROLE_PRESETS: Record<RoleKey, RolePreset> = {
       'training.view_progress_org',
       'report.training',
       'report.people',
+      'report.communications',
+      'report.export',
+      'support.manage',
     ],
   },
 
@@ -175,8 +181,11 @@ export const ROLE_PRESETS: Record<RoleKey, RolePreset> = {
       'checklist.verify',
       'checklist.reopen',
       'handoff.manage',
+      'report.people',
       'report.operations',
       'report.training',
+      'report.communications',
+      'report.export',
     ],
   },
 
@@ -220,6 +229,7 @@ export const ROLE_PRESETS: Record<RoleKey, RolePreset> = {
       'skill.verify',
       'skill.revoke',
       'report.training',
+      'report.export',
     ],
   },
 

@@ -76,10 +76,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               Sign in
             </Link>
             <Link
-              href="/signin"
+              href="/contact"
               className="bg-accent hover:bg-accent-strong inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
             >
-              Start free
+              Ask about a pilot
             </Link>
           </div>
         </nav>

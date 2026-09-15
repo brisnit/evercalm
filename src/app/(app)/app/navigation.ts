@@ -72,6 +72,12 @@ const ITEMS: NavItem[] = [
   { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
   { href: '/app/training', label: 'Training', requires: TRAINING_CAPABILITIES },
   { href: '/app/operations', label: 'Operations', requires: OPERATIONS_CAPABILITIES },
+  {
+    href: '/app/reports',
+    label: 'Reports',
+    requires: ['report.people', 'report.training', 'report.operations', 'report.communications'],
+  },
+  { href: '/app/support', label: 'Support', requires: 'support.manage' },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
 
@@ -90,6 +96,8 @@ export const SETTINGS_NAV: NavItem[] = [
   { href: '/app/settings/structure', label: 'Structure', requires: 'org.view' },
   { href: '/app/settings/values', label: 'Values & standards', requires: 'org.view' },
   { href: '/app/settings/audit', label: 'Audit log', requires: 'org.view_audit' },
+  { href: '/app/settings/billing', label: 'Billing', requires: 'billing.manage' },
+  { href: '/app/settings/status', label: 'System status', requires: 'org.view' },
 ]
 
 export function visibleSettingsNav(actor: Actor): NavItem[] {

@@ -52,6 +52,8 @@ const GLOBAL_IDENTITY = {
         '**/server/db/full-schema',
         '@/modules/identity/schema',
         '**/modules/identity/schema',
+        '@/server/db/platform-schema',
+        '**/server/db/platform-schema',
       ],
       message:
         'Global identity tables are off-limits to business code. Resolve people through `employments` (tenant-owned, RLS-protected) via @/server/db/schema. See docs/architecture.md.',

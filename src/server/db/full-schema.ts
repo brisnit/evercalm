@@ -11,3 +11,4 @@
  */
 export * from './schema'
 export * from './identity-schema'
+export * from './platform-schema'

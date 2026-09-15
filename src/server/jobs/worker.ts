@@ -11,6 +11,8 @@ import {
 } from '@/modules/comms/service'
 import { processAutomaticReminders } from '@/modules/comms/receipts'
 import { processOperationsReminders } from '@/modules/operations/reminders'
+import { processBillingLifecycle, syncQuantity } from '@/modules/billing/service'
+import { recordWorkerRun } from '@/server/db/platform'
 import {
   claimDueNotifications,
   completeDelivery,
@@ -28,10 +30,14 @@ import {
  *   2. expire published announcements whose time has passed
  *   3. send automatic "due soon" and "overdue" acknowledgement reminders
  *   4. remind people whose shift starts within the hour of the work waiting
- *   5. deliver queued notifications
+ *   5. move subscriptions whose trial, grace period or cancellation is due,
+ *      and keep the active-employee count current
+ *   6. deliver queued notifications
  *
  * In that order, so an announcement published in step 1 has its notifications
- * delivered in step 5 of the SAME tick.
+ * delivered in step 6 of the SAME tick. Every tick is then recorded in
+ * `worker_runs`, so status pages can say when background work last ran and
+ * EverCalm support can see which organizations it failed for.
  *
  * DURABLE. The worker keeps no state of its own. Every decision is a row in
  * PostgreSQL - a status, a stamp, a lease - so stopping it at any instant
@@ -68,9 +74,13 @@ export interface WorkerDeps {
   batchSize?: number
   maxBatches?: number
   leaseMs?: number
+  /** Record the tick in worker_runs. Defaults to on for real ticks. */
+  recordRun?: boolean
+  recordRunImpl?: typeof recordWorkerRun
 }
 
-export type WorkerStep = 'discover' | 'publish' | 'expire' | 'reminders' | 'operations' | 'deliver'
+export type WorkerStep =
+  'discover' | 'publish' | 'expire' | 'reminders' | 'operations' | 'billing' | 'deliver' | 'record'
 
 export interface TickReport {
   startedAt: Date
@@ -83,6 +93,8 @@ export interface TickReport {
   reminded: number
   /** Pre-shift reminders about shift work. */
   shiftReminders: number
+  /** Subscription status changes applied by the billing lifecycle. */
+  billingChanges: number
   sent: number
   retrying: number
   failed: number
@@ -101,6 +113,7 @@ function emptyReport(startedAt: Date): TickReport {
     expired: 0,
     reminded: 0,
     shiftReminders: 0,
+    billingChanges: 0,
     sent: 0,
     retrying: 0,
     failed: 0,
@@ -118,6 +131,7 @@ export function tickDidWork(report: TickReport): boolean {
       report.expired +
       report.reminded +
       report.shiftReminders +
+      report.billingChanges +
       report.sent +
       report.retrying +
       report.failed >
@@ -241,6 +255,14 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
       )
     })
 
+    await step(organizationId, 'billing', async () => {
+      report.billingChanges += await runTenant(organizationId, async (tx) => {
+        const changed = await processBillingLifecycle(tx, organizationId, now)
+        await syncQuantity(tx, organizationId, now)
+        return changed
+      })
+    })
+
     await step(organizationId, 'deliver', async () => {
       for (let batch = 0; batch < maxBatches; batch += 1) {
         // Claim and commit FIRST, so the lease is visible to other workers
@@ -287,6 +309,30 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
   }
 
   report.finishedAt = new Date()
+  // Record the tick for status pages. Only when injected dependencies are not
+  // in use, so unit-style worker tests do not write here, and never fatal.
+  if (deps.recordRun ?? (!deps.runTenant && !deps.dueOrganizations)) {
+    try {
+      await (deps.recordRunImpl ?? recordWorkerRun)({
+        startedAt: report.startedAt,
+        finishedAt: report.finishedAt,
+        organizations: report.organizations,
+        counters: {
+          published: report.published,
+          expired: report.expired,
+          reminded: report.reminded,
+          shiftReminders: report.shiftReminders,
+          billingChanges: report.billingChanges,
+          sent: report.sent,
+          retrying: report.retrying,
+          failed: report.failed,
+        },
+        errors: report.errors,
+      })
+    } catch (error) {
+      log.error({ err: describe(error) }, 'worker run could not be recorded')
+    }
+  }
   return report
 }
 

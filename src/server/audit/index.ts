@@ -158,6 +158,21 @@ export const AUDIT_ACTIONS = {
   HANDOFF_ACKNOWLEDGED: 'handoff.acknowledged',
   HANDOFF_RESOLVED: 'handoff.resolved',
   HANDOFF_REOPENED: 'handoff.reopened',
+  // billing
+  BILLING_CONTACT_UPDATED: 'billing.contact_updated',
+  BILLING_PLAN_CHANGED: 'billing.plan_changed',
+  BILLING_CANCELLATION_REQUESTED: 'billing.cancellation_requested',
+  BILLING_CANCELLATION_WITHDRAWN: 'billing.cancellation_withdrawn',
+  BILLING_PROVIDER_EVENT: 'billing.provider_event',
+  BILLING_STATUS_CHANGED: 'billing.status_changed',
+  BILLING_SIMULATED: 'billing.simulated',
+  // reporting
+  REPORT_EXPORTED: 'report.exported',
+  // support
+  SUPPORT_CASE_CREATED: 'support_case.created',
+  SUPPORT_CASE_CUSTOMER_REPLIED: 'support_case.customer_replied',
+  // reliability
+  NOTIFICATIONS_RETRIED: 'notification.retried',
   // access
   ROLE_GRANTED: 'role_grant.granted',
   ROLE_REVOKED: 'role_grant.revoked',

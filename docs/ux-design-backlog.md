@@ -388,6 +388,62 @@ Safari, which does not focus tapped buttons. **Lesson for the redesign:** the
 employee surface still has no navigation of its own (D4); the account control
 is where that navigation will naturally grow.
 
+## Reporting, billing and support: known gaps (Slice 7)
+
+### R1 · Reports have no charts or trends beyond a weekly table — **Low**
+
+Deliberate: exceptions and lists first. A manager asking "is this getting
+better?" has only the weekly request table and the date filter.
+
+### R2 · Report pages build every table on each load — **Medium**
+
+Fine at pilot size. A year-long range for a large organization will be slow;
+materialised daily aggregates would be the fix.
+
+### R3 · The people report cannot filter invitations by department or role — **Low**
+
+Invitations have no role until accepted; the table says so when a role filter
+is active.
+
+### R4 · No full data export — **Medium**
+
+CSV exports cover report tables. A complete organization export is a manual,
+two-person step ([data retention](runbooks/data-retention.md)).
+
+### R5 · Billing without prices — **Medium**
+
+Plans show what is included and no prices, because pricing is agreed with
+pilots. Owners cannot compare cost on the screen.
+
+### R6 · Support cases have no attachments — **Medium**
+
+Needs file storage. The form asks for page addresses and a description.
+
+### R7 · Staff times are UTC only — **Low**
+
+The team dashboard shows one clock so customers compare; a customer's own
+timezone is not shown next to it.
+
+### R8 · Diagnostics access is a cookie per browser — **Low**
+
+Opening diagnostics is audited and lasts 15 minutes in that browser. It is not
+a shared, revocable grant.
+
+### R9 · Rate limits are per instance — **Medium**
+
+Export and webhook limits are in memory. See the launch checklist.
+
+### R10 · Visual review fixes — **Fixed**
+
+Report tables squeezed every column on a phone until dates wrapped over three
+lines; columns now keep a minimum width and the table scrolls inside its own
+region. The site's "Start free" buttons led to sign-in although there is no
+self-service signup, and "Free for your first location" and "No credit card ·
+Cancel anytime" described pricing that does not exist; they now say "Ask about
+a pilot" and describe pilot pricing honestly. A `'use server'` file that
+exported a constant broke the whole development build; the diagnostics window
+helpers moved to their own module.
+
 ## Test reliability
 
 Browser-suite failures seen once and not yet investigated. Recorded so they are

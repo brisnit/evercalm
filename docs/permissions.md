@@ -329,6 +329,77 @@ Rules that hold regardless of role:
 - **Records are not deleted.** The runtime role cannot delete runs, tasks,
   events or handoffs, whatever the service does.
 
+## Reporting capabilities
+
+| Capability              | Allows                                            | Owner | HR Admin | General Manager | Training Manager |
+| ----------------------- | ------------------------------------------------- | :---: | :------: | :-------------: | :--------------: |
+| `report.people`         | People and compliance report                      |  org  |   org    |    location     |        —         |
+| `report.training`       | Training report                                   |  org  |   org    |    location     |       org        |
+| `report.operations`     | Schedule and shift operations reports             |  org  |    —     |    location     |        —         |
+| `report.communications` | Communication report                              |  org  |   org    |    location     |        —         |
+| `report.export`         | CSV export of the reports you can see, where held |  org  |   org    |    location     |       org        |
+
+Schedulers, Shift Leads and Employees hold none of these.
+
+- **Outside scope is not found**, including another location's id in a filter
+  or an export URL. No reporting capability at all is not found; a different
+  one is "you do not have permission".
+- **Reports carry no sensitive HR fields.** Contact details, date of birth,
+  credential numbers, reasons for leaving and reasons for time off never appear,
+  so `people.view_sensitive` is not needed and not honoured by reports.
+- **Exporting needs `report.export` at every location in the view.** The export
+  is limited to the locations where both the report and export capabilities are
+  held, and is audited.
+- The training report additionally uses the training progress rules: its rows
+  are the assignments `training.view_progress_*` allows.
+
+## Billing and support capabilities
+
+| Capability       | Allows                                                  | Owner | HR Admin |
+| ---------------- | ------------------------------------------------------- | :---: | :------: |
+| `billing.manage` | Billing screen: contact, plan, cancellation, history    |  org  |    —     |
+| `support.manage` | Open support cases for the organization and follow them |  org  |   org    |
+
+Both are organization-wide only.
+
+### Subscription status
+
+| Status      | Administration                                        | Employees                  |
+| ----------- | ----------------------------------------------------- | -------------------------- |
+| `trialing`  | Everything                                            | Everything                 |
+| `active`    | Everything                                            | Everything                 |
+| `past_due`  | Everything for 14 days; owners see a banner           | Everything                 |
+| `suspended` | **Read-only**: view, report, export, support, billing | Their own records and work |
+| `canceled`  | **Read-only**, for 90 days of export                  | Their own records and work |
+
+Read-only is applied when permissions are resolved: every capability that
+creates, publishes, assigns or changes is withheld from every grant, so every
+screen and every action agree. Self-access needs no capability, which is the
+explicit policy that **billing never locks an employee out of their own
+schedule, training, onboarding, messages or shift work**.
+
+## The EverCalm team
+
+EverCalm staff are not customer users and hold no capabilities in any
+organization.
+
+| Role                  | Directory and diagnostics | Support queue | Retry deliveries |
+| --------------------- | :-----------------------: | :-----------: | :--------------: |
+| Support agent         |            yes            |      yes      |        —         |
+| Support administrator |            yes            |      yes      |       yes        |
+
+- **No impersonation.** Staff cannot sign in as, or act as, anyone in a
+  customer organization. They have no employment, and `/app` and `/my` send
+  them to `/platform`.
+- **No customer data beyond the screen.** Staff functions return counts,
+  statuses, reasons and case threads. Employee records, inboxes, messages and HR
+  fields are not reachable by any of them.
+- **Everything is checked twice and audited.** The session is checked in the
+  application and the staff role again inside each database function, and each
+  action writes the customer's audit log with actor type `support`.
+- **Customers never see the dashboard**: `/platform` is a 404 for anyone who is
+  not active staff.
+
 ## Enforcement
 
 Every mutation is a server action whose first act is resolving the actor from

@@ -30,6 +30,14 @@ const serverSchema = z
     EMAIL_FROM: z.string().min(1).default('EverCalm <no-reply@example.invalid>'),
     RESEND_API_KEY: z.string().optional(),
 
+    /** Only the development-safe mock exists. See docs/runbooks/billing-provider.md. */
+    BILLING_PROVIDER: z.enum(['mock']).default('mock'),
+    /** Enables the mock provider's signed webhook outside production. */
+    MOCK_BILLING_WEBHOOK_SECRET: z
+      .string()
+      .min(32, 'MOCK_BILLING_WEBHOOK_SECRET must be at least 32 characters')
+      .optional(),
+
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   })
   .superRefine((v, ctx) => {
@@ -47,6 +55,14 @@ const serverSchema = z
     // business holding production email credentials. The guard still fires
     // the moment a production server boots.
     const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+    if (v.NODE_ENV === 'production' && v.BILLING_PROVIDER === 'mock' && !isBuildPhase) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['BILLING_PROVIDER'],
+        message:
+          'BILLING_PROVIDER "mock" charges nothing and cannot serve production traffic. Configure a real provider first.',
+      })
+    }
     if (v.NODE_ENV === 'production' && v.EMAIL_PROVIDER === 'console' && !isBuildPhase) {
       ctx.addIssue({
         code: 'custom',

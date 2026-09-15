@@ -135,7 +135,7 @@ describe('the HTTP surface', () => {
 
     // Any new endpoint is a deliberate decision that updates this list, so a
     // people- or user-listing API cannot appear unnoticed.
-    expect(routes).toEqual(['auth/[...all]', 'health'])
+    expect(routes).toEqual(['auth/[...all]', 'billing/webhook', 'health', 'ready'])
   })
 
   it('has no route handler that selects from the global user table', () => {
