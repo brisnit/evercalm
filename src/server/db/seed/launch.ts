@@ -12,7 +12,7 @@ import { SEED_PASSWORD } from './data'
  *                   history, a support case in progress (with an EverCalm
  *                   internal note the owner must never see), a resolved billing
  *                   question, and a couple of email deliveries that failed.
- *   Lumen Salon     a pilot trial ending in nine days, and a fresh, unanswered
+ *   Lumen Salon     a manual pilot (billing arranged with EverCalm), and a fresh, unanswered
  *                   high-severity case about Boise times.
  *   EverCalm        two support staff with no employment anywhere, and a few
  *                   recorded worker runs, one with an error.
@@ -144,20 +144,31 @@ export async function seedBillingAndSupport(
         ),
       ])
   } else {
+    // A manual pilot: billing arranged directly with EverCalm, nothing charged.
     await db.insert(schema.subscriptions).values({
       id: subscriptionId,
       organizationId: org,
       plan: 'pilot',
-      status: 'trialing',
-      trialStartsAt: new Date(now.getTime() - 21 * DAY),
-      trialEndsAt: new Date(now.getTime() + 9 * DAY),
+      status: 'active',
+      provider: 'manual',
+      currentPeriodStart: new Date(now.getTime() - 21 * DAY),
       quantity,
       billingContactName: 'Ana Beltrán',
       billingContactEmail: 'accounts@lumensalon.test',
     })
     await db
       .insert(schema.billingEvents)
-      .values([event('trial_started', 'system', 21, 'Trial started', null, 'trialing', 'EverCalm')])
+      .values([
+        event(
+          'pilot_started',
+          'system',
+          21,
+          'Pilot started. Billing is arranged directly with EverCalm; nothing is charged here.',
+          null,
+          'active',
+          'EverCalm',
+        ),
+      ])
   }
 
   // --- support cases ---------------------------------------------------------

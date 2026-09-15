@@ -1,44 +1,28 @@
+import { getLogger } from '@/lib/logger'
+import { consumeRateLimit, type RateLimit } from '@/server/db/rate-limit-store'
+
 /*
- * A SMALL IN-MEMORY RATE LIMITER.
+ * RATE LIMITS FOR APPLICATION ACTIONS that are cheap to abuse and expensive
+ * to serve: report exports and the billing webhook. Support case creation is
+ * limited in its own query, and sign-in, sign-up and password reset by the
+ * authentication library, which also stores its counters in the database.
  *
- * For application actions that are cheap to abuse and expensive to serve:
- * report exports, support case creation, the billing webhook. Sign-in and
- * password reset are limited separately by the authentication library.
- *
- * Per process. Behind several instances each counts on its own, so the
- * effective limit is the limit times the instance count; that is acceptable
- * for abuse protection and documented in docs/runbooks/launch-checklist.md,
- * with a shared store listed as a production follow-up.
+ * Shared across every server instance (see server/db/rate-limit-store.ts).
+ * If the database cannot be reached the action is allowed: the action itself
+ * needs the database, so failing closed would only add a second error.
  */
 
-interface Bucket {
-  count: number
-  resetAt: number
-}
-
-const buckets = new Map<string, Bucket>()
-
-export interface Limit {
-  max: number
-  windowMs: number
-}
+export type { RateLimit }
 
 /** True when this call is over the limit. Counts the call either way. */
-export function rateLimited(scope: string, key: string, limit: Limit, now = Date.now()): boolean {
-  const id = `${scope}:${key}`
-  const bucket = buckets.get(id)
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(id, { count: 1, resetAt: now + limit.windowMs })
-    if (buckets.size > 10_000) {
-      for (const [k, b] of buckets) if (b.resetAt <= now) buckets.delete(k)
-    }
+export async function rateLimited(scope: string, key: string, limit: RateLimit): Promise<boolean> {
+  try {
+    return (await consumeRateLimit(scope, key, limit)) > limit.max
+  } catch (error) {
+    getLogger().warn(
+      { scope, err: error instanceof Error ? error.message : 'unknown' },
+      'rate limit check failed open',
+    )
     return false
   }
-  bucket.count += 1
-  return bucket.count > limit.max
-}
-
-/** Test-only. */
-export function resetRateLimits(): void {
-  buckets.clear()
 }

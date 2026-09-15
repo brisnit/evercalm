@@ -378,15 +378,20 @@ screen and every action agree. Self-access needs no capability, which is the
 explicit policy that **billing never locks an employee out of their own
 schedule, training, onboarding, messages or shift work**.
 
+Under the **manual pilot** provider, a status never changes on its own: only
+an EverCalm support administrator sets it, with a reason the customer sees in
+their billing history. Owners keep `billing.manage` but cannot change plan or
+cancel themselves; those are arranged with EverCalm.
+
 ## The EverCalm team
 
 EverCalm staff are not customer users and hold no capabilities in any
 organization.
 
-| Role                  | Directory and diagnostics | Support queue | Retry deliveries |
-| --------------------- | :-----------------------: | :-----------: | :--------------: |
-| Support agent         |            yes            |      yes      |        —         |
-| Support administrator |            yes            |      yes      |       yes        |
+| Role                  | Directory and diagnostics | Support queue | Retry deliveries | Set a manual pilot's status |
+| --------------------- | :-----------------------: | :-----------: | :--------------: | :-------------------------: |
+| Support agent         |            yes            |      yes      |        —         |              —              |
+| Support administrator |            yes            |      yes      |       yes        |             yes             |
 
 - **No impersonation.** Staff cannot sign in as, or act as, anyone in a
   customer organization. They have no employment, and `/app` and `/my` send

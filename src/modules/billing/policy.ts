@@ -282,4 +282,6 @@ export const EVENT_LABELS: Record<string, string> = {
   cancellation_requested: 'Cancellation requested',
   cancellation_withdrawn: 'Cancellation withdrawn',
   quantity_changed: 'Active employee count changed',
+  pilot_started: 'Pilot started',
+  status_set_by_evercalm: 'Status changed by EverCalm',
 }

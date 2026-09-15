@@ -429,9 +429,10 @@ timezone is not shown next to it.
 Opening diagnostics is audited and lasts 15 minutes in that browser. It is not
 a shared, revocable grant.
 
-### R9 · Rate limits are per instance — **Medium**
+### R9 · Rate limits are per instance — **Fixed**
 
-Export and webhook limits are in memory. See the launch checklist.
+Export, webhook and authentication limits are now stored in the database and
+shared by every instance (Phase B).
 
 ### R10 · Visual review fixes — **Fixed**
 

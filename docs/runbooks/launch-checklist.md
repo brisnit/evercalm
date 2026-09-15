@@ -19,15 +19,16 @@ being launched, not in development.
 - [ ] `E2E_RELAX_RATE_LIMIT` is unset (it is ignored in production regardless).
 - [ ] Sign-in 5/min, sign-up 5/min, password reset 3/min per the test-locked rules.
 
-## Abuse protection (reviewed for Slice 7)
+## Abuse protection (reviewed for Slice 7 and Phase B)
 
-| Surface                    | Protection                                     | Gap to close before scale                       |
-| -------------------------- | ---------------------------------------------- | ----------------------------------------------- |
-| Sign-in, reset             | Library rate limits, strict values test-locked | Store limits in a shared store across instances |
-| Report CSV export          | 20 per person per minute, audited              | Per-instance memory; shared store               |
-| Support case creation      | 5 per person per hour, in the database         | —                                               |
-| Billing webhook            | Signature required, 120/min, 16 KB body limit  | Per-instance memory                             |
-| Invitations, announcements | Capability-gated, audited                      | Per-organization daily caps                     |
+| Surface                    | Protection                                                             | Gap to close before scale   |
+| -------------------------- | ---------------------------------------------------------------------- | --------------------------- |
+| Sign-in, reset             | Library rate limits, strict values test-locked, shared in the database | —                           |
+| Report CSV export          | 20 per person per minute, shared in the database, audited              | —                           |
+| Support case creation      | 5 per person per hour, in the database                                 | —                           |
+| Billing webhook            | Signature required, 120/min shared, 16 KB body limit                   | —                           |
+| Invitations, announcements | Capability-gated, audited                                              | Per-organization daily caps |
+| Scheduled worker endpoint  | Bearer `CRON_SECRET`, constant-time, 404 otherwise, counts only        | —                           |
 
 ## Data protection
 
@@ -40,7 +41,11 @@ being launched, not in development.
 
 ## Configuration
 
-- [ ] Environment validates at boot; the console email provider and mock billing are refused in production.
+- [ ] Environment validates at boot; the console email provider, mock billing and placeholder senders are refused in production.
+- [ ] `BILLING_PROVIDER=manual`; the Billing screen says billing is arranged with EverCalm.
+- [ ] `MIGRATION_DATABASE_URL` is not set in any Vercel environment.
+- [ ] `CRON_SECRET` is set; `GET /api/cron/worker` without it returns 404.
+- [ ] `DATABASE_URL` uses the pooled endpoint; the seed has never run against production.
 - [ ] `/api/ready` returns 200 and names no hosts, versions or secrets.
-- [ ] Worker scheduled every minute; alerting on delayed worker and repeated `worker_runs` errors.
+- [ ] Vercel Cron runs `/api/cron/worker` every minute; alerting on delayed worker and repeated `worker_runs` errors.
 - [ ] Secret scan clean on the release commit.

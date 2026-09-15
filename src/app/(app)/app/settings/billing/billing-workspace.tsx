@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {
   changePlanAction,
   requestCancellationAction,
@@ -13,7 +14,7 @@ import { NoticeProvider } from '@/ui/patterns/notice-provider'
 import { Badge, Card, CardHeader, Field, Input } from '@/ui/primitives'
 
 interface Props {
-  provider: { name: string; live: boolean; simulationsEnabled: boolean }
+  provider: { name: string; live: boolean; simulationsEnabled: boolean; ownerSelfService: boolean }
   summary: {
     statusLabel: string
     statusTone: 'success' | 'info' | 'warning' | 'danger' | 'neutral'
@@ -44,7 +45,23 @@ interface Props {
 export function BillingWorkspace({ provider, summary, plans, contact, history }: Props) {
   return (
     <NoticeProvider>
-      {!provider.live ? (
+      {!provider.ownerSelfService ? (
+        <Card className="border-info/30 bg-info-soft/50 mb-5 p-4">
+          <p className="text-ink text-sm">
+            <span className="font-semibold">
+              Billing is arranged directly with EverCalm during the pilot.
+            </span>{' '}
+            Nothing is charged here. To change your plan or end the pilot,{' '}
+            <Link
+              href="/app/support/new"
+              className="font-medium text-violet-700 underline underline-offset-4"
+            >
+              open a support case
+            </Link>
+            .
+          </p>
+        </Card>
+      ) : !provider.live ? (
         <Card className="border-info/30 bg-info-soft/50 mb-5 p-4">
           <p className="text-ink text-sm">
             <span className="font-semibold">Payments are not connected.</span> EverCalm is in its
@@ -76,7 +93,11 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
           <Card as="section">
             <CardHeader
               title="Plan"
-              description="What each plan includes. Prices are agreed during the pilot."
+              description={
+                provider.ownerSelfService
+                  ? 'What each plan includes. Prices are agreed during the pilot.'
+                  : 'What each plan includes. Plan changes are arranged with EverCalm during the pilot.'
+              }
             />
             <ul className="divide-line divide-y">
               {plans.map((plan) => (
@@ -98,7 +119,7 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
                       <p className="text-warning mt-1 text-xs">{plan.unavailable}</p>
                     ) : null}
                   </div>
-                  {!plan.current && !plan.unavailable ? (
+                  {provider.ownerSelfService && !plan.current && !plan.unavailable ? (
                     <MiniForm
                       action={changePlanAction}
                       hidden={{ plan: plan.key }}
@@ -193,13 +214,26 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
             <CardHeader
               title="Cancellation"
               description={
-                summary.isTrial
-                  ? 'Cancelling a trial takes effect when the trial ends.'
-                  : 'Cancelling takes effect at the end of the current period. Your records stay available to export for 90 days after.'
+                !provider.ownerSelfService
+                  ? 'Your records stay available to export for 90 days after the pilot ends.'
+                  : summary.isTrial
+                    ? 'Cancelling a trial takes effect when the trial ends.'
+                    : 'Cancelling takes effect at the end of the current period. Your records stay available to export for 90 days after.'
               }
             />
             <div className="p-5">
-              {summary.canWithdraw ? (
+              {!provider.ownerSelfService ? (
+                <p className="text-muted text-sm">
+                  During the pilot, ending your subscription is arranged with EverCalm.{' '}
+                  <Link
+                    href="/app/support/new"
+                    className="font-medium text-violet-700 underline underline-offset-4"
+                  >
+                    Open a support case
+                  </Link>{' '}
+                  and we will take care of it.
+                </p>
+              ) : summary.canWithdraw ? (
                 <MiniForm
                   action={withdrawCancellationAction}
                   hidden={{}}

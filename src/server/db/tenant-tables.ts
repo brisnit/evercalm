@@ -67,6 +67,9 @@ export const RLS_EXEMPT_TABLES: Record<string, string> = {
     'EverCalm-internal case notes. The runtime role holds no privileges on it; reached only through staff functions.',
   worker_runs:
     'Background worker tick records. Customers see only their own error count, through a function keyed on the tenant setting.',
+  rate_limit:
+    'Better Auth rate-limit counters keyed by IP and path, used before any organization context exists.',
+  app_rate_limits: 'Application rate-limit windows keyed by a one-way hash; no tenant data.',
   evercalm_migrations:
     'Migration bookkeeping owned by the migration role; not part of the Drizzle schema.',
 }

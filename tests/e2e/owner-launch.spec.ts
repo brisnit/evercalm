@@ -94,6 +94,28 @@ test('an owner sees billing honestly, and the status follows provider events', a
   await expect(page.getByText('Payment failed').first()).toBeVisible()
 })
 
+test('a pilot owner sees billing arranged with EverCalm, with nothing to self-serve', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page)
+  await signIn(page, PEOPLE.salonOwner.email)
+  await page.goto('/app/settings/billing')
+  await expect(
+    page.getByText('Billing is arranged directly with EverCalm during the pilot.'),
+  ).toBeVisible()
+  await expect(page.getByText('Payments are not connected.')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Switch to/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Cancel subscription' })).toHaveCount(0)
+  await expect(page.getByText('Development: simulate the provider')).toHaveCount(0)
+  await expect(page.getByText('Pilot started').first()).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/settings/billing (manual pilot)')
+
+  // The banner's link; the cancellation card has its own.
+  await page.getByRole('link', { name: 'open a support case', exact: true }).first().click()
+  await expect(page).toHaveURL(/\/app\/support\/new$/)
+  expectNoConsoleErrors(errors)
+})
+
 test('an owner checks system status and opens a support case', async ({ page }) => {
   await signIn(page, PEOPLE.harborOwner.email)
   await page.goto('/app/settings/status')

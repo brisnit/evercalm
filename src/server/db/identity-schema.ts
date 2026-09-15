@@ -22,4 +22,4 @@
  *   - eslint `no-restricted-imports` (fails CI)
  *   - tests/unit/architecture.test.ts (fails CI independently of lint config)
  */
-export { users, sessions, accounts, verifications } from '@/modules/identity/schema'
+export { users, sessions, accounts, verifications, rateLimits } from '@/modules/identity/schema'

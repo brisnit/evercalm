@@ -498,9 +498,13 @@ close that window.
 
 ### Production (not provisioned)
 
-A scheduler — a platform cron, a queue trigger — invokes `npm run worker:once`
-(or `runWorkerTick()` from a route) every minute. Overlapping invocations are
-safe by construction. None is configured; that needs approval.
+On Vercel, `vercel.json` schedules `GET /api/cron/worker` every minute. The
+route requires `Authorization: Bearer <CRON_SECRET>` (constant-time
+comparison, 404 otherwise) and runs one `runWorkerTick()` with a deadline, so a
+slow tick defers organizations to the next minute instead of being killed
+mid-way. Elsewhere, a scheduler invokes `npm run worker:once`. Overlapping
+invocations are safe by construction. No production scheduler is configured;
+that needs approval.
 
 ## Scheduling
 
@@ -957,9 +961,13 @@ what each status allows), `service.ts`, `provider.ts` (the provider
 interface), `webhook.ts`; tables `subscriptions` and `billing_events`
 (`drizzle/0019_launch_readiness.sql`).
 
-**No payments are connected.** The only provider is a mock that charges
-nothing, cannot serve production (the environment check refuses it), and says
-so on the Billing screen. Plans describe what is included, without prices.
+**No payments are connected.** Two providers exist: a development-only mock
+(refused in production) and the **manual pilot** provider, where billing is
+arranged directly with EverCalm, owners cannot self-serve plan changes or
+cancellation, the lifecycle never moves a subscription on its own, and only
+an EverCalm support administrator sets its status, through an audited
+security-definer function with a reason the customer sees
+(`drizzle/0020_production_pilot.sql`). Plans describe what is included, without prices.
 [docs/runbooks/billing-provider.md](runbooks/billing-provider.md) lists
 everything a real provider needs.
 
@@ -1047,8 +1055,10 @@ the customer's audit log and lasts 15 minutes.
   reported but does not refuse traffic. It names no hosts, versions or secrets.
 - **Environment** now validates `BILLING_PROVIDER` and the optional mock
   webhook secret, and refuses the mock provider in production.
-- **Rate limits.** In-memory, per instance, for report exports and the billing
-  webhook; support case creation is limited in the database. Reviewed in
+- **Rate limits.** In the database and shared across instances: Better Auth's
+  `rate_limit` table for credentials, `app_rate_limits` (hashed keys, one
+  atomic upsert per call) for report exports and the billing webhook; support
+  case creation is limited in the database. Reviewed in
   [the launch checklist](runbooks/launch-checklist.md).
 - **Runbooks** for production readiness, billing, migrations and rollback,
   backup and restore, incidents, support and data retention are in
@@ -1068,3 +1078,25 @@ equals a tenant id, so those rows are invisible to every tenant.
 Domain tables use `snake_case`. The four Better Auth identity tables use that
 library's expected `camelCase` field names. The split is deliberate: it avoids
 a mapping layer between us and the auth library.
+
+## Production pilot (Phase B)
+
+What a serverless production pilot needs, without any account or deployment:
+
+- **Email:** `ResendEmailProvider` (`src/server/email/resend-provider.ts`),
+  a single HTTPS call with an idempotency key per notification claim.
+  Permanent refusals raise `PermanentEmailError`, which the worker records as
+  a failed delivery with a reason; everything else retries.
+- **Scheduled worker:** `src/app/api/cron/worker/route.ts` and
+  `src/server/jobs/cron.ts`; `runWorkerTick({ deadlineAt })` stops starting
+  new organizations and delivery batches at the deadline.
+- **Connection pools:** `poolSettings()` in `src/server/db/client.ts` — small,
+  quickly released pools on Vercel, `DATABASE_POOL_MAX` to override.
+- **Manual pilot billing:** see Billing above and
+  [billing providers](runbooks/billing-provider.md).
+- **Provisioning:** `src/server/db/provision.ts` and
+  `scripts/provision-organization.ts`; idempotent, dry-run by default, runs as
+  the migration role, never creates users, passwords or demo data. See
+  [provisioning an organization](runbooks/provision-organization.md).
+- **Shared rate limits:** `rate_limit` and `app_rate_limits`, both exempt from
+  row-level security because they hold no tenant data.

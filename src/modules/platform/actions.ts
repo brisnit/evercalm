@@ -13,6 +13,7 @@ import {
   staffCaseUpdate,
   staffRecordAccess,
   staffRetryDeliveries,
+  staffSetSubscriptionStatus,
 } from '@/server/db/platform'
 import type { ActionState } from '@/modules/people/actions'
 import { DIAGNOSTICS_MINUTES, diagnosticsCookieName } from './diagnostics'
@@ -124,5 +125,29 @@ export async function staffCaseAssignAction(
     return { status: 'success', message: assignee ? 'Assigned.' : 'Unassigned.' }
   } catch (error) {
     return fail(error, 'The case could not be assigned.')
+  }
+}
+
+export async function setSubscriptionStatusAction(
+  _p: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const staff = await requirePlatformStaff('set_subscription_status')
+  const organizationId = readString(formData, 'organizationId')
+  const status = readString(formData, 'status')
+  const reason = readString(formData, 'reason').trim()
+  if (!isUuid(organizationId)) return { status: 'error', message: 'Not found.' }
+  if (!reason) {
+    return {
+      status: 'error',
+      message: 'Give a reason. The customer sees it in their billing history.',
+    }
+  }
+  try {
+    const next = await staffSetSubscriptionStatus(staff.userId, organizationId, status, reason)
+    revalidatePath(`/platform/organizations/${organizationId}`)
+    return { status: 'success', message: `Subscription status is now ${next.replace('_', ' ')}.` }
+  } catch (error) {
+    return fail(error, 'The status could not be changed.')
   }
 }

@@ -15,14 +15,32 @@ const postgresUrl = z
     message: 'must be a postgres:// connection string',
   })
 
+/** A sender that is not the development placeholder and has a plausible address. */
+function isRealSender(from: string): boolean {
+  const address = /<([^<>]+)>\s*$/.exec(from)?.[1] ?? from.trim()
+  return (
+    /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i.test(address) &&
+    !/\.(invalid|example|test|localhost)$/i.test(address)
+  )
+}
+
 const serverSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     APP_URL: z.url().default('http://localhost:3000'),
 
     DATABASE_URL: postgresUrl,
+    /**
+     * Only on trusted machines and protected workflows that run migrations or
+     * provisioning. Never set it on the web host.
+     */
     MIGRATION_DATABASE_URL: postgresUrl.optional(),
     TEST_DATABASE_URL: postgresUrl.optional(),
+    /**
+     * Connections per server instance. Defaults to 3 on Vercel, where many
+     * instances share one database, and 10 elsewhere.
+     */
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).optional(),
 
     BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
 
@@ -30,17 +48,36 @@ const serverSchema = z
     EMAIL_FROM: z.string().min(1).default('EverCalm <no-reply@example.invalid>'),
     RESEND_API_KEY: z.string().optional(),
 
-    /** Only the development-safe mock exists. See docs/runbooks/billing-provider.md. */
-    BILLING_PROVIDER: z.enum(['mock']).default('mock'),
+    /**
+     * mock    development only: simulated provider events, refused in production
+     * manual  a pilot with no payment provider: billing is arranged directly
+     *         with EverCalm, nothing is charged, and only EverCalm support
+     *         changes a subscription's status. See docs/runbooks/billing-provider.md.
+     */
+    BILLING_PROVIDER: z.enum(['mock', 'manual']).default('mock'),
     /** Enables the mock provider's signed webhook outside production. */
     MOCK_BILLING_WEBHOOK_SECRET: z
       .string()
       .min(32, 'MOCK_BILLING_WEBHOOK_SECRET must be at least 32 characters')
       .optional(),
 
+    /**
+     * Vercel Cron sends it as "Authorization: Bearer <CRON_SECRET>". Without it
+     * the scheduled worker endpoint answers 404 to everyone.
+     */
+    CRON_SECRET: z.string().min(32, 'CRON_SECRET must be at least 32 characters').optional(),
+
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   })
   .superRefine((v, ctx) => {
+    if (v.EMAIL_PROVIDER === 'resend' && !isRealSender(v.EMAIL_FROM)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_FROM'],
+        message:
+          'EMAIL_FROM must be a verified sender such as "EverCalm <notifications@your-domain>", not the placeholder',
+      })
+    }
     if (v.EMAIL_PROVIDER === 'resend' && !v.RESEND_API_KEY) {
       ctx.addIssue({
         code: 'custom',
@@ -60,7 +97,7 @@ const serverSchema = z
         code: 'custom',
         path: ['BILLING_PROVIDER'],
         message:
-          'BILLING_PROVIDER "mock" charges nothing and cannot serve production traffic. Configure a real provider first.',
+          'BILLING_PROVIDER "mock" simulates a payment provider and cannot serve production traffic. Use "manual" for a pilot billed directly by EverCalm.',
       })
     }
     if (v.NODE_ENV === 'production' && v.EMAIL_PROVIDER === 'console' && !isBuildPhase) {

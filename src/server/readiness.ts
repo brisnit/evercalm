@@ -3,7 +3,7 @@
  */
 
 /** The newest migration this build requires. A unit test keeps it in step with drizzle/. */
-export const EXPECTED_LATEST_MIGRATION = '0019_launch_readiness.sql'
+export const EXPECTED_LATEST_MIGRATION = '0020_production_pilot.sql'
 
 export const WORKER_HEALTHY_MS = 5 * 60_000
 

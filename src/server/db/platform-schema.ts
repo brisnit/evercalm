@@ -1,4 +1,15 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { users } from '@/modules/identity/schema'
 import { supportCases } from '@/modules/support/schema'
 
@@ -56,4 +67,18 @@ export const workerRuns = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('worker_runs_finished_idx').on(t.finishedAt)],
+)
+
+/** Application rate-limit windows, shared by every instance. Keys are hashes. */
+export const appRateLimits = pgTable(
+  'app_rate_limits',
+  {
+    key: text('key').primaryKey(),
+    windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull(),
+    count: integer('count').notNull(),
+  },
+  (t) => [
+    check('app_rate_limits_count_check', sql`${t.count} >= 1`),
+    index('app_rate_limits_window_idx').on(t.windowStartedAt),
+  ],
 )

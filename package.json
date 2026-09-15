@@ -35,6 +35,7 @@
     "db:local:reset": "tsx scripts/local-postgres.ts reset",
     "secrets:scan": "tsx scripts/secret-scan.ts",
     "db:refresh": "tsx scripts/refresh-data.ts",
+    "provision:organization": "tsx scripts/provision-organization.ts",
     "test:e2e:only": "E2E_SKIP_REFRESH=true playwright test"
   },
   "dependencies": {

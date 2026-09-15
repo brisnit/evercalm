@@ -97,3 +97,39 @@ test('support replies reach the customer, and internal notes never do', async ({
   await expect(page.getByText(note)).toHaveCount(0)
   await expect(page.getByText(/Two email deliveries for Harbor timed out/)).toHaveCount(0)
 })
+
+test('a support administrator sets a manual pilot’s status, with a reason', async ({ page }) => {
+  await signInAsStaff(page, STAFF.admin)
+  await page.getByRole('link', { name: 'Lumen Salon' }).click()
+  await expect(page.getByRole('heading', { name: 'Lumen Salon', level: 1 })).toBeVisible()
+  await expect(page.getByText('Manual pilot')).toBeVisible()
+  await expectFitsAndAccessible(page, '/platform/organizations/[id] manual pilot')
+
+  const reason = `Pilot invoice overdue ${Math.random().toString(36).slice(2, 6)}`
+  await page.getByLabel('Pilot subscription status').selectOption({ label: 'Payment overdue' })
+  await page.getByLabel('Reason').fill(reason)
+  await page.getByRole('button', { name: 'Set status' }).click()
+  await expect(page.getByTestId('action-notice')).toContainText('now past due')
+  await page.reload()
+  await expect(page.getByText(reason).first()).toBeVisible()
+
+  await page.getByLabel('Pilot subscription status').selectOption({ label: 'Active' })
+  await page.getByLabel('Reason').fill('Invoice paid')
+  await page.getByRole('button', { name: 'Set status' }).click()
+  await expect(page.getByTestId('action-notice')).toContainText('now active')
+})
+
+test('a support agent cannot change a subscription, and a provider-managed one has no control', async ({
+  page,
+}) => {
+  await signInAsStaff(page, STAFF.agent)
+  await page.getByRole('link', { name: 'Lumen Salon' }).click()
+  await expect(page.getByRole('heading', { name: 'Lumen Salon', level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Set status' })).toHaveCount(0)
+
+  await page.context().clearCookies()
+  await signInAsStaff(page, STAFF.admin)
+  await page.getByRole('link', { name: 'Harbor & Vine' }).click()
+  await expect(page.getByRole('heading', { name: 'Harbor & Vine', level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Set status' })).toHaveCount(0)
+})

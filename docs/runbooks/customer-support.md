@@ -41,3 +41,21 @@ security decision with the safeguards described in the implementation plan.
   [data retention](data-retention.md). Billing changes are the owner's, on the
   Billing screen.
 - **"Can you log in and look?"** No. Ask what they see, where, and when.
+
+## Changing a pilot's subscription status
+
+Manual pilot subscriptions (billing arranged directly with EverCalm) change
+only when a **support administrator** changes them, on the organization's page
+under Subscription:
+
+1. Choose the status: Active, Payment overdue, Suspended (administration
+   read-only) or Canceled.
+2. Give a reason. **The customer sees it** in their billing history, and it is
+   recorded in their audit log with your name.
+3. Set status.
+
+Suspending makes the customer's administration read-only; employees keep their
+own schedules, training and messages. Agree it with the account owner first.
+Support agents cannot change a status, and provider-managed subscriptions
+cannot be changed here. When an owner opens a case asking to change plan or
+end the pilot, arrange it, then set the status.

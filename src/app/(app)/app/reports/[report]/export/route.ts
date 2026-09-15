@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ repo
   const { report: key } = await params
   if (!isReportKey(key)) return new Response('Not found', { status: 404 })
   const { actor } = await requireActorContext()
-  if (rateLimited('report-export', actor.employmentId, { max: 20, windowMs: 60_000 })) {
+  if (await rateLimited('report-export', actor.employmentId, { max: 20, windowSeconds: 60 })) {
     return new Response('Too many exports. Wait a minute and try again.', {
       status: 429,
       headers: { 'Retry-After': '60' },

@@ -1,7 +1,7 @@
 import { withTenant, organizationsWithDueWork, type Tx } from '@/server/db'
 import { getEnv } from '@/lib/env'
 import { getLogger } from '@/lib/logger'
-import { emailProvider } from '@/server/email'
+import { PermanentEmailError, emailProvider } from '@/server/email'
 import {
   ScheduledPublishError,
   expireDue,
@@ -13,6 +13,7 @@ import { processAutomaticReminders } from '@/modules/comms/receipts'
 import { processOperationsReminders } from '@/modules/operations/reminders'
 import { processBillingLifecycle, syncQuantity } from '@/modules/billing/service'
 import { recordWorkerRun } from '@/server/db/platform'
+import { pruneRateLimits } from '@/server/db/rate-limit-store'
 import {
   claimDueNotifications,
   completeDelivery,
@@ -74,9 +75,15 @@ export interface WorkerDeps {
   batchSize?: number
   maxBatches?: number
   leaseMs?: number
+  /**
+   * Epoch milliseconds after which the tick starts no new organization and no
+   * new delivery batch. Unfinished work stays due for the next tick.
+   */
+  deadlineAt?: number
   /** Record the tick in worker_runs. Defaults to on for real ticks. */
   recordRun?: boolean
   recordRunImpl?: typeof recordWorkerRun
+  pruneRateLimitsImpl?: () => Promise<number>
 }
 
 export type WorkerStep =
@@ -95,6 +102,8 @@ export interface TickReport {
   shiftReminders: number
   /** Subscription status changes applied by the billing lifecycle. */
   billingChanges: number
+  /** Organizations left for the next tick because the deadline passed. */
+  deferredOrganizations: number
   sent: number
   retrying: number
   failed: number
@@ -114,6 +123,7 @@ function emptyReport(startedAt: Date): TickReport {
     reminded: 0,
     shiftReminders: 0,
     billingChanges: 0,
+    deferredOrganizations: 0,
     sent: 0,
     retrying: 0,
     failed: 0,
@@ -169,12 +179,18 @@ export const defaultSender: NotificationSender = async (notification) => {
       const link = notification.href ? new URL(notification.href, getEnv().APP_URL).toString() : ''
       try {
         await emailProvider().send({
+          // Keyed by the notification alone, so a retry or a re-claim after an
+          // expired lease is recognised by the provider (Resend keeps keys 24h).
+          idempotencyKey: `notification-${notification.id}`,
           to: notification.emailAddress,
           subject: notification.title,
           text: [notification.preview, link].filter(Boolean).join('\n\n'),
         })
         return { kind: 'sent' }
       } catch (error) {
+        if (error instanceof PermanentEmailError) {
+          return { kind: 'permanent', reason: `Email provider refused it: ${describe(error)}` }
+        }
         return { kind: 'transient', reason: `Email provider error: ${describe(error)}` }
       }
     }
@@ -216,7 +232,17 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
     }
   }
 
-  for (const organizationId of organizationIds) {
+  const pastDeadline = () => deps.deadlineAt !== undefined && Date.now() >= deps.deadlineAt
+
+  for (const [index, organizationId] of organizationIds.entries()) {
+    if (pastDeadline()) {
+      report.deferredOrganizations = organizationIds.length - index
+      log.warn(
+        { deferred: report.deferredOrganizations },
+        'worker deadline reached; remaining work stays due',
+      )
+      break
+    }
     await step(organizationId, 'publish', async () => {
       const due = await runTenant(organizationId, (tx) => listDueScheduled(tx, organizationId, now))
       // One transaction per announcement: one bad schedule cannot hold back
@@ -264,7 +290,7 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
     })
 
     await step(organizationId, 'deliver', async () => {
-      for (let batch = 0; batch < maxBatches; batch += 1) {
+      for (let batch = 0; batch < maxBatches && (batch === 0 || !pastDeadline()); batch += 1) {
         // Claim and commit FIRST, so the lease is visible to other workers
         // before any slow send begins.
         const claimed = await runTenant(organizationId, (tx) =>
@@ -329,6 +355,7 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
         },
         errors: report.errors,
       })
+      await (deps.pruneRateLimitsImpl ?? pruneRateLimits)()
     } catch (error) {
       log.error({ err: describe(error) }, 'worker run could not be recorded')
     }

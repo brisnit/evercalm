@@ -1,0 +1,17 @@
+{
+  "organization": {
+    "name": "Example Kitchen",
+    "slug": "example-kitchen",
+    "industry": "restaurant",
+    "timezone": "America/Los_Angeles"
+  },
+  "locations": [
+    {
+      "name": "Main Street",
+      "timezone": "America/Los_Angeles",
+      "city": "Sacramento",
+      "region": "CA"
+    }
+  ],
+  "owner": { "displayName": "Owner Name", "email": "owner@example.com", "jobTitle": "Owner" }
+}

@@ -15,6 +15,19 @@ export interface EmailMessage {
   /** Plain-text body. HTML templates arrive with the first real email in Slice 2. */
   text: string
   replyTo?: string
+  /** Stable per logical message, so a retried send is not delivered twice. */
+  idempotencyKey?: string
+}
+
+/**
+ * The provider refused the message for a reason that will not change on a
+ * retry: an invalid address, an unverified sender, a revoked key.
+ */
+export class PermanentEmailError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'PermanentEmailError'
+  }
 }
 
 export interface SendResult {

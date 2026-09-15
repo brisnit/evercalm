@@ -52,9 +52,11 @@ export default async function BillingPage() {
         ? `Ends ${day(sub.status === 'trialing' ? sub.trialEndsAt : sub.currentPeriodEnd) ?? 'at the end of the period'}. Everything works until then.`
         : sub.status === 'trialing'
           ? `Trial ends ${day(sub.trialEndsAt)}.`
-          : sub.currentPeriodEnd
-            ? `Renews monthly. Current period ends ${day(sub.currentPeriodEnd)}.`
-            : 'Renews monthly.'
+          : !overview.provider.ownerSelfService
+            ? 'Pilot. Billing is arranged directly with EverCalm.'
+            : sub.currentPeriodEnd
+              ? `Renews monthly. Current period ends ${day(sub.currentPeriodEnd)}.`
+              : 'Renews monthly.'
 
   return (
     <>
@@ -69,7 +71,7 @@ export default async function BillingPage() {
           statusLabel: status.label,
           statusTone: status.tone,
           planName: PLANS[sub.plan].name,
-          interval: 'Monthly',
+          interval: overview.provider.ownerSelfService ? 'Monthly' : 'Arranged with EverCalm',
           timing,
           access,
           trial:
@@ -78,7 +80,11 @@ export default async function BillingPage() {
               : null,
           activeEmployees: overview.activeEmployees,
           activeLocations: overview.activeLocations,
-          paymentMethod: sub.hasPaymentMethod ? 'On file with the provider' : 'None on file',
+          paymentMethod: !overview.provider.ownerSelfService
+            ? 'Not needed during the pilot'
+            : sub.hasPaymentMethod
+              ? 'On file with the provider'
+              : 'None on file',
           canCancel:
             !sub.cancelAtPeriodEnd && sub.status !== 'canceled' && sub.status !== 'suspended',
           canWithdraw: sub.cancelAtPeriodEnd && sub.status !== 'canceled',

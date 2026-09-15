@@ -65,6 +65,8 @@ export interface StaffOrganization {
   failedNotifications7d: number
   publishFailures30d: number
   lastActivityAt: Date | null
+  /** 'mock' | 'manual', or null without a subscription. */
+  billingProvider: string | null
 }
 
 export async function staffOrganizations(
@@ -98,6 +100,7 @@ export async function staffOrganizations(
     failedNotifications7d: r.failed_notifications_7d as number,
     publishFailures30d: r.publish_failures_30d as number,
     lastActivityAt: date(r.last_activity_at),
+    billingProvider: (r.billing_provider as string | null) ?? null,
   }))
 }
 
@@ -402,4 +405,23 @@ export async function organizationForProviderSubscription(
     db,
   )
   return row?.organization_id ?? null
+}
+
+/**
+ * Set a MANUAL pilot subscription's status. Support administrators only, with
+ * a reason the customer sees in their billing history. Provider-managed
+ * subscriptions are refused.
+ */
+export async function staffSetSubscriptionStatus(
+  staffUserId: string,
+  organizationId: string,
+  status: string,
+  reason: string,
+  db?: Db,
+): Promise<string> {
+  const [row] = await rows<{ status: string }>(
+    sql`select evercalm_staff_set_subscription_status(${staffUserId}, ${organizationId}::uuid, ${status}, ${reason}, ${newId()}::uuid) as status`,
+    db,
+  )
+  return row!.status
 }

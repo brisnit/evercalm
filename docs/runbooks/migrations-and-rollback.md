@@ -15,6 +15,16 @@
 - `/api/ready` returns 503 until the newest migration the build expects
   (`EXPECTED_LATEST_MIGRATION`, kept in step by a unit test) is applied.
 
+### Where migrations run
+
+Only from a trusted machine or a protected workflow (for example a CI job
+with a required reviewer and an environment-scoped secret), using the
+database provider's **direct** (unpooled) endpoint. `MIGRATION_DATABASE_URL`
+is never set in Vercel or any other web host, so a compromised request path
+cannot reach the schema-owning role. Apply migrations **before** promoting the
+deployment that expects them; `/api/ready` refuses traffic until they are
+applied.
+
 ## Deploying a change
 
 1. Confirm a recent backup and that point-in-time recovery is enabled.

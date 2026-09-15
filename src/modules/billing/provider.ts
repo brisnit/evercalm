@@ -28,12 +28,19 @@ export interface ProviderEvent {
   periodEnd: Date | null
 }
 
+export type BillingProviderName = 'mock' | 'manual'
+
 export interface BillingProvider {
-  readonly name: 'mock'
+  readonly name: BillingProviderName
   /** False until a real provider is configured. Screens say so. */
   readonly live: boolean
   /** Whether owners may simulate provider events from the billing screen. */
   readonly simulationsEnabled: boolean
+  /**
+   * Whether owners change plan and cancel themselves. With the manual pilot
+   * provider those are arranged with EverCalm instead.
+   */
+  readonly ownerSelfService: boolean
   /** Verify and parse a webhook. Null means reject. */
   verifyWebhook(rawBody: string, signature: string | null): ProviderEvent | null
 }
@@ -85,6 +92,7 @@ export function mockProvider(options: {
     name: 'mock',
     live: false,
     simulationsEnabled: !options.production,
+    ownerSelfService: true,
     verifyWebhook(rawBody, signature) {
       if (options.production || !options.secret || !signature) return null
       const expected = Buffer.from(signMockPayload(rawBody, options.secret), 'utf8')
@@ -99,8 +107,30 @@ export function mockProvider(options: {
   }
 }
 
+/**
+ * THE MANUAL PILOT PROVIDER.
+ *
+ * For a pilot where EverCalm takes no payments: pricing and invoicing are
+ * arranged directly with the business. It charges nothing, accepts no
+ * webhooks, offers no simulations, and never changes a subscription on its
+ * own. Only an EverCalm support administrator changes a manual subscription's
+ * status, with a reason recorded in the billing history and the customer's
+ * audit log. Unlike the mock it is allowed in production, because it does not
+ * pretend anything: every screen says billing is arranged with EverCalm.
+ */
+export function manualProvider(): BillingProvider {
+  return {
+    name: 'manual',
+    live: false,
+    simulationsEnabled: false,
+    ownerSelfService: false,
+    verifyWebhook: () => null,
+  }
+}
+
 export function billingProvider(): BillingProvider {
   const env = getEnv()
+  if (env.BILLING_PROVIDER === 'manual') return manualProvider()
   return mockProvider({
     secret: env.MOCK_BILLING_WEBHOOK_SECRET,
     production: env.NODE_ENV === 'production',

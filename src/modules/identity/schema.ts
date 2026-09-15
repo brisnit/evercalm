@@ -1,4 +1,13 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core'
 
 /**
  * GLOBAL IDENTITY.
@@ -80,4 +89,22 @@ export const verifications = pgTable(
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('verification_identifier_idx').on(t.identifier)],
+)
+
+/**
+ * Better Auth's rate-limit counters, stored in the database so every server
+ * instance shares them. Keys are an IP address and a path; nothing tenant-owned.
+ */
+export const rateLimits = pgTable(
+  'rate_limit',
+  {
+    id: text('id').primaryKey(),
+    key: text('key').notNull(),
+    count: integer('count').notNull(),
+    lastRequest: bigint('lastRequest', { mode: 'number' }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('rate_limit_key_unique').on(t.key),
+    index('rate_limit_last_request_idx').on(t.lastRequest),
+  ],
 )

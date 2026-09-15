@@ -26,6 +26,7 @@ import { parseReportFilters, REPORT_KEYS } from '@/modules/reports/filters'
 import { getSystemStatus, retryFailedNotifications } from '@/modules/status/service'
 import { createCase, getCase, listCases, replyToCase } from '@/modules/support/service'
 import { myTraining } from '@/modules/training/learner'
+import { pruneRateLimits } from '@/server/db/rate-limit-store'
 import { runWorkerTick } from '@/server/jobs/worker'
 import { organizationForProviderSubscription, recordWorkerRun } from '@/server/db/platform'
 import {
@@ -325,43 +326,43 @@ describe('billing', () => {
     try {
       await pool.query(
         `update subscriptions set status = 'past_due', past_due_since = now() - interval '15 days' where organization_id = $1`,
-        [lumenId],
+        [harborId],
       )
-      const graceOwner = await lumen.owner()
+      const graceOwner = await harbor.owner()
       expect(graceOwner.accessMode).toBe('grace')
       expect(can(graceOwner, 'schedule.publish')).toBe(true)
 
       expect(
-        await asTenant(lumenId, (tx) => processBillingLifecycle(tx, lumenId, new Date())),
+        await asTenant(harborId, (tx) => processBillingLifecycle(tx, harborId, new Date())),
       ).toBe(1)
       expect(
-        await asTenant(lumenId, (tx) => processBillingLifecycle(tx, lumenId, new Date())),
+        await asTenant(harborId, (tx) => processBillingLifecycle(tx, harborId, new Date())),
       ).toBe(0)
 
-      const owner = await lumen.owner()
+      const owner = await harbor.owner()
       expect(owner.accessMode).toBe('read_only')
       expect(can(owner, 'schedule.publish')).toBe(false)
       expect(can(owner, 'people.invite')).toBe(false)
       expect(can(owner, 'billing.manage')).toBe(true)
       expect(can(owner, 'report.export')).toBe(true)
       await expect(
-        asTenant(lumenId, (tx) => changePlan(tx, owner, 'essentials')),
+        asTenant(harborId, (tx) => changePlan(tx, owner, 'essentials')),
       ).rejects.toBeInstanceOf(ValidationError)
 
       // An employee still has their own training.
-      const elodie = await actor(lumenId, 'elodie@lumensalon.test')
-      const training = await asTenant(lumenId, (tx) => myTraining(tx, elodie))
+      const sam = await harbor.sam()
+      const training = await asTenant(harborId, (tx) => myTraining(tx, sam))
       expect(training.overview.active.length + training.overview.completed.length).toBeGreaterThan(
         0,
       )
 
-      const overview = await asTenant(lumenId, (tx) => getBillingOverview(tx, owner))
+      const overview = await asTenant(harborId, (tx) => getBillingOverview(tx, owner))
       expect(overview.subscription.status).toBe('suspended')
       expect(overview.events.map((e) => e.type)).toContain('grace_expired')
     } finally {
       await pool.query(
-        `update subscriptions set status = 'trialing', past_due_since = null, suspended_at = null where organization_id = $1`,
-        [lumenId],
+        `update subscriptions set status = 'active', past_due_since = null, suspended_at = null where organization_id = $1`,
+        [harborId],
       )
     }
   })
@@ -538,6 +539,7 @@ describe('reliability', () => {
       runTenant: () => Promise.reject(new Error('simulated outage')),
       recordRun: true,
       recordRunImpl: async (run) => recordWorkerRun(run, await db()),
+      pruneRateLimitsImpl: async () => pruneRateLimits(await db()),
     })
     const [latest] = await query<{ error_count: number; errors: { organizationId: string }[] }>(
       'select error_count, errors from worker_runs order by finished_at desc limit 1',

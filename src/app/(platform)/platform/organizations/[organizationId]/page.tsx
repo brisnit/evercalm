@@ -23,6 +23,7 @@ import {
   utcDateTime,
 } from '../../format'
 import { RetryDeliveries } from './retry-deliveries'
+import { SetSubscriptionStatus } from './set-subscription-status'
 
 export const metadata: Metadata = { title: 'Organization' }
 
@@ -85,6 +86,16 @@ export default async function PlatformOrganizationPage({
           <CardHeader title="Subscription" />
           <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
             <Stat label="Plan" value={org.plan?.replace(/_/g, ' ') ?? 'None'} />
+            <Stat
+              label="Billing"
+              value={
+                org.billingProvider === 'manual'
+                  ? 'Manual pilot'
+                  : org.billingProvider
+                    ? `Provider: ${org.billingProvider}`
+                    : 'None'
+              }
+            />
             <Stat label="Status" value={status?.label ?? 'No subscription'} />
             <Stat label="Trial ends" value={utcDate(org.trialEndsAt)} />
             <Stat label="Period ends" value={utcDate(org.currentPeriodEnd)} />
@@ -100,6 +111,14 @@ export default async function PlatformOrganizationPage({
               }
             />
           </dl>
+          {org.billingProvider === 'manual' && staffMay(staff, 'set_subscription_status') ? (
+            <div className="border-line border-t p-5">
+              <SetSubscriptionStatus
+                organizationId={organizationId}
+                current={org.subscriptionStatus ?? 'active'}
+              />
+            </div>
+          ) : null}
           {billing.length > 0 ? (
             <ol className="divide-line border-line divide-y border-t">
               {billing.slice(0, 8).map((b, i) => (

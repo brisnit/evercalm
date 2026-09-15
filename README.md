@@ -69,7 +69,8 @@ businesses.
   exports. A subscription model with trial, active, past-due, suspended and
   canceled states, an immutable billing history, owner Billing screens and a
   development-only mock provider behind a provider interface - **no payments
-  are connected**. Customer support cases, and a separate EverCalm team
+  are connected**; production pilots use a manual provider, billed directly
+  by EverCalm. Customer support cases, and a separate EverCalm team
   dashboard with an organization directory, audited diagnostics and a support
   queue, with **no impersonation**. Owner-facing system status, readiness
   checks, recorded worker runs, safe retries, and operational runbooks.
@@ -118,25 +119,26 @@ try `/app/settings/audit` to see server-side authorization.
 
 ## Commands
 
-| Command                    | What it does                                   |
-| -------------------------- | ---------------------------------------------- |
-| `npm run dev`              | Development server and background worker       |
-| `npm run dev:web`          | Development server only                        |
-| `npm run worker`           | Background worker alone (Ctrl+C to stop)       |
-| `npm run worker:once`      | One worker tick, then exit                     |
-| `npm run worker:status`    | Is the worker running; when did it last tick   |
-| `npm run worker:stop`      | Stop the running worker gracefully             |
-| `npm run build`            | Production build                               |
-| `npm run typecheck`        | `tsc --noEmit`                                 |
-| `npm run lint`             | ESLint, including the isolation-boundary rules |
-| `npm run test:unit`        | Unit tests                                     |
-| `npm run test:integration` | Integration tests against real PostgreSQL      |
-| `npm run test:e2e`         | Playwright, desktop and phone, with axe        |
-| `npm run verify`           | typecheck → lint → all tests → build           |
-| `npm run db:local`         | Local PostgreSQL with both roles               |
-| `npm run db:migrate`       | Apply migrations as the privileged role        |
-| `npm run db:seed`          | Seed both demo organizations                   |
-| `npm run db:generate`      | Generate DDL from the Drizzle schema           |
+| Command                          | What it does                                                           |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `npm run dev`                    | Development server and background worker                               |
+| `npm run dev:web`                | Development server only                                                |
+| `npm run worker`                 | Background worker alone (Ctrl+C to stop)                               |
+| `npm run worker:once`            | One worker tick, then exit                                             |
+| `npm run worker:status`          | Is the worker running; when did it last tick                           |
+| `npm run worker:stop`            | Stop the running worker gracefully                                     |
+| `npm run provision:organization` | Create a pilot organization (dry run by default; trusted machine only) |
+| `npm run build`                  | Production build                                                       |
+| `npm run typecheck`              | `tsc --noEmit`                                                         |
+| `npm run lint`                   | ESLint, including the isolation-boundary rules                         |
+| `npm run test:unit`              | Unit tests                                                             |
+| `npm run test:integration`       | Integration tests against real PostgreSQL                              |
+| `npm run test:e2e`               | Playwright, desktop and phone, with axe                                |
+| `npm run verify`                 | typecheck → lint → all tests → build                                   |
+| `npm run db:local`               | Local PostgreSQL with both roles                                       |
+| `npm run db:migrate`             | Apply migrations as the privileged role                                |
+| `npm run db:seed`                | Seed both demo organizations                                           |
+| `npm run db:generate`            | Generate DDL from the Drizzle schema                                   |
 
 ## Stack
 

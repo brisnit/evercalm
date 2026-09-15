@@ -21,11 +21,18 @@ import { getSessionUser } from './session'
 export const PLATFORM_ROLES = ['support_agent', 'support_admin'] as const
 export type PlatformRole = (typeof PLATFORM_ROLES)[number]
 
-export type PlatformPermission = 'directory' | 'diagnostics' | 'support' | 'retry_deliveries'
+export type PlatformPermission =
+  'directory' | 'diagnostics' | 'support' | 'retry_deliveries' | 'set_subscription_status'
 
 const PERMISSIONS: Record<PlatformRole, readonly PlatformPermission[]> = {
   support_agent: ['directory', 'diagnostics', 'support'],
-  support_admin: ['directory', 'diagnostics', 'support', 'retry_deliveries'],
+  support_admin: [
+    'directory',
+    'diagnostics',
+    'support',
+    'retry_deliveries',
+    'set_subscription_status',
+  ],
 }
 
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {

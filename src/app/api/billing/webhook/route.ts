@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
  * modules/billing/webhook.ts.
  */
 export async function POST(request: Request) {
-  if (rateLimited('billing-webhook', 'global', { max: 120, windowMs: 60_000 })) {
+  if (await rateLimited('billing-webhook', 'global', { max: 120, windowSeconds: 60 })) {
     return NextResponse.json({ error: 'slow down' }, { status: 429 })
   }
   try {

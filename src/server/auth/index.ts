@@ -4,7 +4,7 @@ import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2'
 import { getEnv } from '@/lib/env'
 import { globalDb } from '@/server/db/global'
 import { authRateLimitRules, shouldRelaxRateLimits } from './rate-limits'
-import { accounts, sessions, users, verifications } from '@/server/db/identity-schema'
+import { accounts, rateLimits, sessions, users, verifications } from '@/server/db/identity-schema'
 
 /**
  * IDENTITY AND SESSIONS.
@@ -37,7 +37,13 @@ function buildAuth() {
 
     database: drizzleAdapter(globalDb(), {
       provider: 'pg',
-      schema: { user: users, session: sessions, account: accounts, verification: verifications },
+      schema: {
+        user: users,
+        session: sessions,
+        account: accounts,
+        verification: verifications,
+        rateLimit: rateLimits,
+      },
     }),
 
     emailAndPassword: {
@@ -69,6 +75,9 @@ function buildAuth() {
 
     rateLimit: {
       enabled: true,
+      // Shared across every server instance. In memory, each serverless
+      // instance would count on its own and the limits would barely apply.
+      storage: 'database',
       window: 60,
       max: 20,
       customRules: authRateLimitRules(

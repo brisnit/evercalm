@@ -89,31 +89,50 @@ export async function ensureSubscription(
     .from(organizations)
     .where(eq(organizations.id, organizationId))
   if (!org) throw new NotFoundError('Organization not found')
-  const trialStartsAt = org.createdAt
-  const trialEndsAt = new Date(
-    Math.max(trialStartsAt.getTime() + TRIAL_DAYS * DAY, now.getTime() + 7 * DAY),
-  )
+  const provider = billingProvider()
   const id = newId()
-  await tx
-    .insert(subscriptions)
-    .values({ id, organizationId, plan: 'pilot', status: 'trialing', trialStartsAt, trialEndsAt })
-    .onConflictDoNothing()
-  const row = await lockSubscription(tx, organizationId)
+  if (provider.name === 'manual') {
+    // A pilot: active, no trial to run out, nothing charged.
+    await tx
+      .insert(subscriptions)
+      .values({
+        id,
+        organizationId,
+        plan: 'pilot',
+        status: 'active',
+        provider: 'manual',
+        currentPeriodStart: now,
+      })
+      .onConflictDoNothing()
+  } else {
+    const trialStartsAt = org.createdAt
+    const trialEndsAt = new Date(
+      Math.max(trialStartsAt.getTime() + TRIAL_DAYS * DAY, now.getTime() + 7 * DAY),
+    )
+    await tx
+      .insert(subscriptions)
+      .values({ id, organizationId, plan: 'pilot', status: 'trialing', trialStartsAt, trialEndsAt })
+      .onConflictDoNothing()
+  }
+  const row = (await lockSubscription(tx, organizationId))!
+  const manual = row.provider === 'manual'
   await tx
     .insert(billingEvents)
     .values({
       id: newId(),
       organizationId,
-      subscriptionId: row!.id,
-      type: 'trial_started',
+      subscriptionId: row.id,
+      type: manual ? 'pilot_started' : 'trial_started',
       source: 'system',
-      idempotencyKey: `system:trial_started:${row!.id}`,
-      toStatus: 'trialing',
-      summary: `Trial started, ending ${trialEndsAt.toISOString().slice(0, 10)}`,
+      idempotencyKey: `system:${manual ? 'pilot_started' : 'trial_started'}:${row.id}`,
+      toStatus: row.status,
+      summary: manual
+        ? 'Pilot started. Billing is arranged directly with EverCalm; nothing is charged here.'
+        : `Trial started, ending ${row.trialEndsAt!.toISOString().slice(0, 10)}`,
       occurredAt: now,
     })
     .onConflictDoNothing()
-  return row!
+  return row
 }
 
 interface RecordInput {
@@ -223,7 +242,7 @@ export interface BillingOverview {
     actorLabel: string
     occurredAt: Date
   }[]
-  provider: { name: string; live: boolean; simulationsEnabled: boolean }
+  provider: { name: string; live: boolean; simulationsEnabled: boolean; ownerSelfService: boolean }
 }
 
 export async function getBillingOverview(
@@ -285,9 +304,10 @@ export async function getBillingOverview(
       occurredAt: e.occurredAt,
     })),
     provider: {
-      name: provider.name,
-      live: provider.live,
-      simulationsEnabled: provider.simulationsEnabled,
+      name: row.provider,
+      live: false,
+      simulationsEnabled: row.provider === 'mock' && provider.simulationsEnabled,
+      ownerSelfService: row.provider !== 'manual',
     },
   }
 }
@@ -295,6 +315,15 @@ export async function getBillingOverview(
 // ---------------------------------------------------------------------------
 // Owner actions
 // ---------------------------------------------------------------------------
+
+function requireSelfService(row: SubscriptionRow): void {
+  if (row.provider === 'manual') {
+    throw new ValidationError(
+      {},
+      'During the pilot, plan changes and cancellation are arranged with EverCalm. Open a support case and we will take care of it.',
+    )
+  }
+}
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -347,6 +376,7 @@ export async function changePlan(
     throw new ValidationError({ plan: ['Choose a plan.'] })
   const plan = PLANS[planKey as PlanKey]
   const row = await ensureSubscription(tx, actor.organizationId, now)
+  requireSelfService(row)
   if (row.plan === plan.key) return
   if (row.status === 'canceled' || row.status === 'suspended') {
     throw new ValidationError({}, 'Resolve the subscription status before changing plan.')
@@ -389,6 +419,7 @@ export async function changePlan(
 export async function requestCancellation(tx: Tx, actor: Actor, now = new Date()): Promise<void> {
   authorize(actor, 'billing.manage')
   const row = await ensureSubscription(tx, actor.organizationId, now)
+  requireSelfService(row)
   if (row.cancelAtPeriodEnd) return
   if (row.status === 'canceled' || row.status === 'suspended') {
     throw new ValidationError({}, 'This subscription is not active, so there is nothing to cancel.')
@@ -420,6 +451,7 @@ export async function requestCancellation(tx: Tx, actor: Actor, now = new Date()
 export async function withdrawCancellation(tx: Tx, actor: Actor, now = new Date()): Promise<void> {
   authorize(actor, 'billing.manage')
   const row = await ensureSubscription(tx, actor.organizationId, now)
+  requireSelfService(row)
   if (!row.cancelAtPeriodEnd || row.status === 'canceled') return
   await recordChange(
     tx,
@@ -460,7 +492,8 @@ export async function handleProviderEvent(
   now = new Date(),
 ): Promise<{ duplicate: boolean; status: SubscriptionStatus }> {
   const row = await lockSubscription(tx, organizationId)
-  if (!row || row.providerSubscriptionRef !== event.subscriptionRef)
+  // A manual pilot has no provider, so there is no provider event to accept.
+  if (!row || row.provider === 'manual' || row.providerSubscriptionRef !== event.subscriptionRef)
     throw new NotFoundError('Subscription not found')
   const billingEvent: BillingEvent =
     event.type === 'payment_succeeded'
@@ -502,7 +535,8 @@ export async function processBillingLifecycle(
   now: Date,
 ): Promise<number> {
   const row = await lockSubscription(tx, organizationId)
-  if (!row) return 0
+  // Manual pilots never move on their own: EverCalm support changes them.
+  if (!row || row.provider === 'manual') return 0
   let applied = 0
   let current = row
   for (const event of dueLifecycleEvents(stateOf(current), now)) {
@@ -598,6 +632,9 @@ export async function simulateBilling(
   if (provider.live || !provider.simulationsEnabled)
     throw new ForbiddenError('billing.manage', 'Simulations are not available here.')
   const row = await ensureSubscription(tx, actor.organizationId, now)
+  if (row.provider !== 'mock') {
+    throw new ForbiddenError('billing.manage', 'Simulations are not available here.')
+  }
   let ref = row.providerSubscriptionRef
   if (!ref) {
     ref = `mock_sub_${row.id.slice(0, 8)}`
@@ -671,6 +708,16 @@ export async function billingBanner(
   const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
   switch (row.status) {
     case 'suspended':
+      if (row.provider === 'manual') {
+        return {
+          tone: 'danger',
+          title: 'This workspace is read-only',
+          body: owner
+            ? 'EverCalm has paused administration for this pilot. Employees still have their schedules, training and messages. Open a support case to restore everything.'
+            : 'Administration is read-only while the owner resolves the pilot with EverCalm. You can still view and export; employees keep access to their own work.',
+          href,
+        }
+      }
       return {
         tone: 'danger',
         title: 'This workspace is read-only',
@@ -689,6 +736,16 @@ export async function billingBanner(
         href,
       }
     case 'past_due':
+      if (row.provider === 'manual') {
+        return owner
+          ? {
+              tone: 'warning',
+              title: 'Payment is overdue',
+              body: 'EverCalm will contact the billing contact about the pilot invoice. Nothing changes automatically.',
+              href,
+            }
+          : null
+      }
       return owner
         ? {
             tone: 'warning',
