@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from './index'
@@ -43,8 +44,12 @@ export interface ActorContext {
 /**
  * Resolve the signed-in person's permissions in their active organization.
  * Returns null when not signed in or when the account has no membership.
+ *
+ * Cached for the duration of one server render, so a page and the header
+ * around it resolve the actor once. Outside a render (a server action) it is
+ * simply called.
  */
-export async function getActorContext(): Promise<ActorContext | null> {
+export const getActorContext = cache(async (): Promise<ActorContext | null> => {
   const user = await getSessionUser()
   if (!user) return null
 
@@ -65,7 +70,7 @@ export async function getActorContext(): Promise<ActorContext | null> {
   if (!actor) return null
 
   return { user, actor, memberships, activeOrganization }
-}
+})
 
 /** Redirects to sign-in when there is no usable session. */
 export async function requireActorContext(): Promise<ActorContext> {

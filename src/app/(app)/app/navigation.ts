@@ -49,6 +49,15 @@ export const TRAINING_CAPABILITIES: readonly Capability[] = [
   'skill.verify',
 ]
 
+/** Everything that opens some part of shift operations. */
+export const OPERATIONS_CAPABILITIES: readonly Capability[] = [
+  'checklist.author',
+  'checklist.view_runs',
+  'checklist.verify',
+  'checklist.reopen',
+  'handoff.manage',
+]
+
 function allowed(actor: Actor, requires: NavItem['requires']): boolean {
   if (requires === null) return true
   const list: readonly Capability[] = typeof requires === 'string' ? [requires] : requires
@@ -62,6 +71,7 @@ const ITEMS: NavItem[] = [
   { href: '/app/comms', label: 'Communication', requires: 'announcement.create' },
   { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
   { href: '/app/training', label: 'Training', requires: TRAINING_CAPABILITIES },
+  { href: '/app/operations', label: 'Operations', requires: OPERATIONS_CAPABILITIES },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
 
@@ -115,4 +125,19 @@ export const TRAINING_NAV: NavItem[] = [
 
 export function visibleTrainingNav(actor: Actor): NavItem[] {
   return TRAINING_NAV.filter((item) => allowed(actor, item.requires))
+}
+
+/** Sub-navigation inside Operations. */
+export const OPERATIONS_NAV: NavItem[] = [
+  { href: '/app/operations', label: 'Today', requires: 'checklist.view_runs' },
+  {
+    href: '/app/operations/handoffs',
+    label: 'Handoffs',
+    requires: ['checklist.view_runs', 'handoff.manage'],
+  },
+  { href: '/app/operations/templates', label: 'Templates', requires: OPERATIONS_CAPABILITIES },
+]
+
+export function visibleOperationsNav(actor: Actor): NavItem[] {
+  return OPERATIONS_NAV.filter((item) => allowed(actor, item.requires))
 }

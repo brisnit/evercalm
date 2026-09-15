@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
+import { EmployeeHeader } from './_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
@@ -10,8 +11,9 @@ import { inboxDigest } from '@/modules/comms/inbox'
 import { nextShift } from '@/modules/scheduling/employee'
 import { myTraining, type MyTraining } from '@/modules/training/learner'
 import { dueLabel } from '@/modules/training/progress'
+import { myShiftWorkSummary, type ShiftWorkSummary } from '@/modules/operations/work'
 import { PriorityMark } from '@/ui/patterns/priority-mark'
-import { Badge, Card, CardHeader, Logo, ProgressBar } from '@/ui/primitives'
+import { Badge, Card, CardHeader, ProgressBar } from '@/ui/primitives'
 
 export const metadata: Metadata = { title: 'My work' }
 export const dynamic = 'force-dynamic'
@@ -35,6 +37,7 @@ export default async function MyWorkPage() {
     inbox: await inboxDigest(tx, actor, actor.employmentId),
     nextShift: await nextShift(tx, actor),
     training: await myTraining(tx, actor),
+    shiftWork: await myShiftWorkSummary(tx, actor),
   }))
 
   // When onboarding's next step IS a course, there is one next action, not two:
@@ -70,16 +73,16 @@ export default async function MyWorkPage() {
 
   return (
     <div className="bg-raise flex min-h-screen flex-col">
-      <header className="border-line border-b bg-white px-5 py-3">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Logo size="h-8" eager />
-          {hasAdminAccess ? (
+      <EmployeeHeader
+        back={null}
+        extra={
+          hasAdminAccess ? (
             <Link href="/app" className="text-muted text-sm underline-offset-4 hover:underline">
               Administration
             </Link>
-          ) : null}
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">
@@ -103,6 +106,8 @@ export default async function MyWorkPage() {
           {data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0 ? (
             <InboxCallout digest={data.inbox} />
           ) : null}
+
+          {data.shiftWork ? <ShiftWorkCard summary={data.shiftWork} /> : null}
 
           <Card>
             <CardHeader
@@ -460,5 +465,66 @@ function TrainingCard({
         </p>
       ) : null}
     </Card>
+  )
+}
+
+/**
+ * The shift in front of you and how much of its work is left. Only shown when
+ * the current or next shift has duties; the workspace is one tap away.
+ */
+function ShiftWorkCard({ summary }: { summary: ShiftWorkSummary }) {
+  const { progress } = summary
+  const when =
+    summary.phase === 'during'
+      ? 'On now'
+      : summary.phase === 'after'
+        ? 'Just finished'
+        : summary.phase === 'before'
+          ? 'Starting soon'
+          : 'Your next shift'
+  const finished = progress.open === 0 && progress.waiting === 0
+  const line = finished
+    ? 'Everything is finished.'
+    : [
+        summary.needsAttention > 0
+          ? `${summary.needsAttention} ${summary.needsAttention === 1 ? 'needs' : 'need'} attention`
+          : null,
+        summary.beforeShift > 0 ? `${summary.beforeShift} before you start` : null,
+        `${progress.open} still to do`,
+        progress.waiting > 0 ? `${progress.waiting} waiting for a manager` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+
+  return (
+    <div data-testid="shift-work-card">
+      <Card className={summary.needsAttention > 0 ? 'border-warning/40' : undefined}>
+        <div className="px-5 py-4">
+          <p className="text-muted text-xs font-semibold tracking-wide uppercase">{when}</p>
+          <p className="font-display text-ink mt-1 text-lg font-bold">
+            {summary.day} · {summary.time}
+            {summary.endsNextDay ? ' (next day)' : ''}
+          </p>
+          <p className="text-muted text-sm">{summary.locationName}</p>
+          <ProgressBar
+            className="mt-3"
+            value={progress.percent}
+            tone={finished ? 'success' : 'violet'}
+            label={`${progress.done + progress.skipped} of ${progress.total} shift tasks finished`}
+          />
+          <p
+            className={`mt-2 text-sm ${summary.needsAttention > 0 ? 'text-warning font-semibold' : 'text-muted'}`}
+          >
+            {line}
+          </p>
+          <Link
+            href={`/my/shift?shift=${summary.shiftId}`}
+            className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+          >
+            Open shift work
+          </Link>
+        </div>
+      </Card>
+    </div>
   )
 }

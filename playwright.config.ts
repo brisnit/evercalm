@@ -39,7 +39,7 @@ export default defineConfig({
       name: 'mobile',
       use: { ...devices['iPhone 14'] },
       testMatch:
-        /.*(employee|employee-onboarding|employee-inbox|employee-schedule|employee-training|employee-onboarding-training|marketing|accessibility|screenshots-mobile)\.spec\.ts/,
+        /.*(employee|employee-onboarding|employee-inbox|employee-schedule|employee-training|employee-onboarding-training|employee-operations|employee-account|marketing|accessibility|screenshots-mobile)\.spec\.ts/,
     },
   ],
 

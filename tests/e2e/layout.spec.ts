@@ -188,3 +188,30 @@ test('linked onboarding training fits a phone screen', async ({ page }) => {
   await page.goto('/my')
   await expectNoHorizontalOverflow(page, '/my')
 })
+
+test('shift operations fit a phone screen', async ({ page }) => {
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  await page.goto('/app/operations/templates')
+  const template = await page.getByRole('link', { name: 'Server side work' }).getAttribute('href')
+  for (const path of [
+    '/app/operations',
+    '/app/operations/handoffs',
+    '/app/operations/templates',
+    template!,
+  ]) {
+    await page.goto(path)
+    await expectNoHorizontalOverflow(page, path)
+  }
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app/operations/templates/new')
+  await expectNoHorizontalOverflow(page, '/app/operations/templates/new')
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.harborEmployee.email)
+  for (const path of ['/my', '/my/shift']) {
+    await page.goto(path)
+    await expectNoHorizontalOverflow(page, path)
+  }
+})

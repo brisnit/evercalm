@@ -1,3 +1,4 @@
+import { syncOperationsForShifts } from '@/modules/operations/generation'
 import { and, asc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Tx } from '@/server/db'
 import { employments, jobRoles, stations } from '@/server/db/schema'
@@ -1513,6 +1514,16 @@ export async function publishSchedule(
     })
     .where(and(eq(schedules.organizationId, actor.organizationId), eq(schedules.id, scheduleId)))
 
+  // The work on each shift follows what was just published: new shifts get
+  // their tasks, cancelled ones retire theirs, changed hands move them.
+  const operations = await syncOperationsForShifts(
+    tx,
+    actor.organizationId,
+    state.rows.map((r) => r.id),
+    actor.employmentId,
+    now,
+  )
+
   const { location, diff } = state
   const weekLabel = formatIsoDate(state.schedule.weekStart)
   const href = `/my/schedule?week=${state.schedule.weekStart}`
@@ -1586,6 +1597,19 @@ export async function publishSchedule(
       openShiftNotices,
     },
   })
+  if (
+    operations.created + operations.cancelled + operations.reassigned + operations.rescheduled >
+    0
+  ) {
+    await recordAuditEvent(tx, actor, {
+      action: AUDIT_ACTIONS.OPS_RUNS_GENERATED,
+      summary: `Updated shift work for the ${location.name} schedule for the week of ${weekLabel}: ${operations.created} new, ${operations.cancelled} cancelled, ${operations.reassigned} changed hands, ${operations.rescheduled} retimed`,
+      subjectType: 'schedule',
+      subjectId: scheduleId,
+      locationId: location.id,
+      metadata: { ...operations },
+    })
+  }
 
   return {
     version,
@@ -1650,8 +1674,18 @@ export async function reassignNow(
           : eq(shifts.assigneeEmploymentId, input.from),
       ),
     )
-    .returning({ id: shifts.id })
+    .returning({ id: shifts.id, publishedAt: shifts.publishedAt })
   if (rows.length === 0) throw new StaleShiftError()
+  // Open work on the shift goes with it to the new person.
+  if (rows[0]!.publishedAt !== null) {
+    await syncOperationsForShifts(
+      tx,
+      organizationId,
+      [input.shiftId],
+      input.actorEmploymentId,
+      input.now,
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------

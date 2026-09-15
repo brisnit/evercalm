@@ -325,6 +325,69 @@ awards. They were left out: progress and accomplishment are shown privately
 and plainly, and nothing ranks one person against another. Recorded so the
 choice is visible, not so it is revisited by default.
 
+## Shift operations: known gaps (Slice 6)
+
+### O1 · No photo evidence on tasks — **Medium**
+
+A temperature log or a clean station cannot carry a photo: there is no file
+storage provider configured yet. Numbers and short notes are the evidence for
+now.
+
+### O2 · Runs keep their version when a template is republished — **Low**
+
+Shifts that already have a run stay on the version they were given, including
+shifts later in the week that nobody has started. That is the honest record,
+but a manager fixing a mistake in a template may expect next Saturday's run to
+change. A "move not-started runs to the new version" action, like training's,
+would cover it.
+
+### O3 · Overdue is computed, not stamped — **Low**
+
+There is no job that marks work missed at the end of a shift, and no
+notification when something goes overdue. The board and workspace compute it
+on every read; the pre-shift reminder is the only push.
+
+### O4 · The phone workspace is long on a busy shift — **Medium**
+
+A bartender with setup, pre-shift and close on one overnight shift sees a dozen
+cards, each with its own controls. Everything is correct and reachable, but a
+compact "tick list" mode for simple check tasks would read faster. Found in
+visual review with the seeded bar close.
+
+### O5 · The board has no date picker — **Low**
+
+Previous day, today and next day only. A manager looking at last Tuesday edits
+the address or clicks back several times.
+
+### O6 · Handoffs are not notified to the next shift — **Low**
+
+They appear on the next person's workspace and the board, and a priority
+handoff is marked, but nobody is pushed a notification when one is left.
+
+### O7 · Visual review fixes — **Fixed**
+
+"1 need attention" became "1 needs attention"; the general "Leave a handoff"
+form on the workspace is collapsed, since the end-of-shift handoff task already
+asks; an empty grey toolbar no longer shows for a manager with one location;
+another location's board or handoffs by address, or a malformed location in the
+address, is a 404 rather than an error page.
+
+### O8 · Employees had no way to sign out — **Fixed**
+
+_Found: Slice 6 review. Switching from one demo employee to another was
+impossible from any /my screen._
+
+**Fixed:** every employee page now uses one shared header with an account
+control: the person's initials and first name, labelled "Account: full name"
+for screen readers. It opens a small panel with their name, organization,
+notification settings and Sign out. It is a disclosure, not an ARIA menu:
+reached with Tab, closed by Escape (focus returns to the control), a tap
+outside, or tabbing away. Sign out ends the session on the server and loads
+the sign-in page fresh. A tap inside the panel no longer closes it on iPhone
+Safari, which does not focus tapped buttons. **Lesson for the redesign:** the
+employee surface still has no navigation of its own (D4); the account control
+is where that navigation will naturally grow.
+
 ## Test reliability
 
 Browser-suite failures seen once and not yet investigated. Recorded so they are

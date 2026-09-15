@@ -295,6 +295,40 @@ Rules that hold regardless of role:
   Reading the linked course's progress on someone's onboarding follows the
   onboarding rules (`onboarding.view_progress` at the person's location).
 
+## Operations capabilities
+
+Every operations capability is location-scopable.
+
+| Capability            | Allows                                                                   | Owner | General Manager | Shift Lead |
+| --------------------- | ------------------------------------------------------------------------ | :---: | :-------------: | :--------: |
+| `checklist.author`    | Build, publish, draft, archive templates for the locations it is held at |  org  |    location     |     —      |
+| `checklist.view_runs` | The operational board                                                    |  org  |    location     |  location  |
+| `checklist.verify`    | Verify, send back and reassign tasks                                     |  org  |    location     |  location  |
+| `checklist.reopen`    | Reopen finished or skipped work                                          |  org  |    location     |     —      |
+| `handoff.manage`      | Resolve and reopen handoffs; leave one without a shift                   |  org  |    location     |  location  |
+
+HR Admins, Schedulers, Training Managers and Employees hold none of these.
+Doing the work on your own shift is self-access and needs no capability.
+
+Rules that hold regardless of role:
+
+- **Templates for every location need the organization.** A General Manager
+  authors templates only for their own locations, and cannot change one that
+  also applies elsewhere. Anyone in operations can read templates that apply
+  where they work.
+- **Outside scope is not found.** A Downtown manager asking for Riverside's
+  board, handoffs, a Riverside task or a Riverside-only template gets 404, as
+  does another business. Inside scope without the capability, the answer is
+  "you do not have permission".
+- **Nobody verifies their own work,** owners included.
+- **A colleague's task is not found** unless it is shared and you are on shift
+  at that location that day.
+- **Handoffs are readable by everyone who works at the location,** and only
+  `handoff.manage` resolves them. An employee leaves one from their own
+  shift; without a shift, only a manager can.
+- **Records are not deleted.** The runtime role cannot delete runs, tasks,
+  events or handoffs, whatever the service does.
+
 ## Enforcement
 
 Every mutation is a server action whose first act is resolving the actor from

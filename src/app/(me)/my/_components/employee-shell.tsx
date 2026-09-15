@@ -1,12 +1,51 @@
 import Link from 'next/link'
+import { requireActorContext } from '@/server/auth/session'
 import { Logo } from '@/ui/primitives'
+import { AccountMenu } from './account-menu'
 
 /**
- * The employee page frame: a narrow, phone-first column with the mark on the
- * left and one way back on the right.
- *
- * The inbox and notification pages predate this and inline the same markup;
- * new employee pages use this so the frame stays identical everywhere.
+ * The employee header: the mark, an optional way back or across, and the
+ * account control with Sign out. Every /my page uses it, so a person can always
+ * see who is signed in and leave.
+ */
+export async function EmployeeHeader({
+  back,
+  extra,
+}: {
+  back?: { href: string; label: string } | null
+  /** Rendered before the account control, for example "Administration". */
+  extra?: React.ReactNode
+}) {
+  const { actor, activeOrganization } = await requireActorContext()
+  return (
+    <header className="border-line border-b bg-white px-5 py-2">
+      <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
+        <Link href="/my" aria-label="Your work" className="shrink-0">
+          <Logo size="h-8" eager />
+        </Link>
+        <div className="flex min-w-0 items-center gap-3">
+          {extra}
+          {back ? (
+            <Link
+              href={back.href}
+              className="text-muted truncate text-sm underline-offset-4 hover:underline"
+            >
+              {back.label}
+            </Link>
+          ) : null}
+          <AccountMenu
+            name={actor.displayName}
+            organizationName={activeOrganization.organizationName}
+          />
+        </div>
+      </div>
+    </header>
+  )
+}
+
+/**
+ * The employee page frame: a narrow, phone-first column under the employee
+ * header.
  */
 export function EmployeeShell({
   children,
@@ -17,16 +56,7 @@ export function EmployeeShell({
 }) {
   return (
     <div className="bg-raise flex min-h-screen flex-col">
-      <header className="border-line border-b bg-white px-5 py-3">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Link href="/my" aria-label="Your work">
-            <Logo size="h-8" eager />
-          </Link>
-          <Link href={back.href} className="text-muted text-sm underline-offset-4 hover:underline">
-            {back.label}
-          </Link>
-        </div>
-      </header>
+      <EmployeeHeader back={back} />
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         {children}
       </main>

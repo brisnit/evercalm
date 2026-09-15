@@ -338,3 +338,31 @@ test('linked onboarding training has no accessibility violations', async ({ page
   const employee = await scan(page)
   expect(employee.violations.map((v) => `my onboarding -> ${v.id}: ${v.help}`)).toEqual([])
 })
+
+test('shift operations screens have no accessibility violations', async ({ page }) => {
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  await page.goto('/app/operations/templates')
+  const template = await page.getByRole('link', { name: 'Server side work' }).getAttribute('href')
+  for (const path of [
+    '/app/operations',
+    '/app/operations/handoffs',
+    '/app/operations/templates',
+    template!,
+  ]) {
+    await page.goto(path)
+    const results = await scan(page)
+    expect(
+      results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`),
+      `Violations on ${path}`,
+    ).toEqual([])
+  }
+
+  await page.context().clearCookies()
+  await signIn(page, PEOPLE.harborEmployee.email)
+  await page.goto('/my/shift')
+  // Open the parts that start closed, so what they hold is scanned too.
+  await page.getByRole('button', { name: /^Finished/ }).click()
+  await page.getByRole('button', { name: 'Leave a handoff for the next shift' }).click()
+  const results = await scan(page)
+  expect(results.violations.map((v) => `/my/shift -> ${v.id}: ${v.help}`)).toEqual([])
+})

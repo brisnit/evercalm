@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { EmployeeHeader } from '../../_components/employee-shell'
 import { notFound } from 'next/navigation'
 import { NotFoundError } from '@/lib/errors'
 import { isUuid } from '@/lib/uuid'
@@ -9,7 +10,7 @@ import { openAnnouncement, outstandingAcknowledgement } from '@/modules/comms/in
 import { organizationTimeZone } from '@/modules/comms/service'
 import { formatDateInZone } from '@/lib/dates'
 import { isSafeHref } from '@/modules/comms/content'
-import { Badge, Card, Logo } from '@/ui/primitives'
+import { Badge, Card } from '@/ui/primitives'
 import { AnnouncementBody } from '@/ui/patterns/announcement-body'
 import { PriorityMark } from '@/ui/patterns/priority-mark'
 import { AcknowledgementPanel } from './acknowledgement-panel'
@@ -53,16 +54,7 @@ export default async function AnnouncementPage({
 
   return (
     <div className="bg-raise flex min-h-screen flex-col">
-      <header className="border-line border-b bg-white px-5 py-3">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Link href="/my" aria-label="Your work">
-            <Logo size="h-8" eager />
-          </Link>
-          <Link href="/my/inbox" className="text-muted text-sm underline-offset-4 hover:underline">
-            Inbox
-          </Link>
-        </div>
-      </header>
+      <EmployeeHeader back={{ href: '/my/inbox', label: 'Inbox' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         <nav aria-label="Breadcrumb" className="mb-3">

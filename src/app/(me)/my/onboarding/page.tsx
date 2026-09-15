@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
-import Link from 'next/link'
+import { EmployeeHeader } from '../_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
-import { Badge, Card, EmptyState, Logo, ProgressBar } from '@/ui/primitives'
+import { Badge, Card, EmptyState, ProgressBar } from '@/ui/primitives'
 import { LinkedTrainingCard } from './linked-training'
 import { StepActions } from './step-actions'
 
@@ -26,16 +26,7 @@ export default async function MyOnboardingPage() {
 
   return (
     <div className="bg-raise flex min-h-screen flex-col">
-      <header className="border-line border-b bg-white px-5 py-3">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Link href="/my" aria-label="Your work">
-            <Logo size="h-8" eager />
-          </Link>
-          <Link href="/my" className="text-muted text-sm underline-offset-4 hover:underline">
-            Back
-          </Link>
-        </div>
-      </header>
+      <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">

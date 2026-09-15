@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { EmployeeHeader } from '../_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listCategories } from '@/modules/comms/service'
 import { getSettings, listPreferences } from '@/modules/notifications/service'
-import { Card, CardHeader, Logo } from '@/ui/primitives'
+import { Card, CardHeader } from '@/ui/primitives'
 import { PreferencesForm } from './preferences-form'
 
 export const metadata: Metadata = { title: 'Notifications' }
@@ -37,16 +37,7 @@ export default async function NotificationPreferencesPage() {
 
   return (
     <div className="bg-raise flex min-h-screen flex-col">
-      <header className="border-line border-b bg-white px-5 py-3">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
-          <Link href="/my" aria-label="Your work">
-            <Logo size="h-8" eager />
-          </Link>
-          <Link href="/my" className="text-muted text-sm underline-offset-4 hover:underline">
-            Back
-          </Link>
-        </div>
-      </header>
+      <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight">

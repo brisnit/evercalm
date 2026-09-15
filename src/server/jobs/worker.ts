@@ -10,6 +10,7 @@ import {
   publishScheduledAnnouncement,
 } from '@/modules/comms/service'
 import { processAutomaticReminders } from '@/modules/comms/receipts'
+import { processOperationsReminders } from '@/modules/operations/reminders'
 import {
   claimDueNotifications,
   completeDelivery,
@@ -26,10 +27,11 @@ import {
  *   1. publish scheduled announcements whose time has come
  *   2. expire published announcements whose time has passed
  *   3. send automatic "due soon" and "overdue" acknowledgement reminders
- *   4. deliver queued notifications
+ *   4. remind people whose shift starts within the hour of the work waiting
+ *   5. deliver queued notifications
  *
  * In that order, so an announcement published in step 1 has its notifications
- * delivered in step 4 of the SAME tick.
+ * delivered in step 5 of the SAME tick.
  *
  * DURABLE. The worker keeps no state of its own. Every decision is a row in
  * PostgreSQL - a status, a stamp, a lease - so stopping it at any instant
@@ -68,7 +70,7 @@ export interface WorkerDeps {
   leaseMs?: number
 }
 
-export type WorkerStep = 'discover' | 'publish' | 'expire' | 'reminders' | 'deliver'
+export type WorkerStep = 'discover' | 'publish' | 'expire' | 'reminders' | 'operations' | 'deliver'
 
 export interface TickReport {
   startedAt: Date
@@ -79,6 +81,8 @@ export interface TickReport {
   scheduleFailures: number
   expired: number
   reminded: number
+  /** Pre-shift reminders about shift work. */
+  shiftReminders: number
   sent: number
   retrying: number
   failed: number
@@ -96,6 +100,7 @@ function emptyReport(startedAt: Date): TickReport {
     scheduleFailures: 0,
     expired: 0,
     reminded: 0,
+    shiftReminders: 0,
     sent: 0,
     retrying: 0,
     failed: 0,
@@ -112,6 +117,7 @@ export function tickDidWork(report: TickReport): boolean {
       report.scheduleFailures +
       report.expired +
       report.reminded +
+      report.shiftReminders +
       report.sent +
       report.retrying +
       report.failed >
@@ -227,6 +233,12 @@ export async function runWorkerTick(deps: WorkerDeps = {}): Promise<TickReport> 
         processAutomaticReminders(tx, organizationId, now),
       )
       report.reminded += result.reminded
+    })
+
+    await step(organizationId, 'operations', async () => {
+      report.shiftReminders += await runTenant(organizationId, (tx) =>
+        processOperationsReminders(tx, organizationId, now),
+      )
     })
 
     await step(organizationId, 'deliver', async () => {

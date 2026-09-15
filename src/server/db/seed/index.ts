@@ -10,6 +10,7 @@ import { deliveryPolicy } from '@/modules/comms/delivery-policy'
 import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data'
 import { seedScheduling } from './scheduling'
 import { linkSeededOnboardingTraining, seedTraining } from './training'
+import { seedOperations } from './operations'
 
 /**
  * Idempotent seed.
@@ -47,6 +48,9 @@ export interface SeedOrganizationSummary {
   shifts: number
   courses: number
   trainingAssignments: number
+  opsTemplates: number
+  opsRuns: number
+  handoffs: number
 }
 
 export interface SeedSummary {
@@ -132,6 +136,9 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
     shifts: 0,
     courses: 0,
     trainingAssignments: 0,
+    opsTemplates: 0,
+    opsRuns: 0,
+    handoffs: 0,
   }
 }
 
@@ -935,6 +942,18 @@ async function seedOrganization(
     systemEvent,
   })
 
+  // --- shift operations --------------------------------------------------------
+  // After scheduling, so today's shifts exist to carry the work.
+  const operations = await seedOperations(db, {
+    organizationId,
+    slug: seed.slug,
+    locationIds,
+    locationTimeZones: new Map(seed.locations.map((l) => [l.key, l.timezone])),
+    jobRoleIds,
+    employmentIds,
+    systemEvent,
+  })
+
   await db.insert(schema.auditEvents).values(audit)
 
   return {
@@ -957,6 +976,9 @@ async function seedOrganization(
     shifts: scheduling.shifts,
     courses: training.courses,
     trainingAssignments: training.assignments,
+    opsTemplates: operations.templates,
+    opsRuns: operations.runs,
+    handoffs: operations.handoffs,
   }
 }
 

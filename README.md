@@ -6,7 +6,7 @@ businesses.
 > Every person knows what is happening, what is expected, what they have
 > completed, and what comes next.
 
-**Status: Slices 1–4 approved. Slice 5 built and awaiting review.**
+**Status: Slices 1–5 approved. Slice 6 built and awaiting review.**
 
 - **Slice 1 — Foundation.** Authentication, multi-tenant organizations and
   locations, capability permissions with location scope, three-layer tenant
@@ -50,8 +50,18 @@ businesses.
   completes when the course does. Quiet moments of progress, no points, badges
   or leaderboards.
 
-Daily shift operations arrive in a later slice and are not built — nothing in
-the interface pretends otherwise. Two-way messaging is
+- **Slice 6 — Shift operations.** Versioned operational templates for
+  pre-shift, opening, side work, station setup, shift duties, closing and
+  handoffs, targeted by location, job role and station, with timing relative
+  to the shift, required and optional tasks, shared tasks and manager
+  verification. Publishing a schedule gives each shift its work exactly once;
+  swaps, claims, reassignment, time changes and cancellations move or retire
+  open work without rewriting finished work. A phone-first shift workspace for
+  employees, an operational board that puts what needs a manager first, and
+  location handoffs with acknowledgement and resolution. Restaurant and salon
+  demo days.
+
+Two-way messaging is
 deliberately absent: the architecture supports it, and no half-built chat is
 exposed.
 

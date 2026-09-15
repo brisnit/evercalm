@@ -790,6 +790,125 @@ notified like any other assignment. The home screen shows one next action: when
 onboarding's next step is a course, the onboarding card links to the lesson and
 the training card does not repeat it.
 
+## Shift operations
+
+Slice 6. Everything lives in `src/modules/operations`: pure rules in `rules.ts`
+(when a task is due, whether a template applies to a shift, a task's state,
+where it sits on the workspace, progress and what needs a manager); database
+work in `templates.ts` (authoring, versions, publication), `generation.ts`
+(published shift to runs), `work.ts` (the employee's workspace and actions),
+`board.ts` (the manager's board and interventions), `handoffs.ts`, and
+`reminders.ts` (the worker's pre-shift step); tables in `schema.ts`, mirrored by
+`drizzle/0018_operations.sql`.
+
+Industry-neutral again: Harbor & Vine's templates are a pre-shift lineup with the
+86 list, server side work and a bar close; Lumen's are appointment review,
+station sanitation, a product count and closing duties. The only vocabulary
+the code chooses is the handoff category "Guest issue" or "Client issue", from
+the organization's industry.
+
+### Templates are versioned like courses
+
+| Table                                              | Holds                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| `ops_templates`                                    | The identity people name and archive                         |
+| `ops_template_versions`                            | One editable draft, or one frozen published version          |
+| `ops_sections`, `ops_tasks`                        | The content, owned by a **version**                          |
+| `ops_version_locations`, `_job_roles`, `_stations` | Who the version applies to; an empty list means any          |
+| `ops_runs`                                         | One template version on one published shift                  |
+| `ops_task_items`                                   | Each task on that run: assignee, due time, state, who did it |
+| `ops_task_events`, `ops_run_assignees`             | Every change, and every change of hands (append-only)        |
+| `handoffs`, `handoff_acknowledgements`             | Notes for the next shift, and who has read them              |
+
+A published version never changes: `requireDraft()` refuses in the service, and
+triggers refuse insert, update or delete of a published version's sections,
+tasks and targets. Editing starts a new draft that copies the published one.
+Runs and items carry the version id under composite foreign keys, so what a
+shift was asked to do stays true after the template changes.
+
+A task's due time is an offset of up to twelve hours from the start or end of
+the shift. It is computed from the shift's **published instants**, which already
+carry the location's timezone and an end on the next day, so an overnight bar
+close's "15 minutes before the end" is 12:45 AM on the following date. A run's
+`business_date` is the local date the shift starts.
+
+### From a published shift to its work
+
+`syncOperationsForShifts()` is the only writer of runs, and reads only the
+published copy of a shift. It is called at the end of `publishSchedule()` for
+every shift in the week, by `reassignNow()` for approved claims and swaps, and
+by template publication for published shifts in the next 21 days. It
+reconciles, so calling it twice changes nothing:
+
+| Situation                                        | What happens                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| A template applies and there is no run           | Create the run and its task items                                                |
+| Published again with nothing changed             | Nothing (`unique (shift, template)` and `unique (run, task)` too)                |
+| The shift was cancelled and that was published   | Cancel the run; finished items stay finished                                     |
+| A new role or station means it no longer applies | Cancel the run; it is reactivated if it applies again                            |
+| The shift changed hands                          | Open items move with it; `reassigned_from` and a history row record who had them |
+| The times changed                                | Open items are re-timed and the reminder is re-armed                             |
+| A new template version is published              | Shifts without a run get the new version; existing runs keep theirs              |
+
+Tasks do not exist for a shift nobody has been told about. Nothing is deleted:
+runs, task items, handoffs refuse `DELETE`, and events, assignee history and
+acknowledgements refuse `UPDATE` and `DELETE`, at the grant level.
+
+### Doing the work
+
+Every state change goes through `transition()`: a conditional `UPDATE` on the
+item's `revision` and current status, plus an event row. Two people pressing
+Done on the same task, or two managers verifying it, produce one change; the
+other is told the task changed and nothing is overwritten.
+
+| State                    | Stored as                                   |
+| ------------------------ | ------------------------------------------- |
+| To do, due soon, overdue | `pending`, compared with the due time       |
+| Sent back                | `pending` with a manager's note             |
+| Blocked                  | `blocked`, with a required reason           |
+| Skipped                  | `skipped`, with a required reason           |
+| Waiting for a manager    | `awaiting_verification`                     |
+| Done                     | `done`, with who and when, and who verified |
+| Reassigned               | the new assignee, with `reassigned_from`    |
+
+A task belongs to its assignee. A **shared** task may also be completed by
+anyone with a published shift at the same location on the same business date;
+anyone else gets not found. Work opens 12 hours before a shift starts and closes
+12 hours after it ends. The person who did something may undo it until a
+manager verifies it or two hours after the shift. There are no points, streaks
+or rankings.
+
+The workspace (`/my/shift`) shows the current shift, or the next one with work:
+needs attention now, before your shift, during your shift, before you leave,
+waiting for a manager, finished, shared tasks, handoffs from earlier shifts,
+and a way to leave one. The board (`/app/operations`) shows one location and
+business date: what needs a manager (blocked, overdue, waiting, required work
+skipped, sent back), each shift's progress with its template versions, progress
+by station, role and person, skipped reasons, and handoffs.
+
+### Handoffs
+
+Scoped to a location, with a category (staffing, inventory, maintenance,
+safety, guest or client issue, follow-up), a priority, the author and, when
+left from one, the shift. Everyone who works at the location sees what is open
+on their workspace, from before their shift ends, plus what was resolved in the
+day before it started. Acknowledging is one row per person. Resolving and
+reopening need `handoff.manage`; reopening records the resolution it undoes in
+the audit event.
+
+### Notifications, reminders and records
+
+Category `operations`, in-app only, respecting preferences and quiet hours: a
+task sent back, a task given to someone, a handoff someone left being resolved,
+and one pre-shift reminder in the hour before a shift with work to do. The
+reminder is a worker step (`processOperationsReminders`), claimed with a
+conditional update on `ops_runs.reminded_at`, and the due-work discovery
+function knows about it. Audited: template creation, publication, drafts,
+archive and restore; work generated by a publication; skipped and blocked
+tasks; verification, sending back, reassignment and reopening; handoff creation,
+resolution and reopening. Ordinary completions are recorded in
+`ops_task_events` rather than the organization's audit log.
+
 ## Audit
 
 `recordAuditEvent()` takes the caller's transaction, so an action and its audit
