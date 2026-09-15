@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getTemplate, listLinkableCourses, templateImpact } from '@/modules/onboarding/templates'
@@ -6,15 +7,7 @@ import { listJobRoles } from '@/modules/structure/service'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
-import {
-  BackLink,
-  Badge,
-  ButtonLink,
-  Card,
-  EmptyState,
-  PageHeader,
-  TextLink,
-} from '@/ui/primitives'
+import { BackLink, Badge, ButtonLink, Card, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { TemplateBuilder } from './builder'
 
@@ -72,19 +65,8 @@ export default async function TemplateBuilderPage({
     }
   })
 
-  if (data === 'not_found') {
-    return (
-      <EmptyState
-        title="We could not find that checklist"
-        description="It may have been removed, or the link may be wrong."
-        action={
-          <TextLink href="/app/onboarding/templates" className="text-sm">
-            Back to checklists
-          </TextLink>
-        }
-      />
-    )
-  }
+  // Another organization's checklist is indistinguishable from none: a real 404.
+  if (data === 'not_found') notFound()
   if (data === 'forbidden') {
     return <PermissionDenied capabilityLabel="Manage onboarding checklists" />
   }

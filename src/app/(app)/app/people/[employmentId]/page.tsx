@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { formatCalendarDate } from '@/lib/dates'
 import { and, eq, isNull } from 'drizzle-orm'
 import { requireActorContext } from '@/server/auth/session'
@@ -108,19 +109,9 @@ export default async function EmployeeProfilePage({
     }
   })
 
-  if (data === 'not_found') {
-    return (
-      <EmptyState
-        title="We could not find that employee"
-        description="They may have been removed, or the link may be wrong."
-        action={
-          <TextLink href="/app/people" className="text-sm">
-            Back to the directory
-          </TextLink>
-        }
-      />
-    )
-  }
+  // Someone in another organization, or outside the viewer's locations, is
+  // indistinguishable from someone who does not exist: a real 404.
+  if (data === 'not_found') notFound()
   if (data === 'forbidden') return <PermissionDenied capabilityLabel="View people" />
 
   const { person, onboarding } = data

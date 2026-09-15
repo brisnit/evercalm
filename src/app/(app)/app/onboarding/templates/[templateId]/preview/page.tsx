@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { formatCalendarDate } from '@/lib/dates'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -62,14 +63,8 @@ export default async function TemplatePreviewPage({
     }
   })
 
-  if (data === 'not_found') {
-    return (
-      <EmptyState
-        title="We could not find that checklist"
-        description="It may have been removed, or the link may be wrong."
-      />
-    )
-  }
+  // Another organization's checklist is indistinguishable from none: a real 404.
+  if (data === 'not_found') notFound()
   if (data === 'forbidden') {
     return <PermissionDenied capabilityLabel="Manage onboarding checklists" />
   }

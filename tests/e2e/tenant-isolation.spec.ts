@@ -40,6 +40,25 @@ test.describe('cross-tenant isolation in the browser', () => {
     expectNoConsoleErrors(errors)
   })
 
+  test('an employee record in another organization answers 404', async ({ page }) => {
+    await signIn(page, PEOPLE.harborOwner.email)
+    await page.goto('/app/people')
+    const href = await page
+      .getByRole('main')
+      .locator('a[href^="/app/people/"]')
+      .evaluateAll((links) =>
+        links
+          .map((a) => a.getAttribute('href') ?? '')
+          .find((h) => /^\/app\/people\/[0-9a-f-]{36}$/.test(h)),
+      )
+    expect(href, 'a Harbor & Vine profile link').toBeTruthy()
+
+    await signOut(page)
+    await signIn(page, PEOPLE.salonOwner.email)
+    const response = await page.goto(href!)
+    expect(response?.status()).toBe(404)
+  })
+
   test('the audit log of one tenant never mentions the other', async ({ page }) => {
     await signIn(page, PEOPLE.harborOwner.email)
     // The whole available history, not just the latest page of it.
