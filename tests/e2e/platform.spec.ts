@@ -39,7 +39,11 @@ test('staff land on the team dashboard and cannot enter a customer workspace', a
   const errors = trackConsoleErrors(page)
   await signInAsStaff(page, STAFF.agent)
   await expect(page.getByRole('heading', { name: 'Organizations', level: 1 })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Harbor & Vine' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('region', { name: 'Organizations' })
+      .getByRole('link', { name: 'Harbor & Vine' }),
+  ).toBeVisible()
   await expectFitsAndAccessible(page, '/platform')
 
   await page.goto('/app')
@@ -51,7 +55,10 @@ test('staff land on the team dashboard and cannot enter a customer workspace', a
 
 test('diagnostics stay closed until opened, and opening is recorded', async ({ page }) => {
   await signInAsStaff(page, STAFF.admin)
-  await page.getByRole('link', { name: 'Harbor & Vine' }).click()
+  await page
+    .getByRole('region', { name: 'Organizations' })
+    .getByRole('link', { name: 'Harbor & Vine' })
+    .click()
   await expect(page.getByRole('heading', { name: 'Harbor & Vine', level: 1 })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Delivery failures (30 days)' })).toHaveCount(0)
   await expectFitsAndAccessible(page, '/platform/organizations/[id]')
@@ -100,7 +107,10 @@ test('support replies reach the customer, and internal notes never do', async ({
 
 test('a support administrator sets a manual pilot’s status, with a reason', async ({ page }) => {
   await signInAsStaff(page, STAFF.admin)
-  await page.getByRole('link', { name: 'Lumen Salon' }).click()
+  await page
+    .getByRole('region', { name: 'Organizations' })
+    .getByRole('link', { name: 'Lumen Salon' })
+    .click()
   await expect(page.getByRole('heading', { name: 'Lumen Salon', level: 1 })).toBeVisible()
   await expect(page.getByText('Manual pilot')).toBeVisible()
   await expectFitsAndAccessible(page, '/platform/organizations/[id] manual pilot')
@@ -123,13 +133,19 @@ test('a support agent cannot change a subscription, and a provider-managed one h
   page,
 }) => {
   await signInAsStaff(page, STAFF.agent)
-  await page.getByRole('link', { name: 'Lumen Salon' }).click()
+  await page
+    .getByRole('region', { name: 'Organizations' })
+    .getByRole('link', { name: 'Lumen Salon' })
+    .click()
   await expect(page.getByRole('heading', { name: 'Lumen Salon', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Set status' })).toHaveCount(0)
 
   await page.context().clearCookies()
   await signInAsStaff(page, STAFF.admin)
-  await page.getByRole('link', { name: 'Harbor & Vine' }).click()
+  await page
+    .getByRole('region', { name: 'Organizations' })
+    .getByRole('link', { name: 'Harbor & Vine' })
+    .click()
   await expect(page.getByRole('heading', { name: 'Harbor & Vine', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Set status' })).toHaveCount(0)
 })

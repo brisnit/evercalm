@@ -44,7 +44,6 @@ export default async function OperationsTemplatesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Operations"
         title="Templates"
         description="The duties a shift carries. Publish a template and every matching published shift gets its tasks; editing starts a new version, and shifts already under way keep the one they were given."
         action={

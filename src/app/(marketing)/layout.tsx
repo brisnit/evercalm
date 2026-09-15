@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/ui/primitives'
+import { MarketingMobileNav } from './_home/mobile-nav'
 
 /**
  * Public site shell.
@@ -64,7 +65,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <ul className="hidden flex-1 items-center gap-7 text-sm font-medium lg:flex">
             {NAV.map((item) => (
               <li key={item.label}>
-                <Link href={item.href} className="text-deep/80 hover:text-deep">
+                <Link
+                  href={item.href}
+                  className="text-deep/80 hover:text-deep decoration-accent/60 underline-offset-8 transition-colors hover:underline"
+                >
                   {item.label}
                 </Link>
               </li>
@@ -72,12 +76,16 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </ul>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-4">
-            <Link href="/signin" className="text-deep/80 hover:text-deep text-sm font-medium">
+            <MarketingMobileNav items={NAV} />
+            <Link
+              href="/signin"
+              className="text-deep/80 hover:text-deep hidden min-h-11 items-center text-sm font-medium sm:inline-flex"
+            >
               Sign in
             </Link>
             <Link
               href="/contact"
-              className="bg-accent hover:bg-accent-strong inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white"
+              className="bg-accent hover:bg-accent-strong inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap text-white transition-colors duration-200 active:translate-y-px sm:px-5"
             >
               Ask about a pilot
             </Link>

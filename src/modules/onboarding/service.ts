@@ -153,11 +153,25 @@ export function deriveState(
   return 'not_started'
 }
 
+const POLICY_REASON =
+  'Your manager will share this document with you here. There is nothing to do until then.'
+
+/**
+ * The wording steps waiting on a policy document were once stored with. It
+ * described the product roadmap rather than the person's situation, so it is
+ * shown as the current wording wherever it is still stored.
+ */
+const LEGACY_POLICY_REASON = 'Waiting on policy documents, which arrive in a later release.'
+
+function displayReason(reason: string | null): string | null {
+  return reason === LEGACY_POLICY_REASON ? POLICY_REASON : reason
+}
+
 function blockedReasonFor(kind: string, courseId: string | null = null): string | null {
   // A linked training step is satisfied by its course; an unlinked one needs a person.
   if (kind === 'training_assignment') return courseId ? null : UNLINKED_TRAINING_REASON
   if (kind === 'policy_ack') {
-    return 'Waiting on policy documents, which arrive in a later release.'
+    return POLICY_REASON
   }
   return null
 }
@@ -506,7 +520,7 @@ export async function getProgressForEmployment(
       position: r.position,
       dueOn: r.dueOn,
       note: r.note,
-      blockedReason: r.blockedReason,
+      blockedReason: displayReason(r.blockedReason),
       completedAt: r.completedAt,
       completedBy: r.completedByEmploymentId
         ? (nameOf.get(r.completedByEmploymentId) ?? null)
@@ -644,7 +658,8 @@ export async function completeStep(
   if (row.status === 'blocked') {
     throw new ValidationError(
       {},
-      row.blockedReason ?? 'This step is waiting on something else and cannot be completed yet.',
+      displayReason(row.blockedReason) ??
+        'This step is waiting on something else and cannot be completed yet.',
     )
   }
   if (row.status === 'completed') return

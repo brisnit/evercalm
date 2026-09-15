@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import type { LinkedTraining } from '@/modules/onboarding/training-link'
-import { Badge, ProgressBar } from '@/ui/primitives'
+import { Badge, ButtonLink, ProgressBar } from '@/ui/primitives'
 
 /**
  * A training step's course, inside the onboarding checklist.
@@ -59,9 +58,14 @@ export function LinkedTrainingCard({ training }: { training: LinkedTraining }) {
         <p className="text-muted mt-2 text-sm">This step completes when you finish the course.</p>
       ) : null}
       {href && open ? (
-        <Link
+        <ButtonLink
           href={href}
-          className="rounded-control mt-3 inline-flex min-h-11 items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+          variant={
+            training.state === 'completed' || training.state === 'awaiting_signoff'
+              ? 'secondary'
+              : 'primary'
+          }
+          className="mt-3"
         >
           {training.state === 'completed'
             ? 'Review the course'
@@ -70,7 +74,7 @@ export function LinkedTrainingCard({ training }: { training: LinkedTraining }) {
               : training.state === 'awaiting_signoff'
                 ? 'See the course'
                 : 'Continue the course'}
-        </Link>
+        </ButtonLink>
       ) : null}
     </div>
   )

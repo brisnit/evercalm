@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { NotFoundError } from '@/lib/errors'
 import { isUuid } from '@/lib/uuid'
@@ -16,7 +15,7 @@ import {
 import { receiptReport } from '@/modules/comms/receipts'
 import { resolveSelectorLabels } from '@/modules/comms/audience'
 import { formatDateInZone, formatInZone } from '@/lib/dates'
-import { Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, ButtonLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { AnnouncementBody } from '@/ui/patterns/announcement-body'
 import { PriorityMark, StatusMark } from '@/ui/patterns/priority-mark'
@@ -83,9 +82,7 @@ export default async function AnnouncementDetailPage({
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link href="/app/comms" className="text-muted text-sm underline-offset-4 hover:underline">
-          ← Announcements
-        </Link>
+        <BackLink href="/app/comms">Announcements</BackLink>
       </nav>
 
       <PageHeader
@@ -93,12 +90,9 @@ export default async function AnnouncementDetailPage({
         title={announcement.title}
         action={
           editable ? (
-            <Link
-              href={`/app/comms/${announcementId}/edit`}
-              className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border bg-white px-4 text-sm font-medium"
-            >
+            <ButtonLink href={`/app/comms/${announcementId}/edit`} variant="secondary">
               Edit
-            </Link>
+            </ButtonLink>
           ) : undefined
         }
       />

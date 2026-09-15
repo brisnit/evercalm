@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { formatDateInZone } from '@/lib/dates'
 import { NotFoundError } from '@/lib/errors'
@@ -16,7 +15,7 @@ import {
   type TemplateVersionDetail,
 } from '@/modules/operations/templates'
 import { organizationTimeZone } from '@/modules/training/records'
-import { Badge, PageHeader } from '@/ui/primitives'
+import { BackLink, Badge, PageHeader } from '@/ui/primitives'
 import { targetSummary } from '../page'
 import { TemplateBuilder, type VersionView } from './template-builder'
 
@@ -87,14 +86,9 @@ export default async function TemplatePage({
 
   return (
     <>
-      <Link
-        href="/app/operations/templates"
-        className="text-muted text-sm underline-offset-4 hover:underline"
-      >
-        ← Templates
-      </Link>
+      <BackLink href="/app/operations/templates">Templates</BackLink>
       <PageHeader
-        eyebrow={`Operations · ${OPS_KIND_LABELS[template.kind]}`}
+        eyebrow={OPS_KIND_LABELS[template.kind]}
         title={shown?.name ?? template.name}
         description={shown?.description || undefined}
         action={

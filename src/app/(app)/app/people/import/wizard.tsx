@@ -1,7 +1,6 @@
 'use client'
 
 import { Fragment, useActionState, useRef, useState } from 'react'
-import Link from 'next/link'
 import {
   confirmImportAction,
   previewImportAction,
@@ -15,12 +14,18 @@ import {
   type ImportField,
 } from '@/modules/people/csv'
 import type { ImportPreview } from '@/modules/people/import-service'
-import { Badge, Button, Card, CardHeader, EmptyState, ScrollArea } from '@/ui/primitives'
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  EmptyState,
+  ScrollArea,
+  Select,
+} from '@/ui/primitives'
 
 const INITIAL: ImportActionState = { status: 'idle' }
-
-const SELECT =
-  'min-h-11 w-full rounded-control border border-line-strong bg-white px-2 text-sm text-ink hover:border-faint focus:border-violet-600'
 
 /**
  * The import wizard: choose a file, map columns, review every row, confirm.
@@ -178,9 +183,8 @@ export function ImportWizard() {
                     <label className="sr-only" htmlFor={`map-${index}`}>
                       What is “{header || `column ${index + 1}`}”?
                     </label>
-                    <select
+                    <Select
                       id={`map-${index}`}
-                      className={SELECT}
                       value={activeMapping[index] ?? ''}
                       onChange={(e) => {
                         const next = { ...activeMapping }
@@ -195,7 +199,7 @@ export function ImportWizard() {
                           {FIELD_LABELS[field]}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </li>
                 ))}
               </ul>
@@ -415,18 +419,10 @@ function ImportComplete({
         </dl>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/app/people"
-            className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
-          >
-            View the directory
-          </Link>
-          <Link
-            href="/app/people/import"
-            className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
-          >
+          <ButtonLink href="/app/people">View the directory</ButtonLink>
+          <ButtonLink href="/app/people/import" variant="secondary">
             Import another file
-          </Link>
+          </ButtonLink>
           {outcome.skipped > 0 && skippedReport ? (
             <Button
               variant="secondary"

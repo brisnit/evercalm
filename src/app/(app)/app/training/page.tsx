@@ -43,7 +43,6 @@ export default async function TrainingPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Training"
         title="Courses"
         description="Build training once, publish it, and assign it to the people who need it. Everyone keeps the version they were given."
         action={

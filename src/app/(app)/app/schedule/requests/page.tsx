@@ -87,7 +87,6 @@ export default async function ScheduleRequestsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Schedule"
         title="Requests"
         description="Time off, open shifts, and swaps waiting for a decision. Everyone involved is told what you decide."
       />

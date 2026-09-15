@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { localDateOf } from '@/modules/scheduling/time'
@@ -8,7 +7,7 @@ import { REPORT_KEYS, parseReportFilters } from '@/modules/reports/filters'
 import { REPORT_META } from '@/modules/reports/model'
 import { canSeeReport, canUseReports } from '@/modules/reports/scope'
 import { organizationTimeZone } from '@/modules/training/records'
-import { Card, PageHeader } from '@/ui/primitives'
+import { Card, PageHeader, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { StatTile } from '@/ui/patterns/stat-tile'
 
@@ -44,12 +43,9 @@ export default async function ReportsPage() {
               <h2 className="font-display text-ink text-lg font-bold">
                 {REPORT_META[report.key].title}
               </h2>
-              <Link
-                href={`/app/reports/${report.key}`}
-                className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-              >
+              <TextLink href={`/app/reports/${report.key}`} className="text-sm">
                 Open report
-              </Link>
+              </TextLink>
             </div>
             <p className="text-muted mt-1 text-sm">{REPORT_META[report.key].description}</p>
             <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

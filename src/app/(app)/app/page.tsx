@@ -10,13 +10,15 @@ import { ForbiddenError } from '@/lib/errors'
 import {
   Avatar,
   Badge,
+  ButtonLink,
   Card,
   CardHeader,
   EmptyState,
   PageHeader,
   ProgressRing,
+  TextLink,
 } from '@/ui/primitives'
-import { StatTile } from '@/ui/patterns/stat-tile'
+import { attentionItems } from '@/modules/reports/attention'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +42,7 @@ async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function AppOverviewPage() {
-  const { actor, activeOrganization } = await requireActorContext()
+  const { actor } = await requireActorContext()
 
   const data = await withTenant(actor.organizationId, async (tx) => ({
     locations: await listLocations(tx, actor),
@@ -48,17 +50,10 @@ export default async function AppOverviewPage() {
     onboarding: await safely(() => listProgress(tx, actor), []),
     credentials: await safely(() => listExpiringCredentials(tx, actor), []),
     invitations: await safely(() => listInvitations(tx, actor), []),
+    attention: await attentionItems(tx, actor),
   }))
 
   const activePeople = data.people.filter((p) => p.status === 'active')
-  const needsAttention = data.onboarding.filter(
-    (o) => o.state === 'blocked' || o.state === 'overdue',
-  )
-  const inProgress = data.onboarding.filter(
-    (o) => o.state === 'in_progress' || o.state === 'not_started',
-  )
-  const expiredCredentials = data.credentials.filter((c) => c.credential.expiryState === 'expired')
-  const pendingInvitations = data.invitations.filter((i) => i.status === 'pending')
 
   const firstName = actor.displayName.split(' ')[0] ?? actor.displayName
   const mayViewPeople = canAtAnyLocation(actor, 'people.view')
@@ -68,79 +63,94 @@ export default async function AppOverviewPage() {
   return (
     <>
       <PageHeader
-        eyebrow={activeOrganization.organizationName}
         title={`Good to see you, ${firstName}`}
-        description="What needs your attention today."
+        description={
+          data.attention.length === 0
+            ? 'Nothing needs a decision right now. Here is how things stand.'
+            : `${data.attention.length} ${data.attention.length === 1 ? 'thing needs' : 'things need'} a decision.`
+        }
         action={
           mayInvite ? (
-            <Link
-              href="/app/people/invite"
-              className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
-            >
+            <ButtonLink href="/app/people/invite" variant="secondary">
               Invite someone
-            </Link>
+            </ButtonLink>
           ) : undefined
         }
       />
 
-      {mayViewPeople || mayViewOnboarding ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {mayViewOnboarding ? (
-            <StatTile
-              label="Onboarding stuck"
-              value={needsAttention.length}
-              detail={
-                needsAttention.length === 0
-                  ? 'Nobody is blocked or overdue'
-                  : 'Blocked or past due — needs a decision'
-              }
-              href="/app/onboarding"
-              tone={needsAttention.length > 0 ? 'urgent' : 'good'}
-            />
-          ) : null}
-          {mayViewOnboarding ? (
-            <StatTile
-              label="Onboarding in flight"
-              value={inProgress.length}
-              detail={
-                inProgress.length === 0 ? 'No new hires mid-onboarding' : 'New hires on track'
-              }
-              href="/app/onboarding"
-            />
-          ) : null}
-          {mayViewPeople ? (
-            <StatTile
-              label="Credentials"
-              value={data.credentials.length}
-              detail={
-                data.credentials.length === 0
-                  ? 'None expiring in the next 45 days'
-                  : `${expiredCredentials.length} expired, ${data.credentials.length - expiredCredentials.length} expiring soon`
-              }
-              href="/app/people?filter=credentials"
-              tone={
-                expiredCredentials.length > 0
-                  ? 'urgent'
-                  : data.credentials.length > 0
-                    ? 'attention'
-                    : 'good'
-              }
-            />
-          ) : null}
-          {mayInvite ? (
-            <StatTile
-              label="Invitations open"
-              value={pendingInvitations.length}
-              detail={
-                pendingInvitations.length === 0
-                  ? 'No invitations waiting'
-                  : 'Sent and not yet accepted'
-              }
-              href="/app/people/invitations"
-            />
-          ) : null}
+      <Card as="section" className="overflow-hidden">
+        <div className="border-line flex flex-wrap items-baseline justify-between gap-2 border-b px-5 py-4">
+          <h2 className="font-display text-ink text-lg font-bold">Needs you</h2>
+          <p className="text-muted text-sm">Last 30 days, for the locations you look after</p>
         </div>
-      ) : null}
+        {data.attention.length === 0 ? (
+          <div className="flex items-center gap-3 px-5 py-5">
+            <span
+              aria-hidden="true"
+              className="bg-success-soft text-success flex size-9 shrink-0 items-center justify-center rounded-full"
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="size-4">
+                <path
+                  d="m3.5 8.5 3 3 6-7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <p className="text-ink">
+              Nothing needs a decision right now.{' '}
+              <span className="text-muted">
+                New requests, blocked work and sign-offs appear here.
+              </span>
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-line divide-y">
+            {data.attention.map((item) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-violet-50/60"
+                >
+                  <span
+                    className={
+                      item.tone === 'urgent'
+                        ? 'bg-danger-soft text-danger font-display flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full px-2 text-base font-extrabold tabular-nums'
+                        : 'bg-warning-soft text-warning font-display flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full px-2 text-base font-extrabold tabular-nums'
+                    }
+                  >
+                    {item.count}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="text-ink block font-semibold group-hover:underline group-hover:underline-offset-4">
+                      {item.label}
+                    </span>
+                    <span className="text-muted block text-sm">
+                      {item.area} · {item.detail}
+                    </span>
+                  </span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    className="text-faint size-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-700"
+                  >
+                    <path
+                      d="M6 3.5 10.5 8 6 12.5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
         {mayViewOnboarding ? (
@@ -149,12 +159,9 @@ export default async function AppOverviewPage() {
               title="Onboarding"
               description="Newest hires first, with whatever is blocking them."
               action={
-                <Link
-                  href="/app/onboarding"
-                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-                >
+                <TextLink href="/app/onboarding" className="text-sm">
                   View all
-                </Link>
+                </TextLink>
               }
             />
             <div className="p-5">
@@ -253,12 +260,9 @@ export default async function AppOverviewPage() {
             </dl>
             {can(actor, 'org.manage_locations') ? (
               <div className="border-line border-t px-5 py-3">
-                <Link
-                  href="/app/setup"
-                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-                >
+                <TextLink href="/app/setup" className="text-sm">
                   Continue company setup
-                </Link>
+                </TextLink>
               </div>
             ) : null}
           </Card>

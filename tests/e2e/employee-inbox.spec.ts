@@ -56,7 +56,7 @@ test('the inbox puts acknowledgement first and labels urgency in words', async (
   await page.goto('/my/inbox')
   await expect(page.getByRole('heading', { name: 'Your inbox' })).toBeVisible()
 
-  const first = page.getByRole('listitem').first()
+  const first = page.getByRole('main').getByRole('listitem').first()
   await expect(first).toContainText(title)
   await expect(first.getByText('Needs your confirmation')).toBeVisible()
   // Urgency is a WORD, not only a colour. The mark also carries a repeated
@@ -123,15 +123,15 @@ test('confirming takes one deliberate press and is then recorded', async ({ page
 test('the filters narrow without hiding anything permanently', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
   await page.goto('/my/inbox')
-  const total = await page.getByRole('listitem').count()
+  const total = await page.getByRole('main').getByRole('listitem').count()
   expect(total).toBeGreaterThan(0)
 
   const filters = page.getByRole('navigation', { name: 'Filter' })
   await filters.getByRole('link', { name: /^Unread/ }).click()
-  expect(await page.getByRole('listitem').count()).toBeLessThanOrEqual(total)
+  expect(await page.getByRole('main').getByRole('listitem').count()).toBeLessThanOrEqual(total)
 
   await filters.getByRole('link', { name: 'All' }).click()
-  await expect(page.getByRole('listitem')).toHaveCount(total)
+  await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(total)
 })
 
 test('search finds a message by its words', async ({ page }) => {
@@ -165,11 +165,12 @@ test('notification preferences are honest about what can be switched off', async
   await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
 
   // Safety cannot be muted, and says so rather than offering a dead switch.
-  const safety = page.getByRole('listitem').filter({ hasText: 'Safety' })
+  const safety = page.getByRole('main').getByRole('listitem').filter({ hasText: 'Safety' })
   await expect(safety.getByText('Cannot be switched off', { exact: true })).toBeVisible()
 
-  // Channels that do not exist yet are disabled and labelled.
-  await expect(page.getByText('(not yet)').first()).toBeVisible()
+  // Only channels that can be delivered are offered: no dead SMS or push switches.
+  await expect(page.getByLabel('SMS')).toHaveCount(0)
+  await expect(page.getByText('(not yet)')).toHaveCount(0)
 
   await page.getByLabel('Hold notifications during quiet hours').check()
   await page.getByRole('button', { name: 'Save preferences' }).click()

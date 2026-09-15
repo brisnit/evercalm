@@ -21,7 +21,7 @@ import {
   weekStartOf,
 } from '@/modules/scheduling/time'
 import { listJobRoles, listStations } from '@/modules/structure/service'
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, CardHeader, EmptyState, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { WeekToolbar } from './_components/week-toolbar'
 import { PublishPanel } from './_components/publish-panel'
@@ -111,9 +111,16 @@ export default async function SchedulePage({
   return (
     <>
       <PageHeader
-        eyebrow={`Schedule · ${location.name}`}
+        eyebrow={location.name}
         title={`Week of ${formatIsoDate(board.weekStart)}`}
         description={`Times are ${location.name} time (${location.timeZone}).`}
+        action={
+          data.canDraft ? (
+            <ButtonLink href="#add-shift" variant="secondary">
+              Add a shift
+            </ButtonLink>
+          ) : undefined
+        }
       />
 
       <WeekToolbar
@@ -215,9 +222,9 @@ export default async function SchedulePage({
         )}
       </section>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-3 lg:items-start [&>*]:min-w-0">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start [&>*]:min-w-0">
         {data.canDraft ? (
-          <>
+          <div id="add-shift" className="scroll-mt-6">
             <Card>
               <CardHeader
                 title="Add a shift"
@@ -246,44 +253,46 @@ export default async function SchedulePage({
                 />
               </div>
             </Card>
-
-            {data.templates.length > 0 ? (
-              <Card>
-                <CardHeader
-                  title="Fill the week from templates"
-                  description="Adds each template’s shifts on its days. Running it twice adds nothing twice."
-                />
-                <div className="p-5">
-                  <ApplyTemplatesForm
-                    locationId={location.id}
-                    weekStart={board.weekStart}
-                    templates={data.templates.map((t) => ({
-                      id: t.id,
-                      label: `${t.name} · ${formatTimeOfDay(t.startMinute)}–${formatTimeOfDay(t.endMinute)}`,
-                    }))}
-                  />
-                </div>
-              </Card>
-            ) : null}
-          </>
+          </div>
         ) : null}
 
-        <Card>
-          <CardHeader title="Hours this week" description="Everyone assigned to this location." />
-          <ul className="divide-line divide-y px-5 pb-2">
-            {board.people.map((p) => (
-              <li
-                key={p.employmentId}
-                className="flex items-center justify-between gap-3 py-2.5 text-sm"
-              >
-                <span className="text-ink min-w-0 truncate">{p.displayName}</span>
-                <span className="text-muted shrink-0 tabular-nums">
-                  {formatDuration(p.scheduledMinutes)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <div className="flex min-w-0 flex-col gap-5">
+          {data.canDraft && data.templates.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Fill the week from templates"
+                description="Adds each template’s shifts on its days. Running it twice adds nothing twice."
+              />
+              <div className="p-5">
+                <ApplyTemplatesForm
+                  locationId={location.id}
+                  weekStart={board.weekStart}
+                  templates={data.templates.map((t) => ({
+                    id: t.id,
+                    label: `${t.name} · ${formatTimeOfDay(t.startMinute)}–${formatTimeOfDay(t.endMinute)}`,
+                  }))}
+                />
+              </div>
+            </Card>
+          ) : null}
+
+          <Card>
+            <CardHeader title="Hours this week" description="Everyone assigned to this location." />
+            <ul className="divide-line divide-y px-5 pb-2">
+              {board.people.map((p) => (
+                <li
+                  key={p.employmentId}
+                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                >
+                  <span className="text-ink min-w-0 truncate">{p.displayName}</span>
+                  <span className="text-muted shrink-0 tabular-nums">
+                    {formatDuration(p.scheduledMinutes)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       </div>
     </>
   )
@@ -303,9 +312,11 @@ function Total({
   const valueTone =
     tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-ink'
   return (
-    <div className="border-line/70 rounded-control border bg-white px-3 py-2.5">
-      <dt className="text-faint text-[0.625rem] font-semibold tracking-wide uppercase">{label}</dt>
-      <dd className={`font-display mt-1 text-xl font-extrabold ${valueTone}`}>
+    <div className="border-line rounded-card border bg-white px-3.5 py-2.5">
+      <dt className="text-muted text-[0.8125rem] font-medium">{label}</dt>
+      <dd
+        className={`font-display text-xl font-extrabold tabular-nums ${value === '0' ? 'text-faint' : valueTone}`}
+      >
         {value}
         <span className="text-muted block text-xs font-medium">{sub}</span>
       </dd>
@@ -333,7 +344,7 @@ function ShiftCard({ shift }: { shift: BoardShift }) {
         {shift.time}
         {shift.endsNextDay ? ' (next day)' : ''}
       </span>
-      <span className="text-muted block truncate text-xs">
+      <span className="text-muted block text-xs break-words">
         {[shift.jobRoleName, shift.stationName].filter(Boolean).join(' · ') || 'Shift'}
       </span>
       <span

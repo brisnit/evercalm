@@ -6,7 +6,7 @@ import { withTenant } from '@/server/db'
 import { listProgress } from '@/modules/onboarding/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Avatar, Badge, Card, EmptyState, PageHeader, ProgressBar } from '@/ui/primitives'
+import { Avatar, Badge, Card, EmptyState, PageHeader, ProgressBar, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 
 export const metadata: Metadata = { title: 'Onboarding' }
@@ -59,7 +59,6 @@ export default async function OnboardingBoardPage() {
   return (
     <>
       <PageHeader
-        eyebrow="People"
         title="Onboarding"
         description="Everyone working through their first weeks, ordered by what needs you most."
       />
@@ -69,12 +68,9 @@ export default async function OnboardingBoardPage() {
           title="Nobody is onboarding"
           description="Assign a checklist from someone's profile and their progress will appear here."
           action={
-            <Link
-              href="/app/people"
-              className="text-sm font-medium text-violet-700 underline underline-offset-4"
-            >
+            <TextLink href="/app/people" className="text-sm">
               Go to the directory
-            </Link>
+            </TextLink>
           }
         />
       ) : (

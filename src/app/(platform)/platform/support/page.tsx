@@ -4,7 +4,13 @@ import { requirePlatformStaff } from '@/server/auth/platform-staff'
 import { staffCases } from '@/server/db/platform'
 import { cn } from '@/lib/cn'
 import { Badge, Card, EmptyState, PageHeader } from '@/ui/primitives'
-import { CASE_STATUS_LABELS, SEVERITY_TONES, utcDateTime } from '../format'
+import {
+  CASE_STATUS_LABELS,
+  SEVERITY_LABELS,
+  SEVERITY_TONES,
+  labelFrom,
+  utcDateTime,
+} from '../format'
 
 export const metadata: Metadata = { title: 'Support cases' }
 
@@ -34,7 +40,6 @@ export default async function PlatformSupportPage({
   return (
     <>
       <PageHeader
-        eyebrow="EverCalm team"
         title="Support cases"
         description="Most severe first, then most recently updated. Times are UTC."
       />
@@ -68,13 +73,15 @@ export default async function PlatformSupportPage({
                       </Link>
                     </h2>
                     <p className="text-muted text-sm">
-                      {c.category.replace(/_/g, ' ')} ·{' '}
+                      {labelFrom({}, c.category)} ·{' '}
                       {c.assignedStaffLabel ? `assigned to ${c.assignedStaffLabel}` : 'unassigned'}{' '}
                       · updated {utcDateTime(c.updatedAt)}
                     </p>
                   </div>
                   <span className="flex gap-2">
-                    <Badge tone={SEVERITY_TONES[c.severity] ?? 'neutral'}>{c.severity}</Badge>
+                    <Badge tone={SEVERITY_TONES[c.severity] ?? 'neutral'}>
+                      {labelFrom(SEVERITY_LABELS, c.severity)}
+                    </Badge>
                     <Badge tone={CASE_STATUS_LABELS[c.status]?.tone ?? 'info'}>
                       {CASE_STATUS_LABELS[c.status]?.label ?? c.status}
                     </Badge>

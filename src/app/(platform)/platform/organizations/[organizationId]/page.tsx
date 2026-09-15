@@ -13,11 +13,16 @@ import {
 } from '@/server/db/platform'
 import { openDiagnosticsAction } from '@/modules/platform/actions'
 import { diagnosticsOpenUntil } from '@/modules/platform/diagnostics'
-import { Badge, Button, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, Badge, Button, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
 import {
   CASE_STATUS_LABELS,
+  INDUSTRY_LABELS,
+  PLAN_LABELS,
+  PROVIDER_LABELS,
+  SEVERITY_LABELS,
   SEVERITY_TONES,
+  labelFrom,
   SUBSCRIPTION_LABELS,
   utcDate,
   utcDateTime,
@@ -54,13 +59,10 @@ export default async function PlatformOrganizationPage({
 
   return (
     <NoticeProvider>
-      <Link href="/platform" className="text-muted text-sm underline-offset-4 hover:underline">
-        ← Organizations
-      </Link>
+      <BackLink href="/platform">Organizations</BackLink>
       <PageHeader
-        eyebrow="EverCalm team · Organization"
         title={org.name}
-        description={`${org.industry.replace(/_/g, ' ')} · ${org.slug} · customer since ${utcDate(org.createdAt)}`}
+        description={`${labelFrom(INDUSTRY_LABELS, org.industry)} · ${org.slug} · customer since ${utcDate(org.createdAt)}`}
         action={status ? <Badge tone={status.tone}>{status.label}</Badge> : null}
       />
       <p className="rounded-control border-line text-muted mb-5 border bg-white px-4 py-3 text-sm">
@@ -76,7 +78,10 @@ export default async function PlatformOrganizationPage({
             <Stat label="Locations" value={org.locations} />
             <Stat label="Active employees" value={org.activeEmployees} />
             <Stat label="Open support cases" value={org.openCases} />
-            <Stat label="Last customer activity" value={utcDateTime(org.lastActivityAt)} />
+            <Stat
+              label="Last customer activity"
+              value={org.lastActivityAt ? utcDateTime(org.lastActivityAt) : 'No sign-ins yet'}
+            />
             <Stat label="Failed deliveries (7 days)" value={org.failedNotifications7d} />
             <Stat label="Publish failures (30 days)" value={org.publishFailures30d} />
           </dl>
@@ -85,19 +90,15 @@ export default async function PlatformOrganizationPage({
         <Card as="section">
           <CardHeader title="Subscription" />
           <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
-            <Stat label="Plan" value={org.plan?.replace(/_/g, ' ') ?? 'None'} />
+            <Stat label="Plan" value={labelFrom(PLAN_LABELS, org.plan)} />
             <Stat
               label="Billing"
-              value={
-                org.billingProvider === 'manual'
-                  ? 'Manual pilot'
-                  : org.billingProvider
-                    ? `Provider: ${org.billingProvider}`
-                    : 'None'
-              }
+              value={org.billingProvider ? labelFrom(PROVIDER_LABELS, org.billingProvider) : 'None'}
             />
             <Stat label="Status" value={status?.label ?? 'No subscription'} />
-            <Stat label="Trial ends" value={utcDate(org.trialEndsAt)} />
+            {org.subscriptionStatus === 'trialing' ? (
+              <Stat label="Trial ends" value={utcDate(org.trialEndsAt)} />
+            ) : null}
             <Stat label="Period ends" value={utcDate(org.currentPeriodEnd)} />
             <Stat label="Cancels at period end" value={org.cancelAtPeriodEnd ? 'Yes' : 'No'} />
             <Stat label="Payment overdue since" value={utcDate(org.pastDueSince)} />
@@ -151,7 +152,9 @@ export default async function PlatformOrganizationPage({
                     {c.reference} · {c.subject}
                   </Link>
                   <span className="flex gap-2">
-                    <Badge tone={SEVERITY_TONES[c.severity] ?? 'neutral'}>{c.severity}</Badge>
+                    <Badge tone={SEVERITY_TONES[c.severity] ?? 'neutral'}>
+                      {labelFrom(SEVERITY_LABELS, c.severity)}
+                    </Badge>
                     <Badge tone={CASE_STATUS_LABELS[c.status]?.tone ?? 'info'}>
                       {CASE_STATUS_LABELS[c.status]?.label ?? c.status}
                     </Badge>

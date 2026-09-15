@@ -4,6 +4,9 @@ import { Container, SECTION, SectionHeading } from './_home/parts'
 import { HeroMock } from './_home/hero-mock'
 import { Icon, type IconName } from './_home/icons'
 import { IndustryTabs, type Industry } from './_home/industry-tabs'
+import { IMAGERY } from './_home/imagery'
+import { LifestylePhoto } from './_home/lifestyle-image'
+import { RevealOnScroll } from './_home/reveal'
 
 export const metadata: Metadata = {
   title: 'EverCalm — everyone walks in knowing what’s next',
@@ -344,6 +347,7 @@ const ROLLOUT = [
 export default function HomePage() {
   return (
     <>
+      <RevealOnScroll />
       <Hero />
       <IndustryStrip />
       <Promise />
@@ -407,14 +411,17 @@ function Hero() {
           <div data-testid="hero-actions" className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/contact"
-              className="bg-accent hover:bg-accent-strong inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold text-white"
+              className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold text-white shadow-[0_10px_24px_-12px_rgb(107_77_241/0.7)] transition-[background-color,box-shadow,transform] duration-200 hover:shadow-[0_14px_28px_-12px_rgb(107_77_241/0.8)] active:translate-y-px"
             >
               Ask about a pilot
-              <Icon name="arrow" className="h-4 w-4" />
+              <Icon
+                name="arrow"
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+              />
             </Link>
             <Link
               href="/#platform"
-              className="border-line-strong text-deep hover:border-accent/50 inline-flex min-h-12 items-center rounded-full border bg-white px-6 text-[0.9375rem] font-semibold"
+              className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-6 text-[0.9375rem] font-semibold transition-colors duration-200 active:translate-y-px"
             >
               See the shift board
             </Link>
@@ -466,16 +473,21 @@ function Promise() {
   return (
     <section className={SECTION}>
       <Container>
-        <SectionHeading
-          eyebrow="The promise"
-          title={
-            <>
-              Four questions, answered
-              <br className="hidden sm:block" /> before anyone has to ask.
-            </>
-          }
-          lead="Most shift-based teams lose hours a week to the same four unknowns — relayed by group text, sticky note, and whoever happens to be on. EverCalm answers all four in one place, for every person, every day."
-        />
+        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
+          <SectionHeading
+            eyebrow="The promise"
+            title={
+              <>
+                Four questions, answered
+                <br className="hidden sm:block" /> before anyone has to ask.
+              </>
+            }
+            lead="Most shift-based teams lose hours a week to the same four unknowns — relayed by group text, sticky note, and whoever happens to be on. EverCalm answers all four in one place, for every person, every day."
+          />
+          <div data-reveal className="hidden lg:block">
+            <LifestylePhoto image={IMAGERY.prepForService} sizes="272px" />
+          </div>
+        </div>
 
         <div className="mt-14">
           <div className="border-line/70 text-faint hidden grid-cols-4 border-t pt-3 font-mono text-[0.625rem] tracking-[0.14em] uppercase lg:grid">
@@ -492,8 +504,12 @@ function Promise() {
               className="absolute top-4 right-4 left-4 hidden h-px bg-[linear-gradient(90deg,#6b4df1_0%,#ea33a9_38%,#14b8a6_68%,#22b8e6_100%)] lg:block"
             />
             <ol className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-              {PROMISE.map((item) => (
-                <li key={item.title}>
+              {PROMISE.map((item, index) => (
+                <li
+                  key={item.title}
+                  data-reveal
+                  style={{ '--reveal-index': index } as React.CSSProperties}
+                >
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-white ${item.tone}`}
                   >
@@ -532,10 +548,12 @@ function Platform() {
         />
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CAPABILITIES.map((item) => (
+          {CAPABILITIES.map((item, index) => (
             <li
               key={item.title}
-              className="border-line/60 rounded-2xl border bg-white p-4 transition-shadow hover:shadow-[0_10px_30px_-16px_rgb(23_18_64/0.3)]"
+              data-reveal
+              style={{ '--reveal-index': index % 4 } as React.CSSProperties}
+              className="border-line/60 hover:border-accent/30 rounded-2xl border bg-white p-4 transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-16px_rgb(23_18_64/0.3)] motion-reduce:hover:translate-y-0"
             >
               <span
                 className={`flex h-9 w-9 items-center justify-center rounded-[0.7rem] ${item.chip}`}
@@ -571,6 +589,7 @@ function Experiences() {
 
         <div className="mt-10 grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
           <ExperienceCard
+            photo={IMAGERY.managerCheckIn}
             audience="Owners, HR & managers"
             audienceClass="bg-violet-50 text-violet-700"
             title="The console"
@@ -579,6 +598,7 @@ function Experiences() {
             checkClass="bg-violet-100 text-violet-700"
           />
           <ExperienceCard
+            photo={IMAGERY.stylistStation}
             audience="Employees"
             audienceClass="bg-info-soft text-info"
             title="The app"
@@ -593,6 +613,7 @@ function Experiences() {
 }
 
 function ExperienceCard({
+  photo,
   audience,
   audienceClass,
   title,
@@ -606,9 +627,11 @@ function ExperienceCard({
   lead: string
   points: string[][]
   checkClass: string
+  photo: (typeof IMAGERY)[keyof typeof IMAGERY]
 }) {
   return (
-    <div className="border-line/70 rounded-[1.15rem] border bg-white p-5 sm:p-6">
+    <div data-reveal className="border-line/70 rounded-[1.15rem] border bg-white p-5 sm:p-6">
+      <LifestylePhoto image={photo} sizes="(min-width: 1024px) 520px, 100vw" className="mb-5" />
       <span
         className={`inline-block rounded-full px-3 py-1.5 font-mono text-[0.625rem] tracking-[0.14em] uppercase ${audienceClass}`}
       >
@@ -652,7 +675,10 @@ function Training() {
           lead="Gamification only works when the reward means something. In EverCalm a level moves when knowledge is verified and a manager signs off on the floor, so a Level 3 bartender is one you can actually put on a Saturday."
         />
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start [&>*]:min-w-0">
+        <div
+          data-reveal
+          className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start [&>*]:min-w-0"
+        >
           <div className="border-line/70 rounded-[1.15rem] border bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -810,7 +836,7 @@ function Industries() {
           }
           lead="Every template arrives with the roles, checklists, training paths, and certification types that business already uses — then every one of them is yours to rename, reorder, or delete."
         />
-        <div className="mt-10">
+        <div data-reveal className="mt-10">
           <IndustryTabs industries={INDUSTRIES} />
         </div>
       </Container>
@@ -834,8 +860,12 @@ function Rollout() {
         />
 
         <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
-          {ROLLOUT.map((step) => (
-            <li key={step.week}>
+          {ROLLOUT.map((step, index) => (
+            <li
+              key={step.week}
+              data-reveal
+              style={{ '--reveal-index': index } as React.CSSProperties}
+            >
               <span className={`block h-[3px] w-full rounded-full ${step.line}`} />
               <p className="text-faint mt-4 font-mono text-[0.625rem] tracking-[0.16em] uppercase">
                 {step.week}
@@ -854,7 +884,16 @@ function FinalCta() {
   return (
     <section className="pt-16 pb-32 sm:pt-24 sm:pb-48">
       <Container>
-        <div className="rounded-[1.5rem] bg-[linear-gradient(to_top_right,#8853e3_0%,#6b4df1_52%,#6563f1_100%)] px-6 py-14 text-center sm:px-12">
+        <div data-reveal className="mb-6">
+          <LifestylePhoto
+            image={IMAGERY.closingTogether}
+            sizes="(min-width: 1168px) 1128px, 100vw"
+          />
+        </div>
+        <div
+          data-reveal
+          className="rounded-[1.5rem] bg-[linear-gradient(to_top_right,#8853e3_0%,#6b4df1_52%,#6563f1_100%)] px-6 py-14 text-center sm:px-12"
+        >
           <h2 className="font-display text-[1.75rem] leading-[1.15] font-extrabold tracking-[-0.02em] text-balance text-white sm:text-[2.35rem]">
             Give every shift the same answer.
           </h2>

@@ -40,6 +40,61 @@ export const CASE_STATUS_LABELS: Record<
   resolved: { label: 'Resolved', tone: 'success' },
 }
 
+export const SEVERITY_LABELS: Record<string, string> = {
+  low: 'Low',
+  normal: 'Normal',
+  high: 'High',
+  urgent: 'Urgent',
+}
+
+export const PLAN_LABELS: Record<string, string> = {
+  pilot: 'Pilot',
+  essentials: 'Essentials',
+  multi_location: 'Multi-location',
+}
+
+export const INDUSTRY_LABELS: Record<string, string> = {
+  restaurant: 'Restaurant',
+  salon_spa: 'Salon & spa',
+  retail: 'Retail',
+  fitness: 'Fitness',
+  hospitality: 'Hospitality',
+  field_service: 'Field service',
+}
+
+export const PROVIDER_LABELS: Record<string, string> = {
+  manual: 'Manual pilot (billed by EverCalm)',
+  mock: 'Test provider (development only)',
+}
+
+const titleCase = (value: string) => value.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
+
+export const labelFrom = (map: Record<string, string>, value: string | null | undefined) =>
+  value ? (map[value] ?? titleCase(value)) : '—'
+
+/** Why an organization needs the team, in words. Empty when nothing does. */
+export function attentionReasons(o: {
+  subscriptionStatus: string | null
+  openCases: number
+  failedNotifications7d: number
+  publishFailures30d: number
+}): { label: string; tone: 'danger' | 'warning' }[] {
+  const reasons: { label: string; tone: 'danger' | 'warning' }[] = []
+  if (o.subscriptionStatus === 'suspended') reasons.push({ label: 'Suspended', tone: 'danger' })
+  if (o.subscriptionStatus === 'past_due')
+    reasons.push({ label: 'Payment overdue', tone: 'warning' })
+  if (o.failedNotifications7d > 0)
+    reasons.push({ label: `${o.failedNotifications7d} failed deliveries`, tone: 'danger' })
+  if (o.publishFailures30d > 0)
+    reasons.push({ label: `${o.publishFailures30d} publish failures`, tone: 'danger' })
+  if (o.openCases > 0)
+    reasons.push({
+      label: `${o.openCases} open ${o.openCases === 1 ? 'case' : 'cases'}`,
+      tone: 'warning',
+    })
+  return reasons
+}
+
 export const SEVERITY_TONES: Record<string, 'neutral' | 'info' | 'warning' | 'danger'> = {
   low: 'neutral',
   normal: 'info',

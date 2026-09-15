@@ -39,7 +39,6 @@ export default async function StructurePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Settings"
         title="Structure"
         description="Departments, the roles people work, and the positions they work them at."
       />

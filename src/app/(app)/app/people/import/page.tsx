@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
 import { listJobRoles } from '@/modules/structure/service'
 import { canAtAnyLocation } from '@/server/authz/can'
-import { Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { ImportWizard } from './wizard'
 
@@ -26,16 +25,10 @@ export default async function ImportPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href="/app/people"
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← People
-        </Link>
+        <BackLink href="/app/people">People</BackLink>
       </nav>
 
       <PageHeader
-        eyebrow="People"
         title="Import from a spreadsheet"
         description="Add a lot of people at once. Nothing is created until you have seen exactly what will happen."
       />

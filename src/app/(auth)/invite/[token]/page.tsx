@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { resolveInvitationToken } from '@/server/auth/invitation-access'
-import { Card } from '@/ui/primitives'
+import { Card, TextLink } from '@/ui/primitives'
 import { AcceptForm } from './accept-form'
 
 export const metadata: Metadata = { title: 'Accept your invitation' }
@@ -36,12 +35,9 @@ export default async function AcceptInvitationPage({
           invited you to send a new link.
         </p>
         <p className="mt-5">
-          <Link
-            href="/signin"
-            className="text-sm font-medium text-violet-700 underline underline-offset-4"
-          >
+          <TextLink href="/signin" className="text-sm">
             Sign in instead
-          </Link>
+          </TextLink>
         </p>
       </Card>
     )

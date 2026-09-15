@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { NotFoundError } from '@/lib/errors'
 import { isUuid } from '@/lib/uuid'
@@ -10,7 +9,7 @@ import { handoffCategoryLabel, ITEM_STATE_LABELS, describeTiming } from '@/modul
 import { HANDOFF_CATEGORIES } from '@/modules/operations/rules'
 import { getMyShiftWork, STAYS_CURRENT_AFTER_END_MS } from '@/modules/operations/work'
 import { formatShift } from '@/modules/scheduling/time'
-import { EmptyState } from '@/ui/primitives'
+import { EmptyState, TextLink } from '@/ui/primitives'
 import { EmployeeShell } from '../_components/employee-shell'
 import { ShiftWorkspace, type TaskCardData } from './shift-workspace'
 
@@ -51,12 +50,9 @@ export default async function MyShiftWorkPage({
           title="No shift work right now"
           description="When a shift of yours is published with duties on it, they appear here: what to do before you start, during the shift and before you leave."
           action={
-            <Link
-              href="/my/schedule"
-              className="text-sm font-medium text-violet-700 underline underline-offset-4"
-            >
+            <TextLink href="/my/schedule" className="text-sm">
               See your schedule
-            </Link>
+            </TextLink>
           }
         />
       </EmployeeShell>

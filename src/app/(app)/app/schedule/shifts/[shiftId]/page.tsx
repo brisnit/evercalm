@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
 import { isUuid } from '@/lib/uuid'
@@ -8,7 +7,7 @@ import { withTenant } from '@/server/db'
 import { loadShiftForManager } from '@/modules/scheduling/manager'
 import { formatDuration, formatIsoDate, weekDates } from '@/modules/scheduling/time'
 import { listJobRoles, listStations } from '@/modules/structure/service'
-import { Badge, PageHeader } from '@/ui/primitives'
+import { BackLink, Badge, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { ShiftManager } from './shift-manager'
 
@@ -45,9 +44,9 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link href={weekHref} className="text-muted text-sm underline-offset-4 hover:underline">
-          ← {shift.location.name}, week of {formatIsoDate(shift.weekStart)}
-        </Link>
+        <BackLink href={weekHref}>
+          {shift.location.name}, week of {formatIsoDate(shift.weekStart)}
+        </BackLink>
       </nav>
 
       <PageHeader

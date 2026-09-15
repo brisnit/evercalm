@@ -26,6 +26,7 @@ export function ActionForm({
   destructive = false,
   className,
   onSuccess,
+  stickySubmit,
 }: {
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>
   submitLabel: string
@@ -34,6 +35,8 @@ export function ActionForm({
   destructive?: boolean
   className?: string
   onSuccess?: (state: ActionState) => void
+  /** Keep the submit button in view at the bottom of a long form. */
+  stickySubmit?: { hint?: string }
 }) {
   // Success is handed over from INSIDE the action, not from an effect after
   // render. When success removes this form, the result and the refreshed page
@@ -71,14 +74,27 @@ export function ActionForm({
 
       {typeof children === 'function' ? children(state) : children}
 
-      <Button
-        type="submit"
-        loading={pending}
-        variant={destructive ? 'danger' : variant}
-        className="self-start"
-      >
-        {submitLabel}
-      </Button>
+      {stickySubmit ? (
+        <div className="border-line sm:rounded-card sm:shadow-lift sticky bottom-0 z-20 -mx-5 mt-2 flex flex-wrap items-center justify-between gap-3 border-t bg-white/95 px-5 py-3 backdrop-blur sm:mx-0 sm:border">
+          {stickySubmit.hint ? (
+            <p className="text-muted min-w-0 text-sm">{stickySubmit.hint}</p>
+          ) : (
+            <span />
+          )}
+          <Button type="submit" loading={pending} variant={destructive ? 'danger' : variant}>
+            {submitLabel}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="submit"
+          loading={pending}
+          variant={destructive ? 'danger' : variant}
+          className="self-start"
+        >
+          {submitLabel}
+        </Button>
+      )}
     </form>
   )
 }

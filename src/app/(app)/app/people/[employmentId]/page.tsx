@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
-import Link from 'next/link'
 import { and, eq, isNull } from 'drizzle-orm'
 import { requireActorContext } from '@/server/auth/session'
+import { employmentStatusLabel } from '@/modules/people/labels'
 import { withTenant } from '@/server/db'
 import { roleGrants, roles, locations as locationsTable } from '@/server/db/schema'
 import { getEmployment, listCredentials, listEmployments } from '@/modules/people/service'
@@ -11,7 +11,16 @@ import { getProgressForEmployment } from '@/modules/onboarding/service'
 import { listLocations } from '@/modules/org/service'
 import { can, canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
-import { Avatar, Badge, Card, CardHeader, EmptyState, ProgressBar } from '@/ui/primitives'
+import {
+  Avatar,
+  BackLink,
+  Badge,
+  Card,
+  CardHeader,
+  EmptyState,
+  ProgressBar,
+  TextLink,
+} from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { EmploymentPanels, StartOnboardingForm } from './panels'
 
@@ -105,12 +114,9 @@ export default async function EmployeeProfilePage({
         title="We could not find that employee"
         description="They may have been removed, or the link may be wrong."
         action={
-          <Link
-            href="/app/people"
-            className="text-sm font-medium text-violet-700 underline underline-offset-4"
-          >
+          <TextLink href="/app/people" className="text-sm">
             Back to the directory
-          </Link>
+          </TextLink>
         }
       />
     )
@@ -135,12 +141,7 @@ export default async function EmployeeProfilePage({
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href="/app/people"
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← People
-        </Link>
+        <BackLink href="/app/people">People</BackLink>
       </nav>
 
       <div className="flex flex-wrap items-start gap-4 pb-6">
@@ -154,7 +155,7 @@ export default async function EmployeeProfilePage({
             {person.homeLocationName ? ` · ${person.homeLocationName}` : ''}
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <Badge tone={statusTone}>{person.status}</Badge>
+            <Badge tone={statusTone}>{employmentStatusLabel(person.status)}</Badge>
             {person.managerName ? (
               <span className="text-muted text-xs">Reports to {person.managerName}</span>
             ) : null}
@@ -266,12 +267,9 @@ export default async function EmployeeProfilePage({
               title="Onboarding"
               action={
                 onboarding ? (
-                  <Link
-                    href="/app/onboarding"
-                    className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-                  >
+                  <TextLink href="/app/onboarding" className="text-sm">
                     All onboarding
-                  </Link>
+                  </TextLink>
                 ) : undefined
               }
             />

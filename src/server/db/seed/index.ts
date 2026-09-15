@@ -648,7 +648,7 @@ async function seedOrganization(
         blockedReason =
           step.kind === 'training_assignment'
             ? 'No course is linked to this step. A manager can assign the course under Training.'
-            : 'Waiting on policy documents, which arrive in a later release.'
+            : 'Your manager will share this document with you here. There is nothing to do until then.'
       }
 
       if (step.required && step.blocksCompletion && status !== 'completed') allRequiredDone = false

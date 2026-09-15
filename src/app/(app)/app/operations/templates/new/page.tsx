@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { templateOptions } from '@/modules/operations/templates'
 import { OPS_KIND_LABELS } from '@/modules/operations/rules'
 import { OPS_TEMPLATE_KINDS } from '@/modules/operations/rules'
-import { Card, PageHeader } from '@/ui/primitives'
+import { BackLink, Card, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { NewTemplateForm } from './new-template-form'
 
@@ -20,12 +19,7 @@ export default async function NewTemplatePage() {
   const options = await withTenant(actor.organizationId, (tx) => templateOptions(tx, actor))
   return (
     <>
-      <Link
-        href="/app/operations/templates"
-        className="text-muted text-sm underline-offset-4 hover:underline"
-      >
-        ← Templates
-      </Link>
+      <BackLink href="/app/operations/templates">Templates</BackLink>
       <PageHeader
         eyebrow="Operations · Templates"
         title="New template"

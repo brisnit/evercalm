@@ -198,7 +198,7 @@ export function LifecycleActions({
                           required
                           rows={10}
                           defaultValue={body}
-                          className="rounded-control border-line-strong text-ink w-full border bg-white px-3 py-2.5 text-sm"
+                          className="rounded-control border-field text-ink w-full border bg-white px-3 py-2.5 text-sm"
                         />
                       )}
                     </Field>

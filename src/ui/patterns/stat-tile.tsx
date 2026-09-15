@@ -21,31 +21,43 @@ export function StatTile({
   href: string
   tone?: 'neutral' | 'attention' | 'urgent' | 'good'
 }) {
-  const accent = {
-    neutral: 'border-line',
-    attention: 'border-warning/40 bg-warning-soft/40',
-    urgent: 'border-danger/40 bg-danger-soft/40',
-    good: 'border-success/35 bg-success-soft/40',
-  }[tone]
+  // Nothing to act on reads as calm, not as a competing number.
+  const quiet = value === 0 || value === '0' || value === '0%'
+  const effective = quiet && tone !== 'good' ? 'neutral' : tone
 
-  const valueTone = {
-    neutral: 'text-ink',
-    attention: 'text-warning',
-    urgent: 'text-danger',
-    good: 'text-success',
-  }[tone]
+  const mark = {
+    neutral: 'before:bg-transparent',
+    attention: 'before:bg-warning',
+    urgent: 'before:bg-danger',
+    good: 'before:bg-transparent',
+  }[effective]
+
+  const valueTone = quiet
+    ? 'text-faint'
+    : {
+        neutral: 'text-ink',
+        attention: 'text-warning',
+        urgent: 'text-danger',
+        good: 'text-success',
+      }[effective]
 
   return (
     <Link
       href={href}
       className={cn(
-        'group rounded-card flex flex-col gap-1 border bg-white p-4',
-        'hover:shadow-lift focus-visible:shadow-lift transition-shadow',
-        accent,
+        'group rounded-card border-line relative flex flex-col gap-0.5 overflow-hidden border bg-white p-4 pl-5',
+        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
+        'hover:shadow-lift focus-visible:shadow-lift transition-[box-shadow,border-color] hover:border-violet-300',
+        mark,
       )}
     >
-      <span className="text-muted text-xs font-semibold tracking-[0.08em] uppercase">{label}</span>
-      <span className={cn('font-display text-3xl font-extrabold tabular-nums', valueTone)}>
+      <span className="text-muted text-[0.8125rem] font-medium">{label}</span>
+      <span
+        className={cn(
+          'font-display text-[1.75rem] leading-tight font-extrabold tabular-nums',
+          valueTone,
+        )}
+      >
         {value}
       </span>
       <span className="text-muted group-hover:text-ink text-sm">{detail}</span>

@@ -13,7 +13,7 @@ import { myTraining, type MyTraining } from '@/modules/training/learner'
 import { dueLabel } from '@/modules/training/progress'
 import { myShiftWorkSummary, type ShiftWorkSummary } from '@/modules/operations/work'
 import { PriorityMark } from '@/ui/patterns/priority-mark'
-import { Badge, Card, CardHeader, ProgressBar } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, CardHeader, ProgressBar, TextLink } from '@/ui/primitives'
 
 export const metadata: Metadata = { title: 'My work' }
 export const dynamic = 'force-dynamic'
@@ -27,7 +27,7 @@ export const dynamic = 'force-dynamic'
  * simply absent: no placeholder card stands in for them.
  */
 export default async function MyWorkPage() {
-  const { actor, activeOrganization } = await requireActorContext()
+  const { actor } = await requireActorContext()
 
   const data = await withTenant(actor.organizationId, async (tx) => ({
     locations: await listLocations(tx, actor),
@@ -67,12 +67,24 @@ export default async function MyWorkPage() {
   const myLocations = data.locations.filter((l) => actor.locationIds.includes(l.id))
   const hasAdminAccess = actor.grants.some((g) => g.capabilities.size > 0)
   const firstName = actor.displayName.split(' ')[0] ?? actor.displayName
+  // One primary action on the screen: the most demanding thing to do next.
+  const inboxDemands = data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0
+  const shiftOpen =
+    !!data.shiftWork && (data.shiftWork.progress.open > 0 || data.shiftWork.progress.waiting > 0)
+  const lead: 'inbox' | 'shift' | 'onboarding' | 'none' = inboxDemands
+    ? 'inbox'
+    : shiftOpen
+      ? 'shift'
+      : data.onboarding?.nextAction
+        ? 'onboarding'
+        : 'none'
+  const scheduleRepeatsShift = !!data.shiftWork && data.nextShift?.id === data.shiftWork.shiftId
   const attentionCredentials = data.credentials.filter(
     (c) => c.expiryState === 'expired' || c.expiryState === 'expiring_soon',
   )
 
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <EmployeeHeader
         back={null}
         extra={
@@ -85,10 +97,7 @@ export default async function MyWorkPage() {
       />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
-        <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">
-          {activeOrganization.organizationName}
-        </p>
-        <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight">
+        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
           Hello, {firstName}
         </h1>
         <p className="text-muted mt-1 text-sm">
@@ -103,31 +112,33 @@ export default async function MyWorkPage() {
             unread. Otherwise the inbox is a quiet line further down, because
             "Do this next" must not become a wall of everything.
           */}
-          {data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0 ? (
-            <InboxCallout digest={data.inbox} />
-          ) : null}
+          {inboxDemands ? <InboxCallout digest={data.inbox} /> : null}
 
-          {data.shiftWork ? <ShiftWorkCard summary={data.shiftWork} /> : null}
+          {data.shiftWork ? (
+            <ShiftWorkCard summary={data.shiftWork} primary={lead === 'shift'} />
+          ) : null}
 
           <Card>
             <CardHeader
               title="Your schedule"
               description={
-                data.nextShift
-                  ? 'Your next shift'
-                  : 'No upcoming shifts have been published for you yet.'
+                !data.nextShift
+                  ? 'No upcoming shifts have been published for you yet.'
+                  : scheduleRepeatsShift
+                    ? 'Your next shift is above.'
+                    : 'Your next shift'
               }
               action={
-                <Link
-                  href="/my/schedule"
-                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-                >
+                <TextLink href="/my/schedule" className="text-sm">
                   Open schedule
-                </Link>
+                </TextLink>
               }
             />
-            {data.nextShift ? (
-              <Link href={`/my/schedule/shifts/${data.nextShift.id}`} className="block p-5 pt-4">
+            {data.nextShift && !scheduleRepeatsShift ? (
+              <Link
+                href={`/my/schedule/shifts/${data.nextShift.id}`}
+                className="block p-5 pt-4 hover:bg-violet-50/50"
+              >
                 <span className="text-ink block font-medium">
                   {data.nextShift.day} · {data.nextShift.time}
                   {data.nextShift.endsNextDay ? ' (next day)' : ''}
@@ -143,19 +154,13 @@ export default async function MyWorkPage() {
                 </span>
               </Link>
             ) : null}
-            <div className="border-line flex flex-wrap gap-x-4 gap-y-1 border-t px-5 py-3 text-sm">
-              <Link
-                href="/my/time-off"
-                className="text-violet-700 underline-offset-4 hover:underline"
-              >
+            <div className="border-line flex flex-wrap gap-x-5 border-t px-5 py-1 text-sm">
+              <TextLink href="/my/time-off" standalone>
                 Time off
-              </Link>
-              <Link
-                href="/my/availability"
-                className="text-violet-700 underline-offset-4 hover:underline"
-              >
+              </TextLink>
+              <TextLink href="/my/availability" standalone>
                 Availability
-              </Link>
+              </TextLink>
             </div>
           </Card>
 
@@ -165,7 +170,7 @@ export default async function MyWorkPage() {
                 <div className="border-line border-b bg-white px-5 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+                      <p className="text-sm font-semibold text-violet-700">
                         {data.onboarding.nextAction ? 'Do this next' : 'Onboarding'}
                       </p>
                       <p className="font-display text-ink mt-1 text-lg font-bold text-balance">
@@ -192,8 +197,8 @@ export default async function MyWorkPage() {
                     tone={
                       data.onboarding.state === 'completed'
                         ? 'success'
-                        : data.onboarding.state === 'blocked' && !carryOn
-                          ? 'danger'
+                        : data.onboarding.state === 'overdue'
+                          ? 'warning'
                           : 'violet'
                     }
                   />
@@ -207,26 +212,25 @@ export default async function MyWorkPage() {
                   ) : null}
                   {onboardingLesson ? (
                     <>
-                      <Link
+                      <ButtonLink
                         href={onboardingLesson.href}
-                        className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+                        variant={lead === 'onboarding' ? 'primary' : 'secondary'}
+                        className="mt-4 w-full"
                       >
                         Continue {onboardingLesson.courseTitle}
-                      </Link>
-                      <Link
-                        href="/my/onboarding"
-                        className="rounded-control border-line-strong text-ink hover:bg-sunk mt-2 inline-flex min-h-11 w-full items-center justify-center border bg-white px-4 text-sm font-medium"
-                      >
+                      </ButtonLink>
+                      <ButtonLink href="/my/onboarding" variant="secondary" className="mt-2 w-full">
                         Open your onboarding
-                      </Link>
+                      </ButtonLink>
                     </>
                   ) : (
-                    <Link
+                    <ButtonLink
                       href="/my/onboarding"
-                      className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+                      variant={lead === 'onboarding' ? 'primary' : 'secondary'}
+                      className="mt-4 w-full"
                     >
                       Open your onboarding
-                    </Link>
+                    </ButtonLink>
                   )}
                 </div>
               </Card>
@@ -268,18 +272,15 @@ export default async function MyWorkPage() {
 
           <Card>
             <CardHeader title="Where you work" />
-            <div className="p-5">
+            <div className="px-5 py-3">
               {myLocations.length === 0 ? (
                 <p className="text-muted text-sm">
                   You are not assigned to a location yet. Your manager can assign you one.
                 </p>
               ) : (
-                <ul className="flex flex-col gap-2.5">
+                <ul className="divide-line flex flex-col divide-y">
                   {myLocations.map((l) => (
-                    <li
-                      key={l.id}
-                      className="rounded-control border-line flex items-center justify-between gap-3 border bg-white px-3.5 py-3"
-                    >
+                    <li key={l.id} className="flex items-center justify-between gap-3 py-2">
                       <span className="text-ink text-sm font-medium">{l.name}</span>
                       {l.city ? <Badge tone="neutral">{l.city}</Badge> : null}
                     </li>
@@ -294,15 +295,14 @@ export default async function MyWorkPage() {
               title="Messages"
               description={inboxDescription(data.inbox)}
               action={
-                <Link
-                  href="/my/inbox"
-                  className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-                >
+                <TextLink href="/my/inbox" className="text-sm">
                   Open inbox
-                </Link>
+                </TextLink>
               }
             />
-            {data.inbox.headline ? (
+            {/* A preview only when there is something new; read messages live in the inbox. */}
+            {data.inbox.headline &&
+            (data.inbox.unreadCount > 0 || data.inbox.acknowledgementsDue > 0) ? (
               <div className="p-5 pt-4">
                 <Link href={`/my/inbox/${data.inbox.headline.announcementId}`} className="block">
                   <span className="flex flex-wrap items-center gap-2">
@@ -370,7 +370,7 @@ function InboxCallout({
 
   return (
     <Card className="border-violet-300 p-5">
-      <p className="text-xs font-semibold tracking-wide text-violet-700 uppercase">Needs you</p>
+      <p className="text-sm font-semibold text-pink-700">Needs you</p>
       <h2 className="font-display text-ink mt-1 text-lg font-extrabold">{heading}</h2>
       {digest.overdueAcknowledgements > 0 ? (
         <p className="text-warning mt-1.5 text-sm font-semibold">
@@ -385,12 +385,11 @@ function InboxCallout({
       ) : null}
 
       <div className="mt-4">
-        <Link
+        <ButtonLink
           href={digest.headline ? `/my/inbox/${digest.headline.announcementId}` : '/my/inbox'}
-          className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
         >
           {digest.acknowledgementsDue > 0 ? 'Read and confirm' : 'Read it'}
-        </Link>
+        </ButtonLink>
       </div>
     </Card>
   )
@@ -431,17 +430,14 @@ function TrainingCard({
         title="Your training"
         description={description}
         action={
-          <Link
-            href="/my/training"
-            className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
-          >
+          <TextLink href="/my/training" className="text-sm">
             Open training
-          </Link>
+          </TextLink>
         }
       />
       {upNext && lesson ? (
         <div className="p-5 pt-4">
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">Next up</p>
+          <p className="text-sm font-semibold text-violet-700">Next up</p>
           <Link href={`/my/training/${upNext.id}/lessons/${lesson.id}`} className="mt-1 block">
             <span className="text-ink block font-medium">{lesson.title}</span>
             <span className="text-muted block text-sm">
@@ -472,7 +468,14 @@ function TrainingCard({
  * The shift in front of you and how much of its work is left. Only shown when
  * the current or next shift has duties; the workspace is one tap away.
  */
-function ShiftWorkCard({ summary }: { summary: ShiftWorkSummary }) {
+function ShiftWorkCard({
+  summary,
+  primary,
+}: {
+  summary: ShiftWorkSummary
+  /** Whether this is the screen's one primary action. */
+  primary: boolean
+}) {
   const { progress } = summary
   const when =
     summary.phase === 'during'
@@ -500,7 +503,7 @@ function ShiftWorkCard({ summary }: { summary: ShiftWorkSummary }) {
     <div data-testid="shift-work-card">
       <Card className={summary.needsAttention > 0 ? 'border-warning/40' : undefined}>
         <div className="px-5 py-4">
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">{when}</p>
+          <p className="text-sm font-semibold text-violet-700">{when}</p>
           <p className="font-display text-ink mt-1 text-lg font-bold">
             {summary.day} · {summary.time}
             {summary.endsNextDay ? ' (next day)' : ''}
@@ -517,12 +520,13 @@ function ShiftWorkCard({ summary }: { summary: ShiftWorkSummary }) {
           >
             {line}
           </p>
-          <Link
+          <ButtonLink
             href={`/my/shift?shift=${summary.shiftId}`}
-            className="rounded-control mt-4 inline-flex min-h-11 w-full items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+            variant={primary ? 'primary' : 'secondary'}
+            className="mt-4 w-full"
           >
             Open shift work
-          </Link>
+          </ButtonLink>
         </div>
       </Card>
     </div>

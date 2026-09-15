@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { Select } from '@/ui/primitives'
+import { buttonClasses } from '@/ui/primitives/button'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 
@@ -29,31 +31,26 @@ export function WeekToolbar({
   const [pending, startTransition] = useTransition()
   const href = (week: string, location = locationId) =>
     `${basePath}?location=${location}&week=${week}`
-  const linkClass =
-    'rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border bg-white px-3 text-sm font-medium'
+  const linkClass = buttonClasses('secondary', 'md', 'px-3')
 
   return (
-    <div
-      className="rounded-card border-line bg-raise flex flex-wrap items-end gap-3 border p-3"
-      aria-busy={pending || undefined}
-    >
+    <div className="flex flex-wrap items-end gap-2" aria-busy={pending || undefined}>
       {locations.length > 1 ? (
-        <div className="flex min-w-44 flex-col gap-1.5">
+        <div className="flex min-w-48 flex-col gap-1">
           <label htmlFor="schedule-location" className="text-muted text-xs font-medium">
             Location
           </label>
-          <select
+          <Select
             id="schedule-location"
             value={locationId}
             onChange={(e) => startTransition(() => router.push(href(weekStart, e.target.value)))}
-            className="rounded-control border-line-strong text-ink hover:border-faint min-h-11 border bg-white px-3 text-sm focus:border-violet-600"
           >
             {locations.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ) : null}
 

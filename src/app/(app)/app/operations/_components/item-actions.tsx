@@ -7,12 +7,7 @@ import {
   verifyTaskAction,
 } from '@/modules/operations/actions'
 import { MiniForm } from '@/ui/patterns/mini-form'
-import { Disclosure, Field } from '@/ui/primitives'
-
-const TEXTAREA =
-  'rounded-control border-line-strong text-ink placeholder:text-faint w-full border bg-white px-3 py-2.5 text-sm leading-relaxed hover:border-faint focus:border-violet-600'
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm hover:border-faint focus:border-violet-600'
+import { Disclosure, Field, Select, Textarea } from '@/ui/primitives'
 
 /**
  * What a manager can do about one task, given its status and their
@@ -61,7 +56,7 @@ export function ItemActions({
         <p className="text-muted text-sm">You did this, so someone else needs to verify it.</p>
       ) : null}
       {sendBack ? (
-        <Disclosure label="Send back">
+        <Disclosure label="Send back" className="border-transparent">
           <MiniForm action={returnTaskAction} hidden={hidden} submitLabel="Send back">
             {(state) => (
               <Field
@@ -70,23 +65,14 @@ export function ItemActions({
                 required
                 error={state.fieldErrors?.note?.[0]}
               >
-                {(p) => (
-                  <textarea
-                    {...p}
-                    name="note"
-                    rows={2}
-                    maxLength={300}
-                    required
-                    className={TEXTAREA}
-                  />
-                )}
+                {(p) => <Textarea {...p} name="note" rows={2} maxLength={300} required />}
               </Field>
             )}
           </MiniForm>
         </Disclosure>
       ) : null}
       {reassign ? (
-        <Disclosure label="Reassign">
+        <Disclosure label="Reassign" className="border-transparent">
           <MiniForm action={reassignTaskAction} hidden={hidden} submitLabel="Reassign">
             {(state) => (
               <>
@@ -97,13 +83,7 @@ export function ItemActions({
                   error={state.fieldErrors?.toEmploymentId?.[0]}
                 >
                   {(p) => (
-                    <select
-                      {...p}
-                      name="toEmploymentId"
-                      defaultValue=""
-                      required
-                      className={SELECT}
-                    >
+                    <Select {...p} name="toEmploymentId" defaultValue="" required>
                       <option value="" disabled>
                         Someone on shift
                       </option>
@@ -112,13 +92,11 @@ export function ItemActions({
                           {person.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   )}
                 </Field>
                 <Field id={`note-${itemId}`} label="Note" hint="Optional. They are told.">
-                  {(p) => (
-                    <textarea {...p} name="note" rows={2} maxLength={300} className={TEXTAREA} />
-                  )}
+                  {(p) => <Textarea {...p} name="note" rows={2} maxLength={300} />}
                 </Field>
               </>
             )}
@@ -126,10 +104,10 @@ export function ItemActions({
         </Disclosure>
       ) : null}
       {reopen ? (
-        <Disclosure label="Reopen">
+        <Disclosure label="Reopen" className="border-transparent">
           <MiniForm action={reopenTaskAction} hidden={hidden} submitLabel="Reopen">
             <Field id={`reopen-${itemId}`} label="Why" hint="Optional. The person is told.">
-              {(p) => <textarea {...p} name="note" rows={2} maxLength={300} className={TEXTAREA} />}
+              {(p) => <Textarea {...p} name="note" rows={2} maxLength={300} />}
             </Field>
           </MiniForm>
         </Disclosure>

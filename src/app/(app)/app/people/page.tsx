@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
+import { employmentStatusLabel, ONBOARDING_STATE_LABELS } from '@/modules/people/labels'
 import { withTenant } from '@/server/db'
 import { listEmployments } from '@/modules/people/service'
 import { listLocations } from '@/modules/org/service'
 import { listProgress } from '@/modules/onboarding/service'
 import { can, canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Avatar, Badge, Card, EmptyState, PageHeader } from '@/ui/primitives'
+import { Avatar, Badge, ButtonLink, Card, EmptyState, PageHeader, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { PeopleFilters } from './filters'
 
@@ -72,30 +73,18 @@ export default async function PeoplePage({
   return (
     <>
       <PageHeader
-        eyebrow="People"
         title="Employee directory"
         description="Everyone employed by this organization, and where they work."
         action={
           can(actor, 'people.invite') || canAtAnyLocation(actor, 'people.invite') ? (
             <div className="flex flex-wrap gap-2">
-              <Link
-                href="/app/people/invitations"
-                className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
-              >
+              <ButtonLink href="/app/people/invitations" variant="secondary">
                 Invitations
-              </Link>
-              <Link
-                href="/app/people/import"
-                className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
-              >
+              </ButtonLink>
+              <ButtonLink href="/app/people/import" variant="secondary">
                 Import
-              </Link>
-              <Link
-                href="/app/people/invite"
-                className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
-              >
-                Invite someone
-              </Link>
+              </ButtonLink>
+              <ButtonLink href="/app/people/invite">Invite someone</ButtonLink>
             </div>
           ) : undefined
         }
@@ -118,12 +107,9 @@ export default async function PeoplePage({
           }
           action={
             filtered ? (
-              <Link
-                href="/app/people"
-                className="text-sm font-medium text-violet-700 underline underline-offset-4"
-              >
+              <TextLink href="/app/people" className="text-sm">
                 Clear filters
-              </Link>
+              </TextLink>
             ) : undefined
           }
         />
@@ -193,12 +179,15 @@ export default async function PeoplePage({
                       {person.homeLocationName ?? '—'}
                     </td>
                     <td className="px-4 py-3 sm:px-5">
-                      <Badge tone={STATUS_TONE[person.status] ?? 'neutral'}>{person.status}</Badge>
+                      <Badge tone={STATUS_TONE[person.status] ?? 'neutral'}>
+                        {employmentStatusLabel(person.status)}
+                      </Badge>
                     </td>
                     <td className="hidden px-5 py-3 lg:table-cell">
                       {onboarding ? (
                         <span className="text-muted tabular-nums">
-                          {onboarding.percentComplete}% · {onboarding.state.replace(/_/g, ' ')}
+                          {onboarding.percentComplete}% ·{' '}
+                          {ONBOARDING_STATE_LABELS[onboarding.state] ?? onboarding.state}
                         </span>
                       ) : (
                         <span className="text-faint">—</span>

@@ -5,7 +5,7 @@ import { withTenant } from '@/server/db'
 import { listTemplates } from '@/modules/onboarding/templates'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Badge, Card, EmptyState, PageHeader } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, EmptyState, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { NewTemplateForm } from './new-template-form'
 
@@ -48,20 +48,19 @@ export default async function TemplatesPage({
   return (
     <>
       <PageHeader
-        eyebrow="Onboarding"
         title="Checklists"
         description="What a new hire works through in their first weeks. Only published checklists can be assigned."
         action={
-          <Link
+          <ButtonLink
             href={
               showArchived ? '/app/onboarding/templates' : '/app/onboarding/templates?archived=1'
             }
-            className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
+            variant="secondary"
           >
             {showArchived
               ? 'Hide archived'
               : `Show archived${archived.length ? ` (${archived.length})` : ''}`}
-          </Link>
+          </ButtonLink>
         }
       />
 
@@ -132,12 +131,9 @@ export default async function TemplatesPage({
                     </dl>
                   </div>
 
-                  <Link
-                    href={`/app/onboarding/templates/${template.id}`}
-                    className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
-                  >
+                  <ButtonLink href={`/app/onboarding/templates/${template.id}`} variant="secondary">
                     {template.archivedAt ? 'View' : 'Edit'}
-                  </Link>
+                  </ButtonLink>
                 </div>
               </Card>
             </li>

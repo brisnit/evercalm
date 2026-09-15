@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
-import { Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { InviteForm } from './invite-form'
 
@@ -22,16 +21,10 @@ export default async function InvitePage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href="/app/people"
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← People
-        </Link>
+        <BackLink href="/app/people">People</BackLink>
       </nav>
 
       <PageHeader
-        eyebrow="People"
         title="Invite someone to the team"
         description="They receive a single-use link. Nothing is granted until they accept."
       />

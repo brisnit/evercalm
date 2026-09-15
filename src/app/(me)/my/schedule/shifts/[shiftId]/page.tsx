@@ -35,7 +35,7 @@ export default async function MyShiftPage({ params }: { params: Promise<{ shiftI
       <p className="text-faint text-xs font-semibold tracking-[0.08em] uppercase">
         {shift.locationName}
       </p>
-      <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight">
+      <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
         {shift.day}
       </h1>
       <p className="text-ink mt-1 text-lg font-semibold tabular-nums">

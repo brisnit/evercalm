@@ -69,7 +69,7 @@ export default async function TeamAvailabilityPage({
   return (
     <>
       <PageHeader
-        eyebrow={`Schedule · ${data.location.name}`}
+        eyebrow={data.location.name}
         title="Team availability"
         description={`Week of ${formatIsoDate(data.weekStart)}. Only each person can change what they have said.`}
       />

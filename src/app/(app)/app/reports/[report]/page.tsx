@@ -10,7 +10,7 @@ import { buildReport } from '@/modules/reports/builders'
 import { filtersToQuery, isReportKey, parseReportFilters } from '@/modules/reports/filters'
 import { REPORT_CAPABILITY } from '@/modules/reports/scope'
 import { organizationTimeZone } from '@/modules/training/records'
-import { Card, CardHeader, PageHeader, ScrollArea } from '@/ui/primitives'
+import { BackLink, Card, CardHeader, PageHeader, ScrollArea } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { StatTile } from '@/ui/patterns/stat-tile'
 import { SECONDARY_LINK_CLASS, SELECT_CLASS } from '../../training/_components/styles'
@@ -62,9 +62,7 @@ export default async function ReportPage({
 
   return (
     <>
-      <Link href="/app/reports" className="text-muted text-sm underline-offset-4 hover:underline">
-        ← Reports
-      </Link>
+      <BackLink href="/app/reports">Reports</BackLink>
       <PageHeader title={report.title} description={report.description} />
 
       <form

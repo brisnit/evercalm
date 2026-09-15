@@ -5,7 +5,7 @@ import { withTenant } from '@/server/db'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { listAnnouncements, organizationTimeZone } from '@/modules/comms/service'
 import { formatInZone } from '@/lib/dates'
-import { Card, EmptyState, PageHeader } from '@/ui/primitives'
+import { ButtonLink, Card, EmptyState, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { PriorityMark, StatusMark } from '@/ui/patterns/priority-mark'
 
@@ -46,23 +46,17 @@ export default async function CommsPage({
   return (
     <>
       <PageHeader
-        eyebrow="Communication"
         title="Announcements"
         description="What you have told people, who has read it, and who still needs to confirm."
         action={
           <div className="flex flex-wrap gap-2">
-            <Link
+            <ButtonLink
               href={includeArchived ? '/app/comms' : '/app/comms?archived=1'}
-              className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border bg-white px-4 text-sm font-medium"
+              variant="secondary"
             >
               {includeArchived ? 'Hide archived' : 'Show archived'}
-            </Link>
-            <Link
-              href="/app/comms/new"
-              className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
-            >
-              New announcement
-            </Link>
+            </ButtonLink>
+            <ButtonLink href="/app/comms/new">New announcement</ButtonLink>
           </div>
         }
       />
@@ -72,14 +66,7 @@ export default async function CommsPage({
           <EmptyState
             title="Nothing posted yet"
             description="Write your first announcement and choose who should see it."
-            action={
-              <Link
-                href="/app/comms/new"
-                className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
-              >
-                New announcement
-              </Link>
-            }
+            action={<ButtonLink href="/app/comms/new">New announcement</ButtonLink>}
           />
         </div>
       ) : (

@@ -30,7 +30,6 @@ export default async function ValuesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Settings"
         title="Values & standards"
         description="What the business believes, and what it expects every shift. New hires read these during onboarding."
       />

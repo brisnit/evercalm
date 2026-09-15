@@ -42,7 +42,8 @@ test.describe('cross-tenant isolation in the browser', () => {
 
   test('the audit log of one tenant never mentions the other', async ({ page }) => {
     await signIn(page, PEOPLE.harborOwner.email)
-    await page.goto('/app/settings/audit')
+    // The whole available history, not just the latest page of it.
+    await page.goto('/app/settings/audit?all=1')
     await expect(page.getByRole('heading', { name: 'Audit log' })).toBeVisible()
 
     const table = page.getByRole('table')
@@ -52,7 +53,7 @@ test.describe('cross-tenant isolation in the browser', () => {
 
     await signOut(page)
     await signIn(page, PEOPLE.salonOwner.email)
-    await page.goto('/app/settings/audit')
+    await page.goto('/app/settings/audit?all=1')
     const salonTable = page.getByRole('table')
     await expect(salonTable).toContainText('Pearl District')
     await expect(salonTable).not.toContainText('Riverside')

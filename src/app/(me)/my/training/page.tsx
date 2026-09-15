@@ -7,7 +7,7 @@ import { formatDateInZone } from '@/lib/dates'
 import { LESSON_KIND_LABELS } from '@/modules/training/content'
 import { myTraining, type MyAssignment } from '@/modules/training/learner'
 import { dueLabel, formatMinutes } from '@/modules/training/progress'
-import { Badge, Card, EmptyState, ProgressBar } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, EmptyState, ProgressBar } from '@/ui/primitives'
 import { EmployeeShell } from '../_components/employee-shell'
 import { CheckMark } from './_components/check-mark'
 
@@ -76,10 +76,7 @@ export default async function MyTrainingPage() {
 
           {active.length > 0 ? (
             <section aria-labelledby="todo-heading" className="mt-7">
-              <h2
-                id="todo-heading"
-                className="font-display text-muted mb-3 text-sm font-bold tracking-[0.06em] uppercase"
-              >
+              <h2 id="todo-heading" className="font-display text-ink mb-3 text-lg font-bold">
                 To do
               </h2>
               <ul className="flex flex-col gap-3">
@@ -94,10 +91,7 @@ export default async function MyTrainingPage() {
 
           {completed.length > 0 ? (
             <section aria-labelledby="done-heading" className="mt-7">
-              <h2
-                id="done-heading"
-                className="font-display text-muted mb-3 text-sm font-bold tracking-[0.06em] uppercase"
-              >
+              <h2 id="done-heading" className="font-display text-ink mb-3 text-lg font-bold">
                 Completed
               </h2>
               <ul className="flex flex-col gap-2">
@@ -178,15 +172,16 @@ function NextUp({
             value={upNext.progress.percent}
             label={`${upNext.progress.completed} of ${upNext.progress.total} lessons done`}
           />
-          <Link
+          <ButtonLink
             href={`/my/training/${upNext.id}/lessons/${lesson.id}`}
-            className="rounded-control inline-flex min-h-12 w-full items-center justify-center bg-violet-600 px-4 text-base font-semibold text-white hover:bg-violet-700"
+            size="lg"
+            className="w-full"
           >
             {upNext.progress.completed === 0 && lesson.state === 'not_started'
               ? 'Start'
               : 'Continue'}
             <span className="sr-only">: {lesson.title}</span>
-          </Link>
+          </ButtonLink>
         </div>
       </Card>
     )

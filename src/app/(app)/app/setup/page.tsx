@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getOrganization, listLocations } from '@/modules/org/service'
@@ -13,7 +12,7 @@ import { listTemplates } from '@/modules/onboarding/templates'
 import { listEmployments } from '@/modules/people/service'
 import { can } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Badge, Card, PageHeader, ProgressBar } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, PageHeader, ProgressBar } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 
 export const metadata: Metadata = { title: 'Company setup' }
@@ -140,7 +139,8 @@ export default async function SetupPage() {
         />
         {percent === 100 ? (
           <p className="text-success mt-3 text-sm">
-            Setup is complete. Scheduling, training, and daily operations arrive in later releases.
+            Setup is complete. Invite your team, publish a week and they will see it on their
+            phones.
           </p>
         ) : null}
       </Card>
@@ -167,12 +167,9 @@ export default async function SetupPage() {
 
               <div className="flex items-center gap-3">
                 {step.done ? <Badge tone="success">Done</Badge> : null}
-                <Link
-                  href={step.href}
-                  className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
-                >
+                <ButtonLink href={step.href} variant="secondary">
                   {step.cta}
-                </Link>
+                </ButtonLink>
               </div>
             </Card>
           </li>

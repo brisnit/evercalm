@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { can } from '@/server/authz/can'
 import { CATEGORY_LABELS, SEVERITY_LABELS } from '@/modules/support/service'
-import { Card, PageHeader } from '@/ui/primitives'
+import { BackLink, Card, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { NewCaseForm } from './new-case-form'
 
@@ -16,9 +15,7 @@ export default async function NewSupportCasePage() {
     return <PermissionDenied capabilityLabel="Contact EverCalm support" />
   return (
     <>
-      <Link href="/app/support" className="text-muted text-sm underline-offset-4 hover:underline">
-        ← Support
-      </Link>
+      <BackLink href="/app/support">Support</BackLink>
       <PageHeader
         title="Open a support case"
         description="The EverCalm team replies here and in your notifications."

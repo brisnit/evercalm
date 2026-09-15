@@ -73,7 +73,7 @@ export default async function HandoffsPage({
   return (
     <NoticeProvider>
       <PageHeader
-        eyebrow={`Operations · ${list.location.name}`}
+        eyebrow={list.location.name}
         title="Handoffs"
         description="What one shift needs the next to know. Anyone who works here can read and acknowledge them; a manager resolves them."
       />

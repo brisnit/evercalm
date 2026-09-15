@@ -30,7 +30,6 @@ export default async function SignoffsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Training"
         title="Sign-offs"
         description="Sign off only what you have watched someone do. If they need more practice, send it back with a note saying what to work on."
       />

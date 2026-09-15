@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { cn } from '@/lib/cn'
+import { BackLink } from './link'
 
 /**
  * Surfaces and labels.
@@ -37,7 +38,7 @@ export function CardHeader({
   return (
     <div className="border-line flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
       <div className="min-w-0">
-        <h2 className="font-display text-ink text-base font-bold">{title}</h2>
+        <h2 className="font-display text-ink text-base font-bold text-balance">{title}</h2>
         {description ? <p className="text-muted mt-0.5 text-sm">{description}</p> : null}
       </div>
       {action}
@@ -85,27 +86,40 @@ export function Badge({
 
 export function PageHeader({
   eyebrow,
+  back,
   title,
   description,
   action,
 }: {
+  /** Real context the title needs, such as the location. Not the nav section. */
   eyebrow?: string
+  /** The way up from a detail page. */
+  back?: { href: string; label: string }
   title: string
   description?: string
   action?: React.ReactNode
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
-      <div className="min-w-0">
-        {eyebrow ? (
-          <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">{eyebrow}</p>
-        ) : null}
-        <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
-          {title}
-        </h1>
-        {description ? <p className="text-muted mt-2 max-w-2xl">{description}</p> : null}
+    <header className="pb-6">
+      {back ? (
+        <div className="mb-1">
+          <BackLink href={back.href}>{back.label}</BackLink>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          {eyebrow ? <p className="text-muted text-sm font-medium">{eyebrow}</p> : null}
+          <h1 className="font-display text-ink mt-0.5 text-[1.625rem] leading-tight font-extrabold tracking-tight text-balance sm:text-[2rem]">
+            {title}
+          </h1>
+          {description ? (
+            <p className="text-muted mt-2 max-w-[65ch] text-[0.9375rem] leading-relaxed">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
       </div>
-      {action}
     </header>
   )
 }

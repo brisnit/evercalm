@@ -41,6 +41,18 @@ constrain the whole system:
 Semantic colour (success/warning/danger/info) is deliberately separate from the
 brand accent, so "this needs attention" never competes with "this is EverCalm".
 
+### Grounds and edges (refinement pass, September 2026)
+
+| Token         | Hex       | Use                                                                       | Measured                                                 |
+| ------------- | --------- | ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `canvas`      | `#F5F2FD` | Application ground behind white surfaces (admin, employee, EverCalm team) | muted 6.36:1, faint 5.29:1, violet-600 5.54:1 on it      |
+| `field`       | `#878299` | Boundary of every text input, select and textarea                         | 3.70:1 on white, 3.34:1 on canvas (WCAG 1.4.11 asks 3:1) |
+| `line-strong` | `#CFCAD9` | Dividers and card edges only — never a control boundary                   | 1.6:1                                                    |
+
+The product's surfaces are white cards on pale lavender. Violet marks what is
+current (navigation, selected tab) and what is primary; hot pink marks the one
+thing that needs a person, and completion moments.
+
 ## Type
 
 The lockup pairs an italic high-contrast serif ("Ever") with a heavy geometric
@@ -67,6 +79,26 @@ the one thing that needs lifting. Not everything is a card.
 
 The violet→pink gradient is reserved for three uses: the primary marketing CTA,
 one hero accent, and progress rings.
+
+## Components to reach for
+
+| Need                              | Use                                                             | Not                               |
+| --------------------------------- | --------------------------------------------------------------- | --------------------------------- |
+| The page's main action, as a link | `ButtonLink`                                                    | a `Link` with button classes      |
+| A link in or beside text          | `TextLink` (`standalone` when it sits alone: 44px hit area)     | colour-only violet text           |
+| Up from a detail page             | `PageHeader back={…}` or `BackLink`                             | "← Label" text                    |
+| A choice                          | `Select`                                                        | a private `SELECT` class string   |
+| Free text                         | `Textarea`                                                      | a private `TEXTAREA` class string |
+| A figure to act on                | `StatTile` — zero renders quiet; problems carry a coloured edge | tinted tiles for every number     |
+| Section navigation                | `AppNav` (top), `SectionNav` (within a section)                 | per-page link rows                |
+
+**One primary action per view.** When several things could be done, the most
+important is `primary` and the rest are `secondary` or text links. A refusal
+(deny, decline, remove) is never styled as the primary.
+
+**Eyebrows carry context, not the nav.** `PageHeader eyebrow` is plain muted
+text for real context (the location); it never repeats the section the
+navigation already marks.
 
 ## Accessibility baseline — WCAG 2.2 AA
 

@@ -179,7 +179,10 @@ test('time off: requested by the employee, decided by a manager, seen by the emp
   await page.getByLabel('Reason').selectOption('vacation')
   await page.getByRole('button', { name: 'Send request' }).click()
   await expect(notice(page)).toContainText('Request sent.')
-  const mine = page.getByRole('listitem').filter({ hasText: dateLabel(day) })
+  const mine = page
+    .getByRole('main')
+    .getByRole('listitem')
+    .filter({ hasText: dateLabel(day) })
   await expect(mine.getByText('Waiting for a decision')).toBeVisible()
 
   await as(page, MANAGER)
@@ -194,7 +197,10 @@ test('time off: requested by the employee, decided by a manager, seen by the emp
 
   await as(page, SAM)
   await page.goto('/my/time-off')
-  const decided = page.getByRole('listitem').filter({ hasText: dateLabel(day) })
+  const decided = page
+    .getByRole('main')
+    .getByRole('listitem')
+    .filter({ hasText: dateLabel(day) })
   await expect(decided.getByText('Approved', { exact: true })).toBeVisible()
   await expect(decided.getByText(/Enjoy it\./)).toBeVisible()
 })

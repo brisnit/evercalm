@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { NotFoundError } from '@/lib/errors'
 import { isUuid } from '@/lib/uuid'
@@ -15,7 +14,7 @@ import {
 import { instantToZonedWallTime } from '@/lib/dates'
 import { publishingScope, resolveSelectorLabels } from '@/modules/comms/audience'
 import { selectableEvents } from '@/modules/events/service'
-import { PageHeader } from '@/ui/primitives'
+import { BackLink, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { Composer, type DraftRule } from '../../composer'
 import { audienceOptions } from '../../audience-options'
@@ -71,16 +70,10 @@ export default async function EditAnnouncementPage({
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href={`/app/comms/${announcementId}`}
-          className="text-muted text-sm underline-offset-4 hover:underline"
-        >
-          ← {data.announcement.title}
-        </Link>
+        <BackLink href={`/app/comms/${announcementId}`}>{data.announcement.title}</BackLink>
       </nav>
 
       <PageHeader
-        eyebrow="Communication"
         title="Edit announcement"
         description="Nobody has received this yet, so changes here replace the draft outright."
       />

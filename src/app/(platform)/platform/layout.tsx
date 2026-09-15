@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Suspense } from 'react'
+import { AppNav } from '@/ui/patterns/app-nav'
+import { NavigationProgress } from '@/ui/patterns/navigation-progress'
 import { PLATFORM_ROLE_LABELS, requirePlatformStaff } from '@/server/auth/platform-staff'
 import { Logo } from '@/ui/primitives'
 import { SignOutButton } from '../../(app)/app/sign-out-button'
@@ -17,7 +20,10 @@ export const dynamic = 'force-dynamic'
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const staff = await requirePlatformStaff('directory')
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="bg-canvas flex min-h-screen flex-col">
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <header className="border-line border-b bg-white">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3">
           <Link href="/platform" aria-label="EverCalm team home" className="shrink-0">
@@ -33,23 +39,14 @@ export default async function PlatformLayout({ children }: { children: React.Rea
             <SignOutButton />
           </div>
         </div>
-        <nav aria-label="EverCalm team" className="border-line border-t">
-          <ul className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-1 px-3">
-            {[
-              ['/platform', 'Organizations'],
-              ['/platform/support', 'Support cases'],
-            ].map(([href, label]) => (
-              <li key={href}>
-                <Link
-                  href={href!}
-                  className="rounded-control text-muted hover:bg-sunk hover:text-ink inline-flex min-h-11 items-center px-3 text-sm"
-                >
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <AppNav
+          label="EverCalm team"
+          items={[
+            { href: '/platform', label: 'Organizations' },
+            { href: '/platform/support', label: 'Support cases' },
+          ]}
+          exact={['/platform']}
+        />
       </header>
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         {children}

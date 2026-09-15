@@ -119,7 +119,7 @@ test('a course goes from draft to a finished employee and back to the manager', 
   // Dana sees the result.
   await switchTo(page, PEOPLE.harborOwner.email)
   await page.goto(`${courseUrl}/people`)
-  const row = page.getByRole('listitem').filter({ hasText: 'Sam Whitfield' })
+  const row = page.getByRole('main').getByRole('listitem').filter({ hasText: 'Sam Whitfield' })
   await expect(row.getByText('Completed', { exact: true })).toBeVisible()
   await expect(row.getByText(/Best knowledge check 100%/)).toBeVisible()
 })

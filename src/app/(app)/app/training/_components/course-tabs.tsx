@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { cn } from '@/lib/cn'
+import { BackLink } from '@/ui/primitives'
 
 /** Content, people, preview: the three things you do with one course. */
 export function CourseTabs({
@@ -45,12 +46,7 @@ export function CourseTabs({
 export function Breadcrumb({ href, label }: { href: string; label: string }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3">
-      <Link
-        href={href}
-        className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-      >
-        ← {label}
-      </Link>
+      <BackLink href={href}>{label}</BackLink>
     </nav>
   )
 }

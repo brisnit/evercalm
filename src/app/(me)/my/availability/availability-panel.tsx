@@ -8,10 +8,7 @@ import {
 } from '@/modules/scheduling/actions'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
-import { Card, CardHeader, Field, Input } from '@/ui/primitives'
-
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600'
+import { Card, CardHeader, Field, Input, Select } from '@/ui/primitives'
 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -70,17 +67,16 @@ export function AvailabilityPanel({
                           <label htmlFor={`d${day.weekday}-preference`} className="sr-only">
                             {name} availability
                           </label>
-                          <select
+                          <Select
                             id={`d${day.weekday}-preference`}
                             name={`d${day.weekday}-preference`}
                             value={day.preference}
                             onChange={(e) => update(day.weekday, { preference: e.target.value })}
-                            className={SELECT}
                           >
                             <option value="none">Any time</option>
                             <option value="unavailable">Can’t work</option>
                             <option value="preferred">Prefer to work</option>
-                          </select>
+                          </Select>
                         </div>
                         {limited ? (
                           <div className="flex flex-wrap items-center gap-3">
@@ -185,15 +181,10 @@ export function AvailabilityPanel({
                   </Field>
                   <Field id="ex-preference" label="That day" required>
                     {(p) => (
-                      <select
-                        {...p}
-                        name="preference"
-                        defaultValue="unavailable"
-                        className={SELECT}
-                      >
+                      <Select {...p} name="preference" defaultValue="unavailable">
                         <option value="unavailable">I can’t work</option>
                         <option value="available">I can work after all</option>
-                      </select>
+                      </Select>
                     )}
                   </Field>
                 </div>

@@ -1,13 +1,20 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getTemplate } from '@/modules/onboarding/templates'
 import { previewVersion } from '@/modules/onboarding/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
-import { Badge, Card, EmptyState, PageHeader, ProgressBar } from '@/ui/primitives'
+import {
+  BackLink,
+  Badge,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+  ProgressBar,
+} from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 
 export const metadata: Metadata = { title: 'Preview' }
@@ -75,12 +82,7 @@ export default async function TemplatePreviewPage({
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href={`/app/onboarding/templates/${templateId}`}
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← {template.name}
-        </Link>
+        <BackLink href={`/app/onboarding/templates/${templateId}`}>{template.name}</BackLink>
       </nav>
 
       <PageHeader
@@ -90,18 +92,18 @@ export default async function TemplatePreviewPage({
         action={
           template.draftVersion && template.publishedVersion ? (
             <div className="flex gap-2">
-              <Link
+              <ButtonLink
                 href={`/app/onboarding/templates/${templateId}/preview?version=draft`}
-                className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
+                variant="secondary"
               >
                 Draft v{template.draftVersion.versionNumber}
-              </Link>
-              <Link
+              </ButtonLink>
+              <ButtonLink
                 href={`/app/onboarding/templates/${templateId}/preview?version=published`}
-                className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
+                variant="secondary"
               >
                 Published v{template.publishedVersion.versionNumber}
-              </Link>
+              </ButtonLink>
             </div>
           ) : undefined
         }

@@ -72,7 +72,6 @@ export default async function TrainingProgressPage({
   return (
     <>
       <PageHeader
-        eyebrow="Training"
         title="Progress"
         description="Training for the people at the locations you look after. Overdue work comes first."
       />

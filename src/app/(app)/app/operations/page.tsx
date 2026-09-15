@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { NotFoundError } from '@/lib/errors'
 import { addCalendarDays } from '@/lib/dates'
@@ -25,6 +24,7 @@ import {
   EmptyState,
   PageHeader,
   ProgressBar,
+  TextLink,
 } from '@/ui/primitives'
 import { BoardToolbar } from './_components/board-toolbar'
 import { ItemActions } from './_components/item-actions'
@@ -77,7 +77,7 @@ export default async function OperationsBoardPage({
   return (
     <NoticeProvider>
       <PageHeader
-        eyebrow={`Operations · ${location.name}`}
+        eyebrow={location.name}
         title={date === board.today ? `Today · ${formatIsoDate(date)}` : formatIsoDate(date)}
         description={`Shift work for the business day. Times are ${location.name} time (${location.timeZone}).`}
       />
@@ -98,18 +98,8 @@ export default async function OperationsBoardPage({
           description="Work appears here once a schedule is published with shifts that a published template applies to."
           action={
             <div className="flex flex-wrap justify-center gap-3 text-sm">
-              <Link
-                href="/app/operations/templates"
-                className="font-medium text-violet-700 underline underline-offset-4"
-              >
-                Templates
-              </Link>
-              <Link
-                href={`/app/schedule?location=${location.id}`}
-                className="font-medium text-violet-700 underline underline-offset-4"
-              >
-                Schedule
-              </Link>
+              <TextLink href="/app/operations/templates">Templates</TextLink>
+              <TextLink href={`/app/schedule?location=${location.id}`}>Schedule</TextLink>
             </div>
           }
         />
@@ -247,12 +237,12 @@ export default async function OperationsBoardPage({
                       : 'Open, and resolved in the last day.'
                   }
                   action={
-                    <Link
+                    <TextLink
                       href={`/app/operations/handoffs?location=${location.id}`}
-                      className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline"
+                      className="text-sm"
                     >
                       All handoffs
-                    </Link>
+                    </TextLink>
                   }
                 />
                 {board.handoffs.length > 0 ? (
@@ -283,9 +273,19 @@ export default async function OperationsBoardPage({
                 </Card>
               ) : null}
 
-              <Groups title="By station" groups={board.byStation} />
-              <Groups title="By role" groups={board.byRole} />
-              <Groups title="By person" groups={board.byEmployee} />
+              {board.byStation.length + board.byRole.length + board.byEmployee.length > 0 ? (
+                <Card as="section">
+                  <CardHeader
+                    title="How the day is going"
+                    description="By station, role and person."
+                  />
+                  <div className="flex flex-col gap-2 p-4">
+                    <Groups title="By station" groups={board.byStation} defaultOpen />
+                    <Groups title="By role" groups={board.byRole} />
+                    <Groups title="By person" groups={board.byEmployee} />
+                  </div>
+                </Card>
+              ) : null}
             </div>
           </div>
         </>
@@ -305,12 +305,13 @@ function Figure({
   detail: string
   tone: 'neutral' | 'attention' | 'urgent' | 'good'
 }) {
+  const quiet = value === 0 || value === '0%'
   const box = {
-    neutral: 'border-line bg-white',
-    attention: 'border-violet-200 bg-violet-50/60',
-    urgent: 'border-danger/40 bg-danger-soft/40',
-    good: 'border-success/35 bg-success-soft/40',
-  }[tone]
+    neutral: 'before:bg-transparent',
+    attention: 'before:bg-violet-500',
+    urgent: 'before:bg-danger',
+    good: 'before:bg-transparent',
+  }[quiet ? 'neutral' : tone]
   const text = {
     neutral: 'text-ink',
     attention: 'text-violet-700',
@@ -318,9 +319,15 @@ function Figure({
     good: 'text-success',
   }[tone]
   return (
-    <div className={`rounded-card flex flex-col gap-0.5 border p-3.5 ${box}`}>
-      <dt className="text-muted text-xs font-semibold tracking-[0.06em] uppercase">{label}</dt>
-      <dd className={`font-display text-2xl font-extrabold tabular-nums ${text}`}>{value}</dd>
+    <div
+      className={`rounded-card border-line relative flex flex-col gap-0.5 overflow-hidden border bg-white p-3.5 pl-4 before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-[''] ${box}`}
+    >
+      <dt className="text-muted text-[0.8125rem] font-medium">{label}</dt>
+      <dd
+        className={`font-display text-2xl font-extrabold tabular-nums ${quiet ? 'text-faint' : text}`}
+      >
+        {value}
+      </dd>
       <dd className="text-muted text-xs">{detail}</dd>
     </div>
   )
@@ -402,12 +409,19 @@ function TaskLine({
   )
 }
 
-function Groups({ title, groups }: { title: string; groups: BoardGroup[] }) {
+function Groups({
+  title,
+  groups,
+  defaultOpen = false,
+}: {
+  title: string
+  groups: BoardGroup[]
+  defaultOpen?: boolean
+}) {
   if (groups.length === 0) return null
   return (
-    <Card as="section">
-      <CardHeader title={title} />
-      <ul className="flex flex-col gap-3 p-5">
+    <Disclosure label={title} count={groups.length} defaultOpen={defaultOpen}>
+      <ul className="flex flex-col gap-3 pt-2">
         {groups.map((group) => (
           <li key={group.key}>
             <div className="mb-1 flex items-center justify-between gap-2 text-sm">
@@ -424,6 +438,6 @@ function Groups({ title, groups }: { title: string; groups: BoardGroup[] }) {
           </li>
         ))}
       </ul>
-    </Card>
+    </Disclosure>
   )
 }

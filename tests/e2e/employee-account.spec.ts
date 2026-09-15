@@ -85,7 +85,8 @@ test('the account control works from the keyboard', async ({ page }) => {
 
   // Reach it with Tab from the top of the page.
   await page.locator('body').focus()
-  for (let i = 0; i < 8; i += 1) {
+  // Past the skip link, the logo, the five employee sections and Back.
+  for (let i = 0; i < 14; i += 1) {
     await page.keyboard.press('Tab')
     if (await button.evaluate((el) => el === document.activeElement)) break
   }

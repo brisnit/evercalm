@@ -5,10 +5,7 @@ import { cancelTimeOffAction, requestTimeOffAction } from '@/modules/scheduling/
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
 import { ConfirmAction } from '@/ui/patterns/confirm-action'
-import { Badge, Card, CardHeader, Field, Input } from '@/ui/primitives'
-
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600 aria-[invalid=true]:border-danger'
+import { Badge, Card, CardHeader, Field, Input, Select } from '@/ui/primitives'
 
 const STATUS: Record<
   string,
@@ -120,19 +117,13 @@ export function TimeOffPanel({
                   error={state.fieldErrors?.reason?.[0]}
                 >
                   {(p) => (
-                    <select
-                      {...p}
-                      name="reason"
-                      required
-                      defaultValue="personal"
-                      className={SELECT}
-                    >
+                    <Select {...p} name="reason" required defaultValue="personal">
                       <option value="vacation">Vacation</option>
                       <option value="sick">Sick</option>
                       <option value="personal">Personal</option>
                       <option value="family">Family</option>
                       <option value="other">Other</option>
-                    </select>
+                    </Select>
                   )}
                 </Field>
                 <Field id="to-note" label="Note for your manager (optional)">

@@ -14,9 +14,10 @@ type Size = 'sm' | 'md' | 'lg'
 const VARIANTS: Record<Variant, string> = {
   primary:
     'bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 border border-transparent',
-  secondary: 'bg-white text-ink border border-line-strong hover:bg-sunk active:bg-line/60',
+  secondary:
+    'bg-white text-ink border border-field/70 hover:bg-violet-50 hover:border-violet-400 active:bg-violet-100',
   ghost: 'bg-transparent text-muted border border-transparent hover:bg-sunk hover:text-ink',
-  danger: 'bg-danger text-white hover:bg-[#a31f1f] border border-transparent',
+  danger: 'bg-danger text-white hover:bg-[#a31f1f] active:bg-[#8a1a1a] border border-transparent',
 }
 
 const SIZES: Record<Size, string> = {
@@ -25,6 +26,23 @@ const SIZES: Record<Size, string> = {
   md: 'min-h-11 px-4 text-sm gap-2',
   lg: 'min-h-12 px-6 text-base gap-2',
 }
+
+/** The button look, for anything that must be a link but act as a button. */
+export function buttonClasses(variant: Variant = 'primary', size: Size = 'md', className?: string) {
+  return cn(
+    'rounded-control inline-flex items-center justify-center font-medium select-none',
+    'transition-[background-color,border-color,color,transform] duration-150',
+    'active:translate-y-px motion-reduce:active:translate-y-0',
+    'disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0',
+    'aria-disabled:pointer-events-none aria-disabled:opacity-60',
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  )
+}
+
+export type ButtonVariant = Variant
+export type ButtonSize = Size
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -42,14 +60,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       ref={ref}
       disabled={disabled ?? loading}
       aria-busy={loading || undefined}
-      className={cn(
-        'rounded-control inline-flex items-center justify-center font-medium',
-        'transition-colors duration-150',
-        'disabled:cursor-not-allowed disabled:opacity-55',
-        VARIANTS[variant],
-        SIZES[size],
-        className,
-      )}
+      className={buttonClasses(variant, size, className)}
       {...props}
     >
       {loading ? (

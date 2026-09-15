@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getTemplate, listLinkableCourses, templateImpact } from '@/modules/onboarding/templates'
@@ -7,7 +6,15 @@ import { listJobRoles } from '@/modules/structure/service'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
-import { Badge, Card, EmptyState, PageHeader } from '@/ui/primitives'
+import {
+  BackLink,
+  Badge,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+  TextLink,
+} from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { TemplateBuilder } from './builder'
 
@@ -71,12 +78,9 @@ export default async function TemplateBuilderPage({
         title="We could not find that checklist"
         description="It may have been removed, or the link may be wrong."
         action={
-          <Link
-            href="/app/onboarding/templates"
-            className="text-sm font-medium text-violet-700 underline underline-offset-4"
-          >
+          <TextLink href="/app/onboarding/templates" className="text-sm">
             Back to checklists
-          </Link>
+          </TextLink>
         }
       />
     )
@@ -91,12 +95,7 @@ export default async function TemplateBuilderPage({
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href="/app/onboarding/templates"
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← Checklists
-        </Link>
+        <BackLink href="/app/onboarding/templates">Checklists</BackLink>
       </nav>
 
       <PageHeader
@@ -105,12 +104,12 @@ export default async function TemplateBuilderPage({
         description={template.description || undefined}
         action={
           template.publishedVersion || template.draftVersion ? (
-            <Link
+            <ButtonLink
               href={`/app/onboarding/templates/${template.id}/preview`}
-              className="rounded-control border-line-strong text-ink hover:bg-sunk inline-flex min-h-11 items-center border px-4 text-sm font-medium"
+              variant="secondary"
             >
               Preview as a new hire
-            </Link>
+            </ButtonLink>
           ) : undefined
         }
       />

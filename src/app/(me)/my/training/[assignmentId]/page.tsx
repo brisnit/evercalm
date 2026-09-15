@@ -10,7 +10,7 @@ import { isUuid } from '@/lib/uuid'
 import { LESSON_KIND_LABELS } from '@/modules/training/content'
 import { myAssignment } from '@/modules/training/learner'
 import { dueLabel, formatMinutes } from '@/modules/training/progress'
-import { Badge, Card, ProgressBar } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, ProgressBar } from '@/ui/primitives'
 import { EmployeeShell } from '../../_components/employee-shell'
 import { CheckMark } from '../_components/check-mark'
 import { LESSON_STATE } from '../_components/lesson-state'
@@ -120,13 +120,14 @@ export default async function MyCoursePage({
             </p>
           ) : null}
           {next ? (
-            <Link
+            <ButtonLink
               href={`/my/training/${data.id}/lessons/${next.id}`}
-              className="rounded-control mt-4 inline-flex min-h-12 w-full items-center justify-center bg-violet-600 px-4 text-base font-semibold text-white hover:bg-violet-700"
+              size="lg"
+              className="mt-4 w-full"
             >
               {progress.completed === 0 && next.state === 'not_started' ? 'Start' : 'Continue'}
               <span className="sr-only">: {next.title}</span>
-            </Link>
+            </ButtonLink>
           ) : (
             <p className="rounded-control text-ink mt-4 border border-violet-200 bg-violet-50 px-4 py-3 text-sm">
               Waiting for a manager to sign off your practical. There is nothing else to do until
@@ -137,10 +138,7 @@ export default async function MyCoursePage({
       )}
 
       <section aria-labelledby="lessons-heading" className="mt-7">
-        <h2
-          id="lessons-heading"
-          className="font-display text-muted mb-3 text-sm font-bold tracking-[0.06em] uppercase"
-        >
+        <h2 id="lessons-heading" className="font-display text-ink mb-3 text-lg font-bold">
           Lessons
         </h2>
         <ol className="flex flex-col gap-2">

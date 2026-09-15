@@ -22,9 +22,8 @@ export const dynamic = 'force-dynamic'
  *   2. Quiet hours delay, they do not cancel. A message held overnight arrives
  *      in the morning; it is not dropped.
  *
- * SMS and push are listed because the preference model already covers them,
- * and they are marked as not yet available rather than offered as working
- * controls.
+ * Only channels that exist are offered. The preference model already covers
+ * SMS and push; they appear here when they can actually be delivered.
  */
 export default async function NotificationPreferencesPage() {
   const { actor } = await requireActorContext()
@@ -36,7 +35,7 @@ export default async function NotificationPreferencesPage() {
   }))
 
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
@@ -51,7 +50,7 @@ export default async function NotificationPreferencesPage() {
         <Card className="mt-6">
           <CardHeader
             title="What you hear about"
-            description="In-app notifications appear in your inbox. Email is in development mode and nothing leaves this machine yet."
+            description="Every message appears in your inbox. Choose which ones also come by email."
           />
           <div className="p-5">
             <PreferencesForm

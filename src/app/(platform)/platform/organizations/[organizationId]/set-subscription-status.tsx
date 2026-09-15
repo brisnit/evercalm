@@ -2,10 +2,7 @@
 
 import { setSubscriptionStatusAction } from '@/modules/platform/actions'
 import { MiniForm } from '@/ui/patterns/mini-form'
-import { Field, Input } from '@/ui/primitives'
-
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600 aria-[invalid=true]:border-danger'
+import { Field, Input, Select } from '@/ui/primitives'
 
 const STATUSES: [string, string][] = [
   ['active', 'Active'],
@@ -33,13 +30,13 @@ export function SetSubscriptionStatus({
     >
       <Field id="subscription-status" label="Pilot subscription status" required>
         {(p) => (
-          <select {...p} name="status" defaultValue={current} required className={SELECT}>
+          <Select {...p} name="status" defaultValue={current} required>
             {STATUSES.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </Field>
       <Field

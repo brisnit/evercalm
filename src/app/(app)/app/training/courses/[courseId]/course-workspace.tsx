@@ -18,7 +18,7 @@ import { formatMinutes } from '@/modules/training/progress'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
 import { ConfirmAction } from '@/ui/patterns/confirm-action'
-import { Badge, Card, CardHeader, EmptyState, Field, Input } from '@/ui/primitives'
+import { Badge, Card, CardHeader, EmptyState, Field, Input, TextLink } from '@/ui/primitives'
 import { SECONDARY_LINK_CLASS, SELECT_CLASS, TEXTAREA_CLASS } from '../../_components/styles'
 
 export interface LessonRow {
@@ -441,12 +441,12 @@ export function CourseWorkspace(props: Props) {
                       completed
                     </p>
                   ) : null}
-                  <Link
+                  <TextLink
                     href={`/app/training/courses/${courseId}/preview?version=${entry.versionNumber}`}
-                    className="mt-2 inline-flex min-h-9 items-center text-sm font-medium text-violet-700 underline underline-offset-4"
+                    className="mt-2 inline-flex min-h-9 items-center text-sm"
                   >
                     Preview version {entry.versionNumber}
-                  </Link>
+                  </TextLink>
                 </li>
               ))}
             </ol>

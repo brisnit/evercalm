@@ -63,21 +63,55 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
   )
 }
 
+/**
+ * The boundary every text control shares. `field` is 3:1 against white and the
+ * canvas, as WCAG 1.4.11 asks of a control's edge; 16px text on a phone stops
+ * iOS zooming the page when a field is focused.
+ */
+export const CONTROL = cn(
+  'rounded-control border-field w-full border bg-white',
+  'text-ink placeholder:text-faint text-base sm:text-sm',
+  'hover:border-ink/60 focus:border-violet-600',
+  'aria-[invalid=true]:border-danger',
+  'disabled:bg-sunk disabled:text-muted disabled:border-line-strong disabled:cursor-not-allowed',
+)
+
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
 >(function Input({ className, ...props }, ref) {
+  return <input ref={ref} className={cn(CONTROL, 'min-h-11 px-3', className)} {...props} />
+})
+
+/** A native select, dressed like the other controls, with its own chevron. */
+export const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(function Select({ className, children, ...props }, ref) {
   return (
-    <input
+    <select
       ref={ref}
       className={cn(
-        'rounded-control border-line-strong min-h-11 w-full border bg-white px-3',
-        'text-ink placeholder:text-faint text-sm',
-        'hover:border-faint focus:border-violet-600',
-        'aria-[invalid=true]:border-danger',
-        'disabled:bg-sunk disabled:text-muted disabled:cursor-not-allowed',
+        CONTROL,
+        'min-h-11 appearance-none bg-white [background-size:1rem] [background-position:right_0.75rem_center] [background-repeat:no-repeat] pr-9 pl-3',
+        "[background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%235a5766' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")]",
         className,
       )}
+      {...props}
+    >
+      {children}
+    </select>
+  )
+})
+
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...props }, ref) {
+  return (
+    <textarea
+      ref={ref}
+      className={cn(CONTROL, 'px-3 py-2.5 leading-relaxed', className)}
       {...props}
     />
   )

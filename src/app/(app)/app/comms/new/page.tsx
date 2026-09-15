@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { listCategories, organizationTimeZone } from '@/modules/comms/service'
 import { publishingScope } from '@/modules/comms/audience'
 import { selectableEvents } from '@/modules/events/service'
-import { PageHeader } from '@/ui/primitives'
+import { BackLink, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { Composer } from '../composer'
 import { audienceOptions } from '../audience-options'
@@ -32,13 +31,10 @@ export default async function NewAnnouncementPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link href="/app/comms" className="text-muted text-sm underline-offset-4 hover:underline">
-          ← Announcements
-        </Link>
+        <BackLink href="/app/comms">Announcements</BackLink>
       </nav>
 
       <PageHeader
-        eyebrow="Communication"
         title="New announcement"
         description="Write it, choose who sees it, then check the audience before anything goes out."
       />

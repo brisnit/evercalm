@@ -11,7 +11,7 @@ import type { ManagedShift } from '@/modules/scheduling/manager'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
 import { ConfirmAction } from '@/ui/patterns/confirm-action'
-import { Badge, Card, CardHeader, Field, Input } from '@/ui/primitives'
+import { Badge, Card, CardHeader, Field, Input, TextLink } from '@/ui/primitives'
 import { SELECT_CLASS } from '../../_components/add-shift-form'
 
 function hours(minutes: number): string {
@@ -330,12 +330,9 @@ export function ShiftManager({
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/app/schedule/requests"
-                    className="mt-2 inline-block text-sm font-medium text-violet-700 underline underline-offset-4"
-                  >
+                  <TextLink href="/app/schedule/requests" className="mt-2 inline-block text-sm">
                     Decide in Requests
-                  </Link>
+                  </TextLink>
                 </div>
               ) : null}
             </div>

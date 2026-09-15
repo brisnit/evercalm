@@ -38,7 +38,7 @@ export function ValueForm() {
                   required
                   rows={3}
                   maxLength={600}
-                  className="rounded-control border-line-strong text-ink hover:border-faint w-full border bg-white px-3 py-2.5 text-sm focus:border-violet-600"
+                  className="rounded-control border-field text-ink hover:border-faint w-full border bg-white px-3 py-2.5 text-sm focus:border-violet-600"
                 />
               )}
             </Field>

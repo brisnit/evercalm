@@ -4,7 +4,7 @@ import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getMySchedule } from '@/modules/scheduling/employee'
 import { formatIsoDate, isIsoDate, isoWeekday } from '@/modules/scheduling/time'
-import { Badge, Card, EmptyState } from '@/ui/primitives'
+import { Badge, Card, EmptyState, TextLink } from '@/ui/primitives'
 import { EmployeeShell, ScheduleTabs } from '../_components/employee-shell'
 import { IncomingSwaps, OpenShiftsAndRequests } from './schedule-requests'
 
@@ -59,12 +59,9 @@ export default async function MySchedulePage({
               Shifts
             </h2>
             {weekStart ? (
-              <Link
-                href="/my/schedule"
-                className="text-sm text-violet-700 underline-offset-4 hover:underline"
-              >
+              <TextLink href="/my/schedule" className="text-sm">
                 Show upcoming
-              </Link>
+              </TextLink>
             ) : null}
           </div>
           {schedule.upcoming.length === 0 ? (
@@ -78,9 +75,7 @@ export default async function MySchedulePage({
             <ol className="mt-3 flex flex-col gap-4">
               {[...days.entries()].map(([date, shifts]) => (
                 <li key={date}>
-                  <h3 className="text-faint text-xs font-semibold tracking-[0.08em] uppercase">
-                    {formatIsoDate(date)}
-                  </h3>
+                  <h3 className="text-ink text-sm font-semibold">{formatIsoDate(date)}</h3>
                   <ul className="mt-2 flex flex-col gap-2">
                     {shifts.map((shift) => (
                       <li key={shift.id}>

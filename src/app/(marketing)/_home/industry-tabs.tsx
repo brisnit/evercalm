@@ -70,8 +70,8 @@ export function IndustryTabs({ industries }: { industries: Industry[] }) {
               onKeyDown={(event) => onKeyDown(event, index)}
               className={
                 selected
-                  ? 'bg-accent min-h-11 rounded-full px-4 text-sm font-semibold text-white'
-                  : 'border-line text-deep hover:border-accent/40 hover:text-accent-strong min-h-11 rounded-full border bg-white px-4 text-sm font-medium'
+                  ? 'bg-accent min-h-11 rounded-full px-4 text-sm font-semibold text-white shadow-[0_6px_16px_-8px_rgb(107_77_241/0.7)] transition-colors duration-200'
+                  : 'border-line text-deep hover:border-accent/40 hover:text-accent-strong hover:bg-lift min-h-11 rounded-full border bg-white px-4 text-sm font-medium transition-colors duration-200'
               }
             >
               {industry.label}
@@ -88,7 +88,7 @@ export function IndustryTabs({ industries }: { industries: Industry[] }) {
           aria-labelledby={`${base}-tab-${index}`}
           hidden={index !== active}
           tabIndex={0}
-          className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] [&>*]:min-w-0"
+          className="grid gap-8 p-6 motion-safe:animate-[ec-fade-in_0.35s_ease-out] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] [&>*]:min-w-0"
         >
           <div>
             <h3 className="font-display text-deep text-2xl font-extrabold tracking-tight">

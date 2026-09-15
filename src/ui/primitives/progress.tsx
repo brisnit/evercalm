@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { cn } from '@/lib/cn'
 
 /**
@@ -63,6 +64,7 @@ export function ProgressRing({
   size?: number
   label: string
 }) {
+  const gradientId = `ec-ring-${useId().replace(/:/g, '')}`
   const clamped = Math.max(0, Math.min(100, Math.round(value)))
   const stroke = 5
   const radius = (size - stroke) / 2
@@ -77,7 +79,7 @@ export function ProgressRing({
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <defs>
-          <linearGradient id="ec-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--color-violet-600)" />
             <stop offset="100%" stopColor="var(--color-pink-500)" />
           </linearGradient>
@@ -95,7 +97,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#ec-ring)"
+          stroke={`url(#${gradientId})`}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}

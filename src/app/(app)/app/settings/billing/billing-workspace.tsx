@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import {
   changePlanAction,
   requestCancellationAction,
@@ -11,7 +10,7 @@ import {
 import { ConfirmAction } from '@/ui/patterns/confirm-action'
 import { MiniForm } from '@/ui/patterns/mini-form'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
-import { Badge, Card, CardHeader, Field, Input } from '@/ui/primitives'
+import { Badge, Card, CardHeader, Field, Input, TextLink } from '@/ui/primitives'
 
 interface Props {
   provider: { name: string; live: boolean; simulationsEnabled: boolean; ownerSelfService: boolean }
@@ -52,13 +51,7 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
               Billing is arranged directly with EverCalm during the pilot.
             </span>{' '}
             Nothing is charged here. To change your plan or end the pilot,{' '}
-            <Link
-              href="/app/support/new"
-              className="font-medium text-violet-700 underline underline-offset-4"
-            >
-              open a support case
-            </Link>
-            .
+            <TextLink href="/app/support/new">open a support case</TextLink>.
           </p>
         </Card>
       ) : !provider.live ? (
@@ -225,13 +218,8 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
               {!provider.ownerSelfService ? (
                 <p className="text-muted text-sm">
                   During the pilot, ending your subscription is arranged with EverCalm.{' '}
-                  <Link
-                    href="/app/support/new"
-                    className="font-medium text-violet-700 underline underline-offset-4"
-                  >
-                    Open a support case
-                  </Link>{' '}
-                  and we will take care of it.
+                  <TextLink href="/app/support/new">Open a support case</TextLink> and we will take
+                  care of it.
                 </p>
               ) : summary.canWithdraw ? (
                 <MiniForm

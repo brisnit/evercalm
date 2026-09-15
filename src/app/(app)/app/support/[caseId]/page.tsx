@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { formatDateInZone } from '@/lib/dates'
 import { NotFoundError } from '@/lib/errors'
@@ -10,7 +9,7 @@ import { can } from '@/server/authz/can'
 import { clockLabel } from '@/modules/operations/items'
 import { CATEGORY_LABELS, SEVERITY_LABELS, STATUS_LABELS, getCase } from '@/modules/support/service'
 import { organizationTimeZone } from '@/modules/training/records'
-import { Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { CaseReply } from './case-reply'
 
@@ -43,9 +42,7 @@ export default async function SupportCasePage({
 
   return (
     <>
-      <Link href="/app/support" className="text-muted text-sm underline-offset-4 hover:underline">
-        ← Support
-      </Link>
+      <BackLink href="/app/support">Support</BackLink>
       <PageHeader
         eyebrow={detail.reference}
         title={detail.subject}

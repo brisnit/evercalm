@@ -46,7 +46,10 @@ function Console() {
           EverCalm · Riverside Ave
         </span>
         <span className="text-success ml-auto flex items-center gap-1.5 font-mono text-[0.625rem] tracking-[0.14em] uppercase">
-          <span className="bg-success h-1.5 w-1.5 rounded-full" />
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="bg-success/50 absolute inset-0 rounded-full motion-safe:animate-ping" />
+            <span className="bg-success relative h-1.5 w-1.5 rounded-full" />
+          </span>
           Live
         </span>
       </div>
@@ -153,7 +156,8 @@ function Phone() {
       data-testid="hero-phone"
       className="relative mx-auto -mt-12 w-full max-w-[16.5rem] sm:absolute sm:bottom-0 sm:left-0 sm:mx-0 sm:mt-0 sm:w-[15.5rem] sm:max-w-none"
     >
-      <div className="border-line/70 rounded-[1.6rem] border bg-white p-3 shadow-[0_24px_50px_-20px_rgb(23_18_64/0.35)]">
+      {/* The float lives on an inner box, so the measured phone never moves. */}
+      <div className="border-line/70 rounded-[1.6rem] border bg-white p-3 shadow-[0_24px_50px_-20px_rgb(23_18_64/0.35)] motion-safe:animate-[ec-float_7s_ease-in-out_infinite]">
         <span className="bg-line mx-auto mb-3 block h-1 w-9 rounded-full" />
         <p className="font-display text-deep text-base font-extrabold">Hey, Maya</p>
         <p className="text-muted text-xs">Today · 4:00p – close · Bar</p>
@@ -187,7 +191,11 @@ function PhoneTask({ label, done = false }: { label: string; done?: boolean }) {
         }
       >
         {done ? (
-          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none">
+          <svg
+            viewBox="0 0 12 12"
+            className="h-2.5 w-2.5 motion-safe:animate-[ec-tick_0.6s_ease-out_0.8s_both]"
+            fill="none"
+          >
             <path d="M2.5 6.2 5 8.6l4.5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         ) : null}

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { formatDateInZone } from '@/lib/dates'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -7,7 +6,7 @@ import { can } from '@/server/authz/can'
 import { getSystemStatus } from '@/modules/status/service'
 import { organizationTimeZone } from '@/modules/training/records'
 import { clockLabel } from '@/modules/operations/items'
-import { Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { Badge, Card, CardHeader, PageHeader, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
 import { RetryButton } from './retry-button'
@@ -97,9 +96,7 @@ export default async function SystemStatusPage() {
                 {status.publishing.failed} scheduled{' '}
                 {status.publishing.failed === 1 ? 'announcement' : 'announcements'} could not
                 publish, most recently {when(status.publishing.lastFailedAt)}.{' '}
-                <Link href="/app/comms" className="text-violet-700 underline underline-offset-4">
-                  Review them in Communication
-                </Link>
+                <TextLink href="/app/comms">Review them in Communication</TextLink>
               </p>
             )}
           </div>
@@ -160,12 +157,7 @@ export default async function SystemStatusPage() {
           <p className="text-ink text-sm">
             Something not working?{' '}
             {can(actor, 'support.manage') ? (
-              <Link
-                href="/app/support/new"
-                className="text-violet-700 underline underline-offset-4"
-              >
-                Open a support case
-              </Link>
+              <TextLink href="/app/support/new">Open a support case</TextLink>
             ) : (
               'Ask an owner to open a support case.'
             )}

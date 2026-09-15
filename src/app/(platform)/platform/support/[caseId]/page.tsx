@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { isUuid } from '@/lib/uuid'
 import { requirePlatformStaff } from '@/server/auth/platform-staff'
 import { staffCaseThread, staffCases, staffColleagues } from '@/server/db/platform'
-import { Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { BackLink, Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { CASE_STATUS_LABELS, SEVERITY_TONES, utcDateTime } from '../../format'
 import { StaffCaseControls } from './staff-case-controls'
 
@@ -28,12 +27,7 @@ export default async function PlatformCasePage({
 
   return (
     <>
-      <Link
-        href="/platform/support"
-        className="text-muted text-sm underline-offset-4 hover:underline"
-      >
-        ← Support cases
-      </Link>
+      <BackLink href="/platform/support">Support cases</BackLink>
       <PageHeader
         eyebrow={`${detail.reference} · ${detail.organizationName}`}
         title={detail.subject}

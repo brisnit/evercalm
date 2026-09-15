@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { Fragment } from 'react'
 import {
   blockTaskAction,
   completeHandoffTaskAction,
@@ -16,12 +16,17 @@ import { cn } from '@/lib/cn'
 import { HandoffCard } from '@/ui/patterns/handoff-card'
 import { MiniForm } from '@/ui/patterns/mini-form'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
-import { Badge, Card, Disclosure, Field, Input, ProgressBar } from '@/ui/primitives'
-
-const TEXTAREA =
-  'rounded-control border-line-strong text-ink placeholder:text-faint w-full border bg-white px-3 py-2.5 text-base leading-relaxed hover:border-faint focus:border-violet-600 sm:text-sm'
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-base hover:border-faint focus:border-violet-600 sm:text-sm'
+import {
+  Badge,
+  Card,
+  Disclosure,
+  Field,
+  Input,
+  ProgressBar,
+  Select,
+  TextLink,
+  Textarea,
+} from '@/ui/primitives'
 
 export interface TaskCardData {
   id: string
@@ -76,14 +81,32 @@ export function ShiftWorkspace(props: Props) {
   const visible = sections.filter((s) => s.items.length > 0)
   const finished = progress.total > 0 && progress.open === 0 && progress.waiting === 0
   const openHandoffs = props.handoffs.filter((h) => h.status === 'open')
+  // One primary action on the page: the first thing that can be done.
+  const leadId =
+    visible
+      .flatMap((sec) => sec.items)
+      .find((t) => t.canAct && !['done', 'skipped', 'waiting', 'cancelled'].includes(t.state))
+      ?.id ?? null
+  const handoffsIn =
+    openHandoffs.length > 0 ? (
+      <section aria-labelledby="handoffs-in" className="mt-6">
+        <h2 id="handoffs-in" className="font-display text-ink text-lg font-bold">
+          From earlier shifts
+        </h2>
+        <p className="text-muted text-sm">Read these before you start.</p>
+        <div className="mt-3 flex flex-col gap-3">
+          {openHandoffs.map((h) => (
+            <HandoffCard key={h.id} handoff={h} />
+          ))}
+        </div>
+      </section>
+    ) : null
 
   return (
     <NoticeProvider>
       <header>
-        <p className="text-faint text-xs font-semibold tracking-[0.08em] uppercase">
-          {shift.eyebrow}
-        </p>
-        <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight">
+        <p className="text-muted text-sm font-medium">{shift.eyebrow}</p>
+        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
           {shift.day}
         </h1>
         <p className="text-ink mt-0.5 text-base font-semibold tabular-nums">{shift.time}</p>
@@ -127,15 +150,12 @@ export function ShiftWorkspace(props: Props) {
 
       {finished ? (
         <Card className="border-success/30 bg-success-soft/40 mt-4 p-4">
-          <p className="text-success font-semibold">Everything on this shift is finished.</p>
+          <p className="text-success font-semibold">
+            Everything on this shift is finished. Nice work.
+          </p>
           <p className="text-muted mt-1 text-sm">
             {props.nextShiftId ? (
-              <Link
-                href={`/my/shift?shift=${props.nextShiftId}`}
-                className="text-violet-700 underline underline-offset-4"
-              >
-                See your next shift
-              </Link>
+              <TextLink href={`/my/shift?shift=${props.nextShiftId}`}>See your next shift</TextLink>
             ) : (
               'Nothing else is waiting for you.'
             )}
@@ -143,36 +163,29 @@ export function ShiftWorkspace(props: Props) {
         </Card>
       ) : null}
 
-      {openHandoffs.length > 0 ? (
-        <section aria-labelledby="handoffs-in" className="mt-6">
-          <h2 id="handoffs-in" className="font-display text-ink text-lg font-bold">
-            From earlier shifts
-          </h2>
-          <p className="text-muted text-sm">Read these before you start.</p>
-          <div className="mt-3 flex flex-col gap-3">
-            {openHandoffs.map((h) => (
-              <HandoffCard key={h.id} handoff={h} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {visible.map((section) => (
-        <section key={section.key} aria-labelledby={`section-${section.key}`} className="mt-7">
-          <h2 id={`section-${section.key}`} className="font-display text-ink text-lg font-bold">
-            {section.title}{' '}
-            <span className="text-faint text-sm font-medium">({section.items.length})</span>
-          </h2>
-          {section.description ? <p className="text-muted text-sm">{section.description}</p> : null}
-          <ol className="mt-3 flex flex-col gap-3">
-            {section.items.map((task) => (
-              <li key={task.id}>
-                <TaskCard task={task} categories={props.categories} />
-              </li>
-            ))}
-          </ol>
-        </section>
+      {visible.map((section, index) => (
+        <Fragment key={section.key}>
+          <section aria-labelledby={`section-${section.key}`} className="mt-7">
+            <h2 id={`section-${section.key}`} className="font-display text-ink text-lg font-bold">
+              {section.title}{' '}
+              <span className="text-faint text-sm font-medium">({section.items.length})</span>
+            </h2>
+            {section.description ? (
+              <p className="text-muted text-sm">{section.description}</p>
+            ) : null}
+            <ol className="mt-3 flex flex-col gap-3">
+              {section.items.map((task) => (
+                <li key={task.id}>
+                  <TaskCard task={task} categories={props.categories} lead={task.id === leadId} />
+                </li>
+              ))}
+            </ol>
+          </section>
+          {/* Notes from earlier shifts come after what is urgent, before the rest. */}
+          {index === (visible[0]?.key === 'now' ? 0 : -1) ? handoffsIn : null}
+        </Fragment>
       ))}
+      {visible[0]?.key !== 'now' ? handoffsIn : null}
 
       {progress.total === 0 ? (
         <p className="text-muted mt-6 text-sm">No duties are attached to this shift.</p>
@@ -295,7 +308,7 @@ function HandoffFields({
         error={errors?.category?.[0]}
       >
         {(p) => (
-          <select {...p} name="category" defaultValue="" required className={SELECT}>
+          <Select {...p} name="category" defaultValue="" required>
             <option value="" disabled>
               Choose one
             </option>
@@ -304,7 +317,7 @@ function HandoffFields({
                 {c.label}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </Field>
       <Field id={`${prefix}-title`} label="In a few words" required error={errors?.title?.[0]}>
@@ -320,7 +333,7 @@ function HandoffFields({
         )}
       </Field>
       <Field id={`${prefix}-body`} label="Details" hint="Optional.">
-        {(p) => <textarea {...p} name="body" rows={3} maxLength={1500} className={TEXTAREA} />}
+        {(p) => <Textarea {...p} name="body" rows={3} maxLength={1500} />}
       </Field>
       <label className="text-ink flex min-h-11 items-center gap-3 text-sm">
         <input
@@ -338,9 +351,12 @@ function HandoffFields({
 function TaskCard({
   task,
   categories,
+  lead = false,
 }: {
   task: TaskCardData
   categories: { value: string; label: string }[]
+  /** The single task whose button is the page's primary action. */
+  lead?: boolean
 }) {
   const open = !['done', 'skipped', 'waiting', 'cancelled'].includes(task.state)
   const hidden = { itemId: task.id, revision: task.revision }
@@ -421,8 +437,8 @@ function TaskCard({
                 action={completeHandoffTaskAction}
                 hidden={hidden}
                 submitLabel="Save handoff"
-                variant="primary"
-                size="lg"
+                variant={lead ? 'primary' : 'secondary'}
+                size={lead ? 'lg' : 'md'}
                 fullWidth
               >
                 {(state) => (
@@ -452,8 +468,8 @@ function TaskCard({
               action={completeTaskAction}
               hidden={hidden}
               submitLabel={task.requiresVerification ? 'Done – send to a manager' : 'Mark done'}
-              variant="primary"
-              size="lg"
+              variant={lead ? 'primary' : 'secondary'}
+              size={lead ? 'lg' : 'md'}
               fullWidth
             >
               {(state) =>
@@ -465,14 +481,7 @@ function TaskCard({
                     error={state.fieldErrors?.response?.[0]}
                   >
                     {(p) => (
-                      <textarea
-                        {...p}
-                        name="responseText"
-                        rows={2}
-                        maxLength={500}
-                        required
-                        className={TEXTAREA}
-                      />
+                      <Textarea {...p} name="responseText" rows={2} maxLength={500} required />
                     )}
                   </Field>
                 ) : task.responseType === 'number' ? (
@@ -506,7 +515,7 @@ function TaskCard({
               fullWidth
             />
           ) : (
-            <Disclosure label="Can’t do it?">
+            <Disclosure label="Can’t do it?" className="border-transparent">
               <div className="flex flex-col gap-4 pt-2">
                 <MiniForm
                   action={blockTaskAction}

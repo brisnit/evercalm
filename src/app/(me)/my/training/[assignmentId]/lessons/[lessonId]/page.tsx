@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
@@ -9,7 +8,7 @@ import { isUuid } from '@/lib/uuid'
 import { LESSON_KIND_LABELS } from '@/modules/training/content'
 import { myLesson } from '@/modules/training/learner'
 import { AnnouncementBody } from '@/ui/patterns/announcement-body'
-import { ProgressBar } from '@/ui/primitives'
+import { BackLink, ProgressBar, TextLink } from '@/ui/primitives'
 import { EmployeeShell } from '../../../../_components/employee-shell'
 import { LessonPlayer } from './lesson-player'
 
@@ -124,21 +123,18 @@ export default async function MyLessonPage({
         className="border-line mt-8 flex items-center justify-between gap-3 border-t pt-4 text-sm"
       >
         {data.previousLessonId ? (
-          <Link
-            href={`${courseHref}/lessons/${data.previousLessonId}`}
-            className="inline-flex min-h-11 items-center font-medium text-violet-700 underline underline-offset-4"
-          >
-            ← Previous lesson
-          </Link>
+          <BackLink href={`${courseHref}/lessons/${data.previousLessonId}`}>
+            Previous lesson
+          </BackLink>
         ) : (
           <span />
         )}
-        <Link
+        <TextLink
           href={data.nextLessonId ? `${courseHref}/lessons/${data.nextLessonId}` : courseHref}
-          className="inline-flex min-h-11 items-center font-medium text-violet-700 underline underline-offset-4"
+          className="inline-flex min-h-11 items-center"
         >
           {data.nextLessonId ? 'Next lesson →' : 'Back to the course'}
-        </Link>
+        </TextLink>
       </nav>
     </EmployeeShell>
   )

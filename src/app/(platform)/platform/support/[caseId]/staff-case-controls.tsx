@@ -7,12 +7,7 @@ import {
 } from '@/modules/platform/actions'
 import { MiniForm } from '@/ui/patterns/mini-form'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
-import { Card, CardHeader, Field } from '@/ui/primitives'
-
-const TEXTAREA =
-  'rounded-control border-line-strong text-ink placeholder:text-faint w-full border bg-white px-3 py-2.5 text-sm leading-relaxed hover:border-faint focus:border-violet-600'
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm hover:border-faint focus:border-violet-600'
+import { Card, CardHeader, Field, Select, Textarea } from '@/ui/primitives'
 
 export function StaffCaseControls({
   caseId,
@@ -43,19 +38,17 @@ export function StaffCaseControls({
               variant="primary"
             >
               <Field id="staff-reply" label="Reply">
-                {(p) => (
-                  <textarea {...p} name="body" rows={5} maxLength={5000} className={TEXTAREA} />
-                )}
+                {(p) => <Textarea {...p} name="body" rows={5} maxLength={5000} />}
               </Field>
               <Field id="staff-status" label="Status after sending">
                 {(p) => (
-                  <select {...p} name="status" defaultValue={status} className={SELECT}>
+                  <Select {...p} name="status" defaultValue={status}>
                     {statuses.map((s) => (
                       <option key={s.value} value={s.value}>
                         {s.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </Field>
             </MiniForm>
@@ -70,16 +63,7 @@ export function StaffCaseControls({
               submitLabel="Save internal note"
             >
               <Field id="staff-note" label="Note" required>
-                {(p) => (
-                  <textarea
-                    {...p}
-                    name="body"
-                    rows={3}
-                    maxLength={5000}
-                    required
-                    className={TEXTAREA}
-                  />
-                )}
+                {(p) => <Textarea {...p} name="body" rows={3} maxLength={5000} required />}
               </Field>
             </MiniForm>
           </div>
@@ -94,19 +78,14 @@ export function StaffCaseControls({
             >
               <Field id="staff-assignee" label="Assigned to">
                 {(p) => (
-                  <select
-                    {...p}
-                    name="assignee"
-                    defaultValue={assignedStaffUserId ?? ''}
-                    className={SELECT}
-                  >
+                  <Select {...p} name="assignee" defaultValue={assignedStaffUserId ?? ''}>
                     <option value="">Nobody</option>
                     {colleagues.map((c) => (
                       <option key={c.userId} value={c.userId}>
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </Field>
             </MiniForm>

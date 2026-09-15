@@ -50,7 +50,7 @@ test('a salon administrator can import people end to end', async ({ page }) => {
   await page.getByLabel('Search by name').fill(`Nadia Okonjo ${stamp}`)
   await page.getByRole('button', { name: 'Search' }).click()
   await expect(page.getByRole('table')).toContainText(`Nadia Okonjo ${stamp}`)
-  await expect(page.getByRole('table')).toContainText('invited')
+  await expect(page.getByRole('table')).toContainText('Invited')
 
   expectNoConsoleErrors(errors)
 })

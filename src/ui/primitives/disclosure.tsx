@@ -40,14 +40,25 @@ export function Disclosure({
         aria-expanded={open}
         aria-controls={`${id}-panel`}
         onClick={() => setOpen((value) => !value)}
-        className="text-ink flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-medium"
+        className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-medium hover:bg-violet-50/60"
       >
-        <span
+        <svg
           aria-hidden="true"
-          className={cn('text-faint inline-block transition-transform', open && 'rotate-90')}
+          viewBox="0 0 16 16"
+          fill="none"
+          className={cn(
+            'text-muted size-4 shrink-0 transition-transform motion-reduce:transition-none',
+            open && 'rotate-90',
+          )}
         >
-          ›
-        </span>
+          <path
+            d="M6 3.5 10.5 8 6 12.5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
         {label}
         {count !== undefined ? <span className="text-faint text-xs">({count})</span> : null}
       </button>

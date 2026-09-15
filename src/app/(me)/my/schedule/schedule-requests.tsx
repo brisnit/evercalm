@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import {
   cancelSwapAction,
   claimOpenShiftAction,
@@ -10,7 +9,7 @@ import {
 import type { MySwap, OpenShift } from '@/modules/scheduling/employee'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
-import { Badge, Card } from '@/ui/primitives'
+import { Badge, Card, TextLink } from '@/ui/primitives'
 
 const SWAP_STATUS: Record<
   string,
@@ -246,9 +245,7 @@ export function OpenShiftsAndRequests({
       </section>
 
       <p className="text-muted text-sm">
-        <Link href="/my/time-off" className="text-violet-700 underline underline-offset-4">
-          Time off
-        </Link>
+        <TextLink href="/my/time-off">Time off</TextLink>
         {timeOff.pending > 0 ? ` · ${timeOff.pending} waiting for a decision` : ''}
         {timeOff.approvedUpcoming > 0 ? ` · ${timeOff.approvedUpcoming} approved` : ''}
       </p>

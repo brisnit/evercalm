@@ -8,11 +8,8 @@ import { Field, Input } from '@/ui/primitives'
 /**
  * The preferences form.
  *
- * Channels that exist are switches. Channels that do not exist yet (SMS, push)
- * are listed as disabled with the reason, because the preference model already
- * covers them and pretending otherwise would mean rebuilding this screen when
- * they arrive. A disabled control that says why is honest; a working-looking
- * control that does nothing is not.
+ * One row per category, with a switch for each channel that can actually be
+ * delivered. Channels that do not exist yet are not shown at all.
  */
 
 interface CategoryView {
@@ -25,11 +22,6 @@ interface CategoryView {
 const LIVE_CHANNELS = [
   { key: 'in_app', label: 'In app' },
   { key: 'email', label: 'Email' },
-] as const
-
-const FUTURE_CHANNELS = [
-  { key: 'sms', label: 'SMS' },
-  { key: 'push', label: 'Push' },
 ] as const
 
 function minutesToTime(minutes: number): string {
@@ -89,34 +81,26 @@ export function PreferencesForm({
                   unless they are marked urgent or are an emergency.
                 </p>
               ) : (
-                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                <div className="mt-1 flex flex-wrap gap-x-6">
                   {LIVE_CHANNELS.map((channel) => {
                     const id = `pref:${category.key}:${channel.key}`
                     const enabled = preferences[`${category.key}:${channel.key}`] ?? true
                     return (
-                      <label key={channel.key} className="flex items-center gap-2 text-sm">
+                      <label
+                        key={channel.key}
+                        className="flex min-h-11 items-center gap-2.5 text-sm"
+                      >
                         <input
                           type="checkbox"
                           id={id}
                           name={id}
                           defaultChecked={enabled}
-                          className="h-4 w-4"
+                          className="size-5"
                         />
                         {channel.label}
                       </label>
                     )
                   })}
-                  {FUTURE_CHANNELS.map((channel) => (
-                    <label
-                      key={channel.key}
-                      className="text-faint flex items-center gap-2 text-sm"
-                      title="Not available yet"
-                    >
-                      <input type="checkbox" disabled className="h-4 w-4" />
-                      {channel.label}
-                      <span className="text-[0.6875rem]">(not yet)</span>
-                    </label>
-                  ))}
                 </div>
               )}
             </li>
@@ -133,13 +117,13 @@ export function PreferencesForm({
           else.
         </p>
 
-        <label className="mt-3 flex items-center gap-2 text-sm">
+        <label className="mt-3 flex min-h-11 items-center gap-2.5 text-sm">
           <input
             type="checkbox"
             name="quietHoursEnabled"
             defaultChecked={settings.quietHoursEnabled}
             onChange={(e) => setQuietEnabled(e.target.checked)}
-            className="h-4 w-4"
+            className="size-5"
           />
           Hold notifications during quiet hours
         </label>

@@ -1,7 +1,10 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { Badge, Logo } from '@/ui/primitives'
+import { AppNav } from '@/ui/patterns/app-nav'
+import { NavigationProgress } from '@/ui/patterns/navigation-progress'
 import { isEmployeeOnly, visibleNavItems } from './navigation'
 import { SignOutButton } from './sign-out-button'
 import { withTenant } from '@/server/db'
@@ -23,15 +26,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const banner = await withTenant(actor.organizationId, (tx) => billingBanner(tx, actor))
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="bg-canvas flex min-h-screen flex-col">
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <header className="border-line border-b bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 px-5 py-3">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-x-4 px-5 py-2.5">
           <Link href="/app" aria-label="EverCalm overview" className="shrink-0">
-            <Logo size="h-8" eager />
+            <Logo size="h-7 sm:h-8" eager />
           </Link>
 
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="text-ink truncate text-sm font-medium">
+          <div className="border-line flex min-w-0 flex-1 items-center gap-2 sm:border-l sm:pl-4">
+            <span className="text-ink truncate text-sm font-semibold">
               {activeOrganization.organizationName}
             </span>
             {memberships.length > 1 ? (
@@ -39,29 +45,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             ) : null}
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-muted hidden text-sm sm:inline">{actor.displayName}</span>
-            <Link href="/my" className="text-muted text-sm underline-offset-4 hover:underline">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <span className="text-muted mr-1 hidden text-sm md:inline">{actor.displayName}</span>
+            <Link
+              href="/my"
+              className="rounded-control text-muted hover:text-ink inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-violet-50"
+            >
               My work
             </Link>
             <SignOutButton />
           </div>
         </div>
 
-        <nav aria-label="Administration" className="border-line border-t">
-          <ul className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-1 px-3">
-            {nav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="rounded-control text-muted hover:bg-sunk hover:text-ink inline-flex min-h-11 items-center px-3 text-sm"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <AppNav
+          label="Administration"
+          items={nav.map((item) => ({ href: item.href, label: item.label }))}
+          exact={['/app']}
+        />
       </header>
 
       {banner ? (

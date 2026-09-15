@@ -38,7 +38,7 @@ export function StepActions({ stepProgressId }: { stepProgressId: string }) {
       <div className="flex flex-wrap gap-2">
         <form action={completeAction}>
           <input type="hidden" name="stepProgressId" value={stepProgressId} />
-          <Button type="submit" loading={completing}>
+          <Button type="submit" variant="secondary" loading={completing}>
             Mark done
           </Button>
         </form>

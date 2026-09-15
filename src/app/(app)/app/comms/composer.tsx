@@ -121,6 +121,12 @@ export function Composer({
     <ActionForm
       action={mode === 'create' ? createAnnouncementAction : updateDraftAction}
       submitLabel={mode === 'create' ? 'Save as draft' : 'Save changes'}
+      stickySubmit={{
+        hint:
+          rules.length === 0
+            ? 'Nothing is sent when you save. Add who sees it, then check the audience before publishing.'
+            : 'Nothing is sent when you save. You check the audience before it is published.',
+      }}
     >
       {(state) => (
         <>
@@ -162,7 +168,7 @@ export function Composer({
                     rows={12}
                     maxLength={8000}
                     defaultValue={initial?.body}
-                    className="rounded-control border-line-strong text-ink w-full border bg-white px-3 py-2.5 text-sm"
+                    className="rounded-control border-field text-ink w-full border bg-white px-3 py-2.5 text-sm"
                     placeholder={'What people need to know.\n\n- One thing\n- Another thing'}
                   />
                 )}
@@ -311,7 +317,7 @@ export function Composer({
                         {...p}
                         name="eventId"
                         defaultValue={initial?.eventId ?? ''}
-                        className="rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm"
+                        className="rounded-control border-field text-ink min-h-11 w-full border bg-white px-3 text-sm"
                       >
                         <option value="">No event</option>
                         {events.map((e) => (

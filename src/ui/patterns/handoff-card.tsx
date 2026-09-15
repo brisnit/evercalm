@@ -6,11 +6,8 @@ import {
   resolveHandoffAction,
 } from '@/modules/operations/actions'
 import type { HandoffView } from '@/modules/operations/handoffs'
-import { Badge, Disclosure, Field } from '@/ui/primitives'
+import { Badge, Disclosure, Field, Textarea } from '@/ui/primitives'
 import { MiniForm } from './mini-form'
-
-const TEXTAREA =
-  'rounded-control border-line-strong text-ink placeholder:text-faint w-full border bg-white px-3 py-2.5 text-sm leading-relaxed hover:border-faint focus:border-violet-600'
 
 /**
  * One handoff: what it is about, who left it on which shift, who has read it,
@@ -89,7 +86,7 @@ export function HandoffCard({
               label="What was done"
               hint="Optional. The person who left it is told."
             >
-              {(p) => <textarea {...p} name="note" rows={2} maxLength={300} className={TEXTAREA} />}
+              {(p) => <Textarea {...p} name="note" rows={2} maxLength={300} />}
             </Field>
           </MiniForm>
         </Disclosure>

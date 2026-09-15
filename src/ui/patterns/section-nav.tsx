@@ -15,7 +15,8 @@ export function SectionNav({ items }: { items: { href: string; label: string }[]
 
   return (
     <nav aria-label="Section" className="border-line border-b">
-      <ul className="-mb-px flex flex-wrap gap-x-1 overflow-x-auto">
+      {/* One row that scrolls on a phone rather than wrapping into several. */}
+      <ul className="-mb-px flex [scrollbar-width:none] gap-x-1 overflow-x-auto sm:flex-wrap">
         {items.map((item) => {
           const active = pathname === item.href
           return (

@@ -40,7 +40,7 @@ export default async function InboxPage({
   searchParams: Promise<{ filter?: string; category?: string; q?: string }>
 }) {
   const params = await searchParams
-  const { actor, activeOrganization } = await requireActorContext()
+  const { actor } = await requireActorContext()
 
   const filter: InboxFilter = FILTERS.some((f) => f.value === params.filter)
     ? (params.filter as InboxFilter)
@@ -65,14 +65,11 @@ export default async function InboxPage({
   const needsYou = everything.filter(outstandingAcknowledgement).length
 
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
-        <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">
-          {activeOrganization.organizationName}
-        </p>
-        <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight">
+        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
           Your inbox
         </h1>
         <p className="text-muted mt-1.5 text-sm">

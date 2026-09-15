@@ -20,7 +20,7 @@ import {
   STEP_KIND_LABELS,
   type TemplateDetail,
 } from '@/modules/onboarding/templates'
-import { Badge, Button, Card, CardHeader, Field, Input } from '@/ui/primitives'
+import { Badge, Button, Card, CardHeader, Field, Input, Select } from '@/ui/primitives'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ConfirmAction } from '@/ui/patterns/confirm-action'
 
@@ -32,9 +32,6 @@ import { ConfirmAction } from '@/ui/patterns/confirm-action'
  * "Start a new draft" — which states in words that nothing live changes until
  * it is published.
  */
-
-const SELECT =
-  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-violet-600'
 
 const STEP_KINDS = Object.entries(STEP_KIND_LABELS)
 const RESPONSIBILITIES = Object.entries(RESPONSIBILITY_LABELS)
@@ -633,7 +630,7 @@ function StepFields({
                 rows={2}
                 maxLength={1000}
                 defaultValue={defaults?.instructions}
-                className="border-line-strong text-ink hover:border-faint rounded-control w-full border bg-white px-3 py-2.5 text-sm focus:border-violet-600"
+                className="border-field text-ink hover:border-faint rounded-control w-full border bg-white px-3 py-2.5 text-sm focus:border-violet-600"
               />
             )}
           </Field>
@@ -641,28 +638,21 @@ function StepFields({
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id={`${idPrefix}-kind`} label="Step type" required>
               {(p) => (
-                <select
-                  {...p}
-                  name="kind"
-                  className={SELECT}
-                  value={kind}
-                  onChange={(e) => setKind(e.target.value)}
-                >
+                <Select {...p} name="kind" value={kind} onChange={(e) => setKind(e.target.value)}>
                   {STEP_KINDS.map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </Field>
 
             <Field id={`${idPrefix}-responsibility`} label="Who is responsible" required>
               {(p) => (
-                <select
+                <Select
                   {...p}
                   name="responsibility"
-                  className={SELECT}
                   defaultValue={defaults?.responsibility ?? 'employee'}
                 >
                   {RESPONSIBILITIES.map(([value, label]) => (
@@ -670,7 +660,7 @@ function StepFields({
                       {label}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </Field>
 
@@ -698,15 +688,14 @@ function StepFields({
               hint="Which date the days are counted from."
             >
               {(p) => (
-                <select
+                <Select
                   {...p}
                   name="dueOffsetBasis"
-                  className={SELECT}
                   defaultValue={defaults?.dueOffsetBasis ?? 'onboarding_start'}
                 >
                   <option value="onboarding_start">Onboarding start</option>
                   <option value="hire_date">Hire date</option>
-                </select>
+                </Select>
               )}
             </Field>
           </div>
@@ -725,13 +714,7 @@ function StepFields({
                     No published courses yet. Publish one under Training first.
                   </p>
                 ) : (
-                  <select
-                    {...p}
-                    name="courseId"
-                    className={SELECT}
-                    defaultValue={defaults?.courseId ?? ''}
-                    required
-                  >
+                  <Select {...p} name="courseId" defaultValue={defaults?.courseId ?? ''} required>
                     <option value="" disabled>
                       Choose a course
                     </option>
@@ -740,7 +723,7 @@ function StepFields({
                         {course.title} (version {course.versionNumber})
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )
               }
             </Field>

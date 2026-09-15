@@ -72,7 +72,7 @@ test('onboarding training, from the checklist through the course and back', asyn
 
   await signIn(page, person)
   await page.goto('/my/onboarding')
-  const step = () => page.getByRole('listitem').filter({ hasText: stepTitle })
+  const step = () => page.getByRole('main').getByRole('listitem').filter({ hasText: stepTitle })
   await expect(step().getByText('Not started')).toBeVisible()
   await expectNoSidewaysScroll(page)
   await step().getByRole('link', { name: 'Start the course' }).click()

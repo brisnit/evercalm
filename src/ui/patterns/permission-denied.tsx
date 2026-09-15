@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Card } from '@/ui/primitives'
+import { Card, TextLink } from '@/ui/primitives'
 
 /**
  * Permission denied.
@@ -28,15 +28,12 @@ export function PermissionDenied({
             : 'This page needs a permission your roles do not include.')}
       </p>
       <p className="text-muted mt-2 text-sm">
-        An owner can grant it from the organization&rsquo;s roles and permissions settings.
+        An owner can give you access from your profile under People, in the Access tab.
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
-        <Link
-          href="/app"
-          className="text-sm font-medium text-violet-700 underline underline-offset-4 hover:text-violet-800"
-        >
+        <TextLink href="/app" className="text-sm">
           Back to overview
-        </Link>
+        </TextLink>
         <Link
           href="/my"
           className="text-muted hover:text-ink text-sm font-medium underline underline-offset-4"

@@ -1,11 +1,19 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listInvitations } from '@/modules/invitations/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Badge, Card, EmptyState, PageHeader, ScrollArea } from '@/ui/primitives'
+import {
+  BackLink,
+  Badge,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+  ScrollArea,
+  TextLink,
+} from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { InvitationRowActions } from './row-actions'
 
@@ -53,26 +61,13 @@ export default async function InvitationsPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className="mb-3">
-        <Link
-          href="/app/people"
-          className="text-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          ← People
-        </Link>
+        <BackLink href="/app/people">People</BackLink>
       </nav>
 
       <PageHeader
-        eyebrow="People"
         title="Invitations"
         description="Every invitation sent, and where it got to."
-        action={
-          <Link
-            href="/app/people/invite"
-            className="rounded-control inline-flex min-h-11 items-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
-          >
-            Invite someone
-          </Link>
-        }
+        action={<ButtonLink href="/app/people/invite">Invite someone</ButtonLink>}
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -87,12 +82,9 @@ export default async function InvitationsPage() {
           title="No invitations yet"
           description="When you invite someone, their invitation and its status appear here."
           action={
-            <Link
-              href="/app/people/invite"
-              className="text-sm font-medium text-violet-700 underline underline-offset-4"
-            >
+            <TextLink href="/app/people/invite" className="text-sm">
               Invite your first team member
-            </Link>
+            </TextLink>
           }
         />
       ) : (

@@ -2,7 +2,8 @@
 
 import { useActionState, useCallback, useRef } from 'react'
 import type { ScheduleActionState } from '@/modules/scheduling/actions'
-import { Button } from '@/ui/primitives'
+import { cn } from '@/lib/cn'
+import { Button, CONTROL } from '@/ui/primitives'
 
 const INITIAL: ScheduleActionState = { status: 'idle' }
 
@@ -63,10 +64,20 @@ export function DecisionForm({
         id={`${idPrefix}-note`}
         name="note"
         maxLength={500}
-        className="rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm"
+        className={cn(CONTROL, 'min-h-11 px-3')}
       />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" name="decision" value={approve.value} loading={pending} size="sm">
+        <Button
+          type="submit"
+          name="decision"
+          value={approve.value}
+          loading={pending}
+          size="sm"
+          // Only one outcome and it is a refusal: it is still not the primary.
+          variant={
+            !reject && /^(decline|deny|refuse)/i.test(approve.label) ? 'secondary' : 'primary'
+          }
+        >
           {approve.label}
         </Button>
         {reject ? (

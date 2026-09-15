@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react'
 import {
   completeReadingAction,
@@ -12,7 +11,7 @@ import {
 import type { ContentItem, LearnerQuestion, LessonKind } from '@/modules/training/content'
 import type { QuizReviewItem } from '@/modules/training/learner'
 import { cn } from '@/lib/cn'
-import { Badge, Button } from '@/ui/primitives'
+import { Badge, Button, ButtonLink } from '@/ui/primitives'
 import { CheckMark } from '../../../_components/check-mark'
 
 /**
@@ -80,12 +79,9 @@ export function LessonPlayer(props: Props) {
             <p className="text-ink font-medium">{moment.message}</p>
           </div>
           {moment.nextHref ? (
-            <Link
-              href={moment.nextHref}
-              className="rounded-control mt-3 inline-flex min-h-12 w-full items-center justify-center bg-violet-600 px-4 text-base font-semibold text-white hover:bg-violet-700"
-            >
+            <ButtonLink href={moment.nextHref} size="lg" className="mt-3 w-full">
               {moment.courseComplete ? 'See your finished course' : 'Next lesson'}
-            </Link>
+            </ButtonLink>
           ) : null}
         </div>
       ) : null}

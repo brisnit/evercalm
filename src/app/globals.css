@@ -46,7 +46,13 @@
   --color-raise: #faf9fc;
   --color-sunk: #f3f1f7;
   --color-line: #e3e0ea;
-  --color-line-strong: #cfcad9;
+  --color-line-strong: #cfcad9; /* dividers and card edges only (1.6:1) */
+  /* Form-control boundaries need 3:1 against their ground (WCAG 1.4.11):
+     3.70:1 on white, 3.34:1 on canvas. */
+  --color-field: #878299;
+  /* The application ground: pale lavender behind white surfaces. Every text
+     token stays AA on it (muted 6.36:1, faint 5.29:1, violet-600 5.54:1). */
+  --color-canvas: #f5f2fd;
   --color-faint: #66627a; /* 5.84:1 on white - AA */
   --color-muted: #5a5766; /* 7.02:1 on white - AAA */
 
@@ -150,6 +156,66 @@
     background: var(--color-ink);
     color: #fff;
     border-radius: var(--radius-control);
+  }
+}
+
+/* Navigation progress: a thin bar while the next server-rendered page loads. */
+@keyframes ec-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Homepage motion. A block rises a little as it arrives; it never fades, so
+   its text is at full contrast at every moment (a half-transparent heading
+   fails WCAG contrast while it animates). Only applies once JavaScript has
+   marked the page ready, and never with reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-motion='ready'] [data-reveal] {
+    transform: translateY(18px);
+    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: calc(var(--reveal-index, 0) * 70ms);
+  }
+  html[data-motion='ready'] [data-reveal][data-revealed] {
+    transform: none;
+  }
+}
+
+@keyframes ec-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes ec-tick {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ec-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

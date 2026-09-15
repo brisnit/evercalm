@@ -18,21 +18,22 @@ export const dynamic = 'force-dynamic'
  * action is the first thing on the screen, before the full list.
  */
 export default async function MyOnboardingPage() {
-  const { actor, activeOrganization } = await requireActorContext()
+  const { actor } = await requireActorContext()
 
   const progress = await withTenant(actor.organizationId, (tx) =>
     getProgressForEmployment(tx, actor, actor.employmentId),
   )
+  const nextStep = progress?.nextAction
+    ? (progress.steps.find((s) => s.status === 'pending' && s.title === progress.nextAction) ??
+      null)
+    : null
 
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
-        <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">
-          {activeOrganization.organizationName}
-        </p>
-        <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight">
+        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
           Your onboarding
         </h1>
 
@@ -52,37 +53,52 @@ export default async function MyOnboardingPage() {
                 tone={
                   progress.state === 'completed'
                     ? 'success'
-                    : progress.state === 'blocked'
-                      ? 'danger'
-                      : progress.state === 'overdue'
-                        ? 'warning'
-                        : 'violet'
+                    : progress.state === 'overdue'
+                      ? 'warning'
+                      : 'violet'
                 }
               />
-              <div className="rounded-control mt-4 border border-violet-200 bg-violet-50 px-4 py-3">
-                <p className="text-xs font-semibold tracking-wide text-violet-700 uppercase">
-                  {progress.nextAction ? 'Next up' : 'All done'}
-                </p>
-                <p className="text-ink mt-1 font-medium">
-                  {progress.nextAction ?? 'You have finished every required step. Nice work.'}
-                </p>
-              </div>
+              {nextStep ? (
+                <a
+                  href={`#step-${nextStep.id}`}
+                  className="rounded-control group mt-4 flex items-center justify-between gap-3 border border-violet-200 bg-violet-50 px-4 py-3 hover:border-violet-400"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-violet-700">Next up</span>
+                    <span className="text-ink mt-0.5 block font-medium">{progress.nextAction}</span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="text-violet-700 transition-transform group-hover:translate-y-0.5"
+                  >
+                    ↓
+                  </span>
+                </a>
+              ) : (
+                <div className="rounded-control border-success/30 bg-success-soft/50 mt-4 border px-4 py-3">
+                  <p className="text-success text-sm font-semibold">
+                    {progress.nextAction ? 'Next up' : 'All done'}
+                  </p>
+                  <p className="text-ink mt-0.5 font-medium">
+                    {progress.nextAction ??
+                      'You have finished every required step. Welcome to the team.'}
+                  </p>
+                </div>
+              )}
             </Card>
 
-            <h2 className="font-display text-muted mt-7 mb-3 text-sm font-bold tracking-[0.06em] uppercase">
-              Every step
-            </h2>
+            <h2 className="font-display text-ink mt-8 mb-3 text-lg font-bold">All steps</h2>
 
             <ul className="flex flex-col gap-3">
               {progress.steps.map((step) => (
-                <li key={step.id}>
+                <li key={step.id} id={`step-${step.id}`} className="scroll-mt-6">
                   <Card className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-ink font-medium">{step.title}</p>
                         <p className="text-muted mt-0.5 text-xs">
                           {step.awaitingPlatform
-                            ? 'Waiting on EverCalm'
+                            ? 'Not ready yet'
                             : step.training
                               ? 'Completes with the course'
                               : !step.selfCompletable && step.status === 'pending'

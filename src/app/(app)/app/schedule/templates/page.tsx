@@ -50,7 +50,7 @@ export default async function TemplatesPage({
   return (
     <>
       <PageHeader
-        eyebrow={`Schedule · ${data.location.name}`}
+        eyebrow={data.location.name}
         title="Shift templates"
         description="Patterns you repeat. Applying them to a week adds unassigned shifts you then fill."
       />

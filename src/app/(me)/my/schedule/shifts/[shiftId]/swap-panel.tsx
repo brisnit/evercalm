@@ -5,10 +5,7 @@ import { cancelSwapAction, requestSwapAction } from '@/modules/scheduling/action
 import type { MySwap } from '@/modules/scheduling/employee'
 import { ActionForm } from '@/ui/patterns/action-form'
 import { ActionNotice, useActionNotice } from '@/ui/patterns/action-notice'
-import { Card, CardHeader, Field, Input } from '@/ui/primitives'
-
-const SELECT =
-  'rounded-control border-line-strong text-ink min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600'
+import { Card, CardHeader, Field, Input, Select } from '@/ui/primitives'
 
 /**
  * Giving away or trading a shift. Always a named colleague who agrees first,
@@ -115,13 +112,12 @@ export function SwapPanel({
                     error={state.fieldErrors?.recipientEmploymentId?.[0]}
                   >
                     {(p) => (
-                      <select
+                      <Select
                         {...p}
                         name="recipientEmploymentId"
                         required
                         value={recipient}
                         onChange={(e) => setRecipient(e.target.value)}
-                        className={SELECT}
                       >
                         <option value="">Choose a colleague</option>
                         {colleagues.map((c) => (
@@ -129,7 +125,7 @@ export function SwapPanel({
                             {c.displayName}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     )}
                   </Field>
 
@@ -146,12 +142,11 @@ export function SwapPanel({
                       error={state.fieldErrors?.recipientShiftId?.[0]}
                     >
                       {(p) => (
-                        <select
+                        <Select
                           {...p}
                           name="recipientShiftId"
                           required
                           defaultValue=""
-                          className={SELECT}
                           disabled={!recipient || theirShifts.length === 0}
                         >
                           <option value="">Choose a shift</option>
@@ -160,7 +155,7 @@ export function SwapPanel({
                               {s.label}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       )}
                     </Field>
                   ) : null}

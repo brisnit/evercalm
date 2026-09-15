@@ -214,7 +214,8 @@ test('the employee inbox has no accessibility violations', async ({ page }) => {
 
   // The detail view is where the interesting markup is. Any message will do -
   // this must not depend on one that an earlier project already confirmed.
-  await page.getByRole('listitem').first().getByRole('link').first().click()
+  // Scoped to the page's content: the header navigation is a list of links too.
+  await page.getByRole('main').getByRole('listitem').first().getByRole('link').first().click()
   await expect(page).toHaveURL(/\/my\/inbox\/[0-9a-f-]{36}$/)
   const detail = await scan(page)
   expect(detail.violations.map((v) => `message -> ${v.id}: ${v.help}`)).toEqual([])

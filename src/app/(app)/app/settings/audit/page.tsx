@@ -3,7 +3,7 @@ import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listAuditEvents } from '@/modules/audit/service'
 import { can } from '@/server/authz/can'
-import { Badge, Card, EmptyState, PageHeader, ScrollArea } from '@/ui/primitives'
+import { Badge, Card, EmptyState, PageHeader, ScrollArea, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 
 export const metadata: Metadata = { title: 'Audit log' }
@@ -25,19 +25,25 @@ function formatTimestamp(value: Date): string {
   }).format(value)
 }
 
-export default async function AuditPage() {
+export default async function AuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>
+}) {
+  const showAll = (await searchParams).all === '1'
   const { actor } = await requireActorContext()
 
   if (!can(actor, 'org.view_audit')) {
     return <PermissionDenied capabilityLabel="View audit history" />
   }
 
-  const events = await withTenant(actor.organizationId, (tx) => listAuditEvents(tx, actor))
+  const events = await withTenant(actor.organizationId, (tx) =>
+    listAuditEvents(tx, actor, showAll ? 200 : 25),
+  )
 
   return (
     <>
       <PageHeader
-        eyebrow="Organization"
         title="Audit log"
         description="An append-only record of sensitive actions. Entries cannot be edited or deleted, including by EverCalm."
       />
@@ -103,6 +109,16 @@ export default async function AuditPage() {
               </tbody>
             </table>
           </ScrollArea>
+          <div className="border-line flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3 text-sm">
+            <span className="text-muted">
+              {`The latest ${events.length} ${events.length === 1 ? 'entry' : 'entries'}.`}
+            </span>
+            {!showAll && events.length === 25 ? (
+              <TextLink href="/app/settings/audit?all=1" standalone>
+                Show older entries
+              </TextLink>
+            ) : null}
+          </div>
         </Card>
       )}
     </>

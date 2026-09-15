@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { Logo } from '@/ui/primitives'
 import { AccountMenu } from './account-menu'
+import { EmployeeNav } from './employee-nav'
 
 /**
  * The employee header: the mark, an optional way back or across, and the
@@ -19,10 +20,11 @@ export async function EmployeeHeader({
   const { actor, activeOrganization } = await requireActorContext()
   return (
     <header className="border-line border-b bg-white px-5 py-2">
-      <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
+      <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3 md:max-w-3xl">
         <Link href="/my" aria-label="Your work" className="shrink-0">
           <Logo size="h-8" eager />
         </Link>
+        <EmployeeNav variant="inline" />
         <div className="flex min-w-0 items-center gap-3">
           {extra}
           {back ? (
@@ -55,7 +57,7 @@ export function EmployeeShell({
   back?: { href: string; label: string }
 }) {
   return (
-    <div className="bg-raise flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <EmployeeHeader back={back} />
       <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
         {children}

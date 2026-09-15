@@ -60,7 +60,10 @@ test('a checklist step links a published course, and starting onboarding assigns
 
   await switchTo(page, 'theo@harborvine.test')
   await page.goto('/my/onboarding')
-  const step = page.getByRole('listitem').filter({ hasText: 'Allergen awareness training' })
+  const step = page
+    .getByRole('main')
+    .getByRole('listitem')
+    .filter({ hasText: 'Allergen awareness training' })
   await expect(step.getByText('Completes with the course')).toBeVisible()
   await expect(step.getByText('version 1')).toBeVisible()
   await expect(step.getByRole('link', { name: 'Start the course' })).toBeVisible()
