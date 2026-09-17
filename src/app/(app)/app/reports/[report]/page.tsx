@@ -116,7 +116,7 @@ export default async function ReportPage({
         </label>
         <button
           type="submit"
-          className="rounded-control inline-flex min-h-11 items-center justify-center bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700"
+          className="rounded-control inline-flex min-h-11 items-center justify-center bg-teal-600 px-4 text-sm font-medium text-white hover:bg-teal-700"
         >
           Apply
         </button>

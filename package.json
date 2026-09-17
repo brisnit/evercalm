@@ -28,16 +28,17 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "tsx scripts/e2e.ts",
     "verify": "npm run typecheck && npm run lint && npm run test:all && npm run build",
     "db:local:stop": "tsx scripts/local-postgres.ts stop",
     "db:local:status": "tsx scripts/local-postgres.ts status",
     "db:local:reset": "tsx scripts/local-postgres.ts reset",
     "secrets:scan": "tsx scripts/secret-scan.ts",
     "db:refresh": "tsx scripts/refresh-data.ts",
+    "db:e2e:setup": "tsx scripts/e2e-database.ts",
     "provision:organization": "tsx scripts/provision-organization.ts",
     "demo:environment": "tsx scripts/demo-environment.ts",
-    "test:e2e:only": "E2E_SKIP_REFRESH=true playwright test"
+    "test:e2e:only": "E2E_SKIP_REFRESH=true tsx scripts/e2e.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.1",

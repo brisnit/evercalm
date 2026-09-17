@@ -5,9 +5,7 @@ import { NotFoundError } from '@/lib/errors'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { canAtAnyLocation } from '@/server/authz/can'
-import { industryOf, listHandoffs } from '@/modules/operations/handoffs'
-import { handoffCategoryLabel } from '@/modules/operations/rules'
-import { HANDOFF_CATEGORIES } from '@/modules/operations/rules'
+import { handoffAssignees, listHandoffs } from '@/modules/operations/handoffs'
 import { cn } from '@/lib/cn'
 import { HandoffCard } from '@/ui/patterns/handoff-card'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
@@ -36,13 +34,16 @@ export default async function HandoffsPage({
   ) {
     return <PermissionDenied capabilityLabel="Manage handoffs" />
   }
-  const data = await withTenant(actor.organizationId, async (tx) => ({
-    list: await listHandoffs(tx, actor, {
+  const data = await withTenant(actor.organizationId, async (tx) => {
+    const list = await listHandoffs(tx, actor, {
       locationId: params.location ?? null,
       status: params.status ?? null,
-    }),
-    industry: await industryOf(tx, actor.organizationId),
-  })).catch((error: unknown) => {
+    })
+    return {
+      list,
+      assignees: list?.canCreate ? await handoffAssignees(tx, actor, list.location.id) : [],
+    }
+  }).catch((error: unknown) => {
     if (error instanceof NotFoundError) notFound()
     throw error
   })
@@ -62,7 +63,7 @@ export default async function HandoffsPage({
       className={cn(
         'inline-flex min-h-11 items-center border-b-2 px-3 text-sm',
         list.status === status
-          ? 'text-ink border-violet-600 font-semibold'
+          ? 'text-ink border-teal-600 font-semibold'
           : 'text-muted hover:text-ink border-transparent',
       )}
     >
@@ -114,16 +115,10 @@ export default async function HandoffsPage({
           <Card>
             <CardHeader
               title="Leave a handoff"
-              description="For something the next shift should know that is not tied to a shift."
+              description="A task for the next shift, or for one person who works here. They see it when they next open EverCalm."
             />
             <div className="p-5">
-              <ManagerHandoffForm
-                locationId={list.location.id}
-                categories={HANDOFF_CATEGORIES.map((c) => ({
-                  value: c,
-                  label: handoffCategoryLabel(c, data.industry),
-                }))}
-              />
+              <ManagerHandoffForm locationId={list.location.id} assignees={data.assignees} />
             </div>
           </Card>
         ) : null}

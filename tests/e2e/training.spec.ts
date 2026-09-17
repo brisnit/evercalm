@@ -163,11 +163,15 @@ test('a manager signs off a practical at their own location only', async ({ page
   ).toBeVisible()
   await page.waitForLoadState('networkidle')
 
+  // Sending back still needs a note, and sits behind its own disclosure.
+  await card.getByRole('button', { name: 'Not ready? Send it back to practise' }).click()
   await card.getByRole('button', { name: 'Send back to practise' }).click()
   await expect(card.getByRole('alert')).toContainText('Add a note saying what to practise.')
 
-  for (const box of await card.getByRole('checkbox').all()) await box.check()
-  await card.getByRole('button', { name: 'Sign off' }).click()
+  // The criteria are there to review, not to tick: one deliberate approval.
+  await expect(card.getByRole('heading', { name: 'What to look for' })).toBeVisible()
+  await expect(card.getByRole('checkbox')).toHaveCount(0)
+  await card.getByRole('button', { name: 'Approve sign-off' }).click()
   await expect(page.getByTestId('action-notice')).toContainText(
     'Signed off for Priyanka Shah. That completes their course.',
   )

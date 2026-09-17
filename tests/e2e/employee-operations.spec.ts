@@ -21,6 +21,14 @@ async function openWorkspace(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 }
 
+async function expectNoSidewaysScroll(page: Page) {
+  const { scrollWidth, viewport } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+  }))
+  expect(scrollWidth, `${page.url()} scrolls sideways`).toBeLessThanOrEqual(viewport + 1)
+}
+
 const card = (page: Page, title: string) => page.getByRole('article', { name: title, exact: true })
 
 test('the home screen leads to the shift in front of you', async ({ page }) => {
@@ -29,7 +37,7 @@ test('the home screen leads to the shift in front of you', async ({ page }) => {
   await page.goto('/my')
   const summary = page.getByTestId('shift-work-card')
   await expect(summary.getByText('On now')).toBeVisible()
-  await summary.getByRole('link', { name: 'Open shift work' }).click()
+  await summary.click()
   await expect(page).toHaveURL(/\/my\/shift\?shift=/)
   await expect(page.getByRole('heading', { name: /During your shift/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'From earlier shifts' })).toBeVisible()
@@ -80,11 +88,53 @@ test('leaving a handoff for the next shift', async ({ page }) => {
   const title = `Ice machine slow to refill ${Math.random().toString(36).slice(2, 6)}`
   await page.getByRole('button', { name: 'Leave a handoff for the next shift' }).click()
   const form = page.locator('section[aria-labelledby="leave-handoff"]')
-  await form.getByLabel('What is it about').selectOption({ label: 'Maintenance' })
-  await form.getByLabel('In a few words').fill(title)
+  // Just two things to fill in: the task, and who it is for.
+  await expect(form.getByLabel('What is it about')).toHaveCount(0)
+  await form.getByLabel('Task').fill(title)
+  await expect(form.getByLabel('Assigned to')).toHaveValue('')
   await form.getByRole('button', { name: 'Leave handoff' }).click()
-  await expect(page.getByTestId('action-notice')).toContainText('Handoff left')
+  await expect(page.getByTestId('action-notice')).toContainText('Handoff saved')
   await expect(page.getByRole('article', { name: `Handoff: ${title}` })).toBeVisible()
+})
+
+test('a handoff assigned to someone waits on their home until they have read it', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  const assignee =
+    test.info().project.name === 'mobile' ? PEOPLE.harborNewServer : PEOPLE.harborEmployee
+  const title = `Restock the host stand menus ${Math.random().toString(36).slice(2, 6)}`
+
+  await signIn(page, PEOPLE.harborGmRiverside.email)
+  await page.goto('/app/operations/handoffs')
+  await page.getByLabel('Task').fill(title)
+  // Only people who work at this location are offered.
+  const options = await page.getByLabel('Assigned to').locator('option').allTextContents()
+  expect(options[0]).toBe('Whoever is on next')
+  expect(options).toContain(assignee.name)
+  expect(options).not.toContain(PEOPLE.salonOwner.name)
+  await page.getByLabel('Assigned to').selectOption({ label: assignee.name })
+  await page.getByRole('button', { name: 'Leave handoff' }).click()
+  await expect(page.getByTestId('action-notice')).toContainText('Handoff saved')
+  const managerCard = page.getByRole('article', { name: `Handoff: ${title}` })
+  await expect(managerCard.getByText(`For ${assignee.name}`)).toBeVisible()
+
+  await page.context().clearCookies()
+  await signIn(page, assignee.email)
+  await page.goto('/my')
+  const handed = page.getByTestId('handed-to-you')
+  const mine = handed.getByRole('article', { name: `Handoff: ${title}` })
+  await expect(mine).toBeVisible()
+  await expect(mine.getByText('For you')).toBeVisible()
+  await expectNoSidewaysScroll(page)
+
+  // It leads the handoffs on their shift too.
+  await page.goto('/my/shift')
+  await expect(page.getByRole('article', { name: `Handoff: ${title}` })).toBeVisible()
+
+  await page.goto('/my')
+  await mine.getByRole('button', { name: 'I’ve read this' }).click()
+  await expect(page.getByRole('article', { name: `Handoff: ${title}` })).toHaveCount(0)
 })
 
 test('someone else’s shift is not found', async ({ page }) => {

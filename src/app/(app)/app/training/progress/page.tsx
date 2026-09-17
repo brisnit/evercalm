@@ -175,7 +175,7 @@ export default async function TrainingProgressPage({
                               ? 'success'
                               : row.status.key === 'overdue'
                                 ? 'danger'
-                                : 'violet'
+                                : 'accent'
                           }
                         />
                         <p className="text-muted text-xs">

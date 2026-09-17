@@ -9,12 +9,12 @@ import { PermissionDenied } from '@/ui/patterns/permission-denied'
 export const metadata: Metadata = { title: 'Audit log' }
 export const dynamic = 'force-dynamic'
 
-const TONE_BY_PREFIX: Record<string, 'violet' | 'warning' | 'neutral'> = {
+const TONE_BY_PREFIX: Record<string, 'accent' | 'warning' | 'neutral'> = {
   role_grant: 'warning',
   role: 'warning',
-  organization: 'violet',
-  location: 'violet',
-  employment: 'violet',
+  organization: 'accent',
+  location: 'accent',
+  employment: 'accent',
   access: 'warning',
 }
 

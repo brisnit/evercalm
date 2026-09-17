@@ -30,6 +30,11 @@ export function HandoffCard({
         <Badge tone={handoff.category === 'safety' ? 'danger' : 'neutral'}>
           {handoff.categoryLabel}
         </Badge>
+        {handoff.assignedToMe ? (
+          <Badge tone="accent">For you</Badge>
+        ) : handoff.assignedName ? (
+          <Badge tone="neutral">For {handoff.assignedName}</Badge>
+        ) : null}
         {handoff.priority === 'urgent' ? <Badge tone="warning">Priority</Badge> : null}
         {resolved ? <Badge tone="success">Resolved</Badge> : <Badge tone="info">Open</Badge>}
       </div>

@@ -162,7 +162,7 @@ export default async function TemplatePreviewPage({
                               ) : step.training ? (
                                 <Badge tone="info">Training</Badge>
                               ) : step.selfCompletable ? (
-                                <Badge tone="violet">To do</Badge>
+                                <Badge tone="accent">To do</Badge>
                               ) : (
                                 <Badge tone="neutral">Manager</Badge>
                               )}

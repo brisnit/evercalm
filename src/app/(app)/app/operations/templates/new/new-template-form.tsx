@@ -64,7 +64,7 @@ export function NewTemplateForm({
                   type="checkbox"
                   name="locationIds"
                   value={l.id}
-                  className="size-5 accent-violet-600"
+                  className="size-5 accent-teal-600"
                 />
                 {l.name}
               </label>

@@ -56,6 +56,9 @@ function SignoffCard({
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
   const run = useCallback(async (previous: TrainingActionState, formData: FormData) => {
+    // Approving confirms every point; sending back confirms none of them, so
+    // the history never records points as seen on a return.
+    if (formData.get('decision') !== 'verified') formData.delete('criteria')
     const result = await decideSignoffAction(previous, formData)
     if (result.status === 'success') onDoneRef.current(result)
     return result
@@ -68,7 +71,7 @@ function SignoffCard({
       <header className="border-line border-b px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-ink text-sm font-semibold">{request.personName}</p>
-          <Badge tone="violet">{request.askedLabel}</Badge>
+          <Badge tone="accent">{request.askedLabel}</Badge>
         </div>
         <p className="text-muted text-xs">
           {request.locations} · {request.courseTitle}, version {request.versionNumber}
@@ -96,6 +99,9 @@ function SignoffCard({
 
         <form action={formAction} className="flex flex-col gap-3">
           <input type="hidden" name="progressId" value={id} />
+          {request.criteria.map((c) => (
+            <input key={c.id} type="hidden" name="criteria" value={c.id} />
+          ))}
           {state.status === 'error' && state.message ? (
             <p
               role="alert"
@@ -104,53 +110,70 @@ function SignoffCard({
               {state.message}
             </p>
           ) : null}
-          <fieldset className="flex flex-col gap-1">
-            <legend className="text-ink mb-1.5 text-sm font-medium">What you saw them do</legend>
-            {request.criteria.map((c) => (
-              <label
-                key={c.id}
-                className="hover:bg-sunk rounded-control text-ink flex min-h-11 items-start gap-2.5 px-2 py-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  name="criteria"
-                  value={c.id}
-                  className="mt-0.5 size-4 accent-violet-600"
-                />
-                {c.text}
-              </label>
-            ))}
-          </fieldset>
+          <section aria-labelledby={`criteria-${id}`}>
+            <h3 id={`criteria-${id}`} className="text-ink mb-1.5 text-sm font-medium">
+              What to look for
+            </h3>
+            <ul className="flex flex-col gap-1">
+              {request.criteria.map((c) => (
+                <li key={c.id} className="text-ink flex items-start gap-2.5 px-1 py-1.5 text-sm">
+                  <span
+                    aria-hidden="true"
+                    className="mt-1.5 size-1.5 shrink-0 rounded-full bg-teal-500"
+                  />
+                  {c.text}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/*
+            One deliberate approval. It confirms every point above, and each
+            point is still recorded against the sign-off in the audit history.
+          */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={`note-${id}`} className="text-ink text-sm font-medium">
-              Note for {request.personName.split(' ')[0]}
-            </label>
-            <p id={`note-${id}-hint`} className="text-muted text-xs">
-              Needed if you send it back: say what to practise.
-            </p>
-            <textarea
-              id={`note-${id}`}
-              name="note"
-              rows={2}
-              maxLength={500}
-              aria-describedby={`note-${id}-hint`}
-              className={TEXTAREA_CLASS}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" name="decision" value="verified" loading={pending}>
-              Sign off
-            </Button>
             <Button
               type="submit"
               name="decision"
-              value="returned"
-              variant="secondary"
-              disabled={pending}
+              value="verified"
+              loading={pending}
+              className="w-full sm:w-auto sm:self-start"
             >
-              Send back to practise
+              Approve sign-off
             </Button>
+            <p className="text-muted text-xs">
+              Approving confirms you saw {request.personName.split(' ')[0]} do every point above.
+            </p>
           </div>
+
+          <Disclosure label="Not ready? Send it back to practise">
+            <div className="flex flex-col gap-2 pt-2">
+              <label htmlFor={`note-${id}`} className="text-ink text-sm font-medium">
+                Note for {request.personName.split(' ')[0]}
+              </label>
+              <p id={`note-${id}-hint`} className="text-muted text-xs">
+                Say what to practise.
+              </p>
+              <textarea
+                id={`note-${id}`}
+                name="note"
+                rows={2}
+                maxLength={500}
+                aria-describedby={`note-${id}-hint`}
+                className={TEXTAREA_CLASS}
+              />
+              <Button
+                type="submit"
+                name="decision"
+                value="returned"
+                variant="secondary"
+                disabled={pending}
+                className="self-start"
+              >
+                Send back to practise
+              </Button>
+            </div>
+          </Disclosure>
         </form>
       </div>
     </Card>

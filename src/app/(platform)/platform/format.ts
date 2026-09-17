@@ -32,10 +32,10 @@ export const SUBSCRIPTION_LABELS: Record<
 
 export const CASE_STATUS_LABELS: Record<
   string,
-  { label: string; tone: 'info' | 'violet' | 'warning' | 'success' }
+  { label: string; tone: 'info' | 'accent' | 'warning' | 'success' }
 > = {
   open: { label: 'Needs EverCalm', tone: 'info' },
-  in_progress: { label: 'In progress', tone: 'violet' },
+  in_progress: { label: 'In progress', tone: 'accent' },
   waiting_on_customer: { label: 'Waiting on customer', tone: 'warning' },
   resolved: { label: 'Resolved', tone: 'success' },
 }

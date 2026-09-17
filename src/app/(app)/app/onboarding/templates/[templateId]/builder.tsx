@@ -79,7 +79,7 @@ export function TemplateBuilder({
           <div className="flex flex-col gap-4 p-5">
             {draft && !archived ? (
               <>
-                <div className="rounded-control border border-violet-200 bg-violet-50 px-4 py-3">
+                <div className="rounded-control border border-teal-200 bg-teal-50 px-4 py-3">
                   <p className="text-ink text-sm font-medium">
                     Draft v{draft.versionNumber} is not live
                   </p>
@@ -415,7 +415,7 @@ function DraftEditor({ template, courses }: { template: TemplateDetail; courses:
                             <Badge tone="neutral">Does not block completion</Badge>
                           ) : null}
                           {step.requiresManagerVerification ? (
-                            <Badge tone="violet">Manager confirms</Badge>
+                            <Badge tone="accent">Manager confirms</Badge>
                           ) : null}
                           {step.awaitingPlatform ? (
                             <Badge tone="warning">Waiting on EverCalm</Badge>
@@ -485,7 +485,7 @@ function DraftEditor({ template, courses }: { template: TemplateDetail; courses:
             </ul>
 
             <details className="mt-3">
-              <summary className="text-sm font-medium text-violet-700 underline-offset-4 hover:underline">
+              <summary className="text-sm font-medium text-teal-700 underline-offset-4 hover:underline">
                 Add a step to {section.title}
               </summary>
               <div className="border-line bg-raise rounded-card mt-3 border p-4">
@@ -630,7 +630,7 @@ function StepFields({
                 rows={2}
                 maxLength={1000}
                 defaultValue={defaults?.instructions}
-                className="border-field text-ink hover:border-faint rounded-control w-full border bg-white px-3 py-2.5 text-sm focus:border-violet-600"
+                className="border-field text-ink hover:border-faint rounded-control w-full border bg-white px-3 py-2.5 text-sm focus:border-teal-600"
               />
             )}
           </Field>

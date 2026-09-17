@@ -8,13 +8,18 @@ import { cn } from '@/lib/cn'
  * always rendered beside it, so this carries `aria-hidden`.
  */
 
+/*
+ * Decorative only, and drawn from the palette's own scales rather than the
+ * semantic colours: an avatar tinted "warning" or "danger" would read as a
+ * status the person does not have. Every pair is at least 5.8:1.
+ */
 const TONES = [
-  'bg-violet-100 text-violet-800',
-  'bg-pink-100 text-pink-800',
-  'bg-info-soft text-info',
-  'bg-success-soft text-success',
-  'bg-warning-soft text-warning',
-  'bg-sunk text-muted',
+  'bg-teal-100 text-teal-800', // 9.72:1
+  'bg-sage-200 text-sage-800', // 5.89:1
+  'bg-sand-300 text-sand-900', // 7.70:1
+  'bg-coral-100 text-coral-800', // 6.32:1
+  'bg-navy-100 text-navy-700', // 9.72:1
+  'bg-teal-50 text-teal-700', // 8.83:1
 ] as const
 
 function initials(name: string): string {

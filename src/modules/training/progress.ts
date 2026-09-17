@@ -260,7 +260,7 @@ export function learnerOverview(
 // Labels
 // ---------------------------------------------------------------------------
 
-export type StatusTone = 'neutral' | 'violet' | 'success' | 'warning' | 'danger' | 'info'
+export type StatusTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
 
 /**
  * The manager's status for one assignment. Overdue is stated here, to the
@@ -274,7 +274,7 @@ export function managerStatus(
   if (state === 'cancelled') return { key: 'cancelled', label: 'Withdrawn', tone: 'neutral' }
   if (due.kind === 'past') return { key: 'overdue', label: 'Overdue', tone: 'danger' }
   if (state === 'awaiting_signoff') {
-    return { key: 'awaiting_signoff', label: 'Waiting for sign-off', tone: 'violet' }
+    return { key: 'awaiting_signoff', label: 'Waiting for sign-off', tone: 'accent' }
   }
   if (state === 'in_progress') return { key: 'in_progress', label: 'In progress', tone: 'info' }
   return { key: 'not_started', label: 'Not started', tone: 'neutral' }

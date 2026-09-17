@@ -39,7 +39,7 @@ const PROMISE = [
   {
     marker: 'Midday',
     icon: 'checklists' as IconName,
-    tone: 'text-pink-600 border-pink-400',
+    tone: 'text-coral-600 border-coral-400',
     title: 'What’s expected',
     body: 'Side work, pre-shift routines, opening and closing checklists, policy acknowledgements, and the training due this week — assigned by role, not by memory.',
     quote: '“Bar close: 9 items. Allergen refresher due Sunday.”',
@@ -65,13 +65,13 @@ const PROMISE = [
 const CAPABILITIES: { icon: IconName; chip: string; title: string; body: string }[] = [
   {
     icon: 'onboarding',
-    chip: 'bg-violet-50 text-violet-700',
+    chip: 'bg-teal-50 text-teal-700',
     title: 'Onboarding',
     body: 'Day-one to day-thirty paths with forms, policies, and uniform sizes collected before the first shift.',
   },
   {
     icon: 'training',
-    chip: 'bg-pink-50 text-pink-700',
+    chip: 'bg-coral-50 text-coral-700',
     title: 'Training & learning paths',
     body: 'Build a path once, assign by role or location, and see exactly where each person stopped.',
   },
@@ -95,13 +95,13 @@ const CAPABILITIES: { icon: IconName; chip: string; title: string; body: string 
   },
   {
     icon: 'swaps',
-    chip: 'bg-violet-50 text-violet-700',
+    chip: 'bg-teal-50 text-teal-700',
     title: 'Shift swaps & pickups',
     body: 'Staff trade among qualified coworkers only. Managers approve in one tap, or set it to auto.',
   },
   {
     icon: 'announcements',
-    chip: 'bg-pink-50 text-pink-700',
+    chip: 'bg-coral-50 text-coral-700',
     title: 'Announcements',
     body: 'Post to a location, a role, or a shift — and see who has actually read it.',
   },
@@ -125,13 +125,13 @@ const CAPABILITIES: { icon: IconName; chip: string; title: string; body: string 
   },
   {
     icon: 'performance',
-    chip: 'bg-violet-50 text-violet-700',
+    chip: 'bg-teal-50 text-teal-700',
     title: 'Performance & readiness',
     body: 'See which stations are covered by trained people, and which shifts are one callout from trouble.',
   },
   {
     icon: 'locations',
-    chip: 'bg-pink-50 text-pink-700',
+    chip: 'bg-coral-50 text-coral-700',
     title: 'Multi-location',
     body: 'Roll standards out everywhere, then compare locations without emailing five managers.',
   },
@@ -200,7 +200,7 @@ const SKILL_LEVELS = [
     name: 'Wine service',
     detail: 'Maya at L2 · floor check scheduled',
     filled: 2,
-    tone: 'bg-pink-500',
+    tone: 'bg-coral-400',
   },
   { name: 'Solo close', detail: '1 of 4 · a Saturday risk', filled: 1, tone: 'bg-info' },
 ]
@@ -328,7 +328,7 @@ const ROLLOUT = [
   },
   {
     week: 'Week 2',
-    line: 'bg-pink-400',
+    line: 'bg-coral-400',
     title: 'Load your standards',
     body: 'Pick your industry template and edit it into your business: your checklists, your handbook, your training path, your approval rules.',
   },
@@ -364,10 +364,10 @@ export default function HomePage() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Two soft corner glows on white: cyan at the top left, violet at the right. */}
+      {/* Two soft corner glows on white: sage at the top left, sand at the right. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(52rem_26rem_at_-2%_-14%,#d8f2ff_0%,#e9f8ff_38%,transparent_72%),radial-gradient(48rem_28rem_at_104%_-8%,#e9e1ff_0%,#f3efff_40%,transparent_74%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(52rem_26rem_at_-2%_-14%,#e2f0ea_0%,#f1f8f5_38%,transparent_72%),radial-gradient(48rem_28rem_at_104%_-8%,#faf2e6_0%,#fdfbf8_40%,transparent_74%)]"
       />
       {/*
         Two columns with a firm gutter between them. The mockups are laid out
@@ -501,7 +501,7 @@ function Promise() {
           <div className="relative mt-3">
             <span
               aria-hidden="true"
-              className="absolute top-4 right-4 left-4 hidden h-px bg-[linear-gradient(90deg,#6b4df1_0%,#ea33a9_38%,#14b8a6_68%,#22b8e6_100%)] lg:block"
+              className="absolute top-4 right-4 left-4 hidden h-px bg-[linear-gradient(90deg,#2a5c5a_0%,#7fb5a0_38%,#e8856c_68%,#f5e6d3_100%)] lg:block"
             />
             <ol className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
               {PROMISE.map((item, index) => (
@@ -591,11 +591,11 @@ function Experiences() {
           <ExperienceCard
             photo={IMAGERY.managerCheckIn}
             audience="Owners, HR & managers"
-            audienceClass="bg-violet-50 text-violet-700"
+            audienceClass="bg-teal-50 text-teal-700"
             title="The console"
             lead="One place to build the week, spot the gap, and prove it happened."
             points={CONSOLE_POINTS}
-            checkClass="bg-violet-100 text-violet-700"
+            checkClass="bg-teal-100 text-teal-700"
           />
           <ExperienceCard
             photo={IMAGERY.stylistStation}
@@ -716,7 +716,7 @@ function Training() {
                       step.state === 'done'
                         ? 'bg-success-soft text-success'
                         : step.state === 'active'
-                          ? 'bg-pink-50 text-pink-700'
+                          ? 'bg-coral-50 text-coral-700'
                           : 'bg-sunk text-muted'
                     }`}
                   >
@@ -892,7 +892,7 @@ function FinalCta() {
         </div>
         <div
           data-reveal
-          className="rounded-[1.5rem] bg-[linear-gradient(to_top_right,#8853e3_0%,#6b4df1_52%,#6563f1_100%)] px-6 py-14 text-center sm:px-12"
+          className="rounded-[1.5rem] bg-[linear-gradient(to_top_right,#1c3c3b_0%,#2a5c5a_52%,#35706d_100%)] px-6 py-14 text-center sm:px-12"
         >
           <h2 className="font-display text-[1.75rem] leading-[1.15] font-extrabold tracking-[-0.02em] text-balance text-white sm:text-[2.35rem]">
             Give every shift the same answer.

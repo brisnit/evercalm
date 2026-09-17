@@ -12,6 +12,7 @@ import { myAssignment } from '@/modules/training/learner'
 import { dueLabel, formatMinutes } from '@/modules/training/progress'
 import { Badge, ButtonLink, Card, ProgressBar } from '@/ui/primitives'
 import { EmployeeShell } from '../../_components/employee-shell'
+import { TrainingTrail } from '../_components/training-trail'
 import { CheckMark } from '../_components/check-mark'
 import { LESSON_STATE } from '../_components/lesson-state'
 
@@ -40,9 +41,12 @@ export default async function MyCoursePage({
   const due = dueLabel(data.dueOn, data.due)
 
   return (
-    <EmployeeShell back={{ href: '/my/training', label: 'All training' }}>
-      <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">Training</p>
-      <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight text-balance">
+    <EmployeeShell back={{ href: '/my', label: 'Home' }}>
+      <TrainingTrail
+        up={{ href: '/my/training', label: 'All training' }}
+        across={{ href: '/my', label: 'Home' }}
+      />
+      <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight text-balance">
         {data.courseTitle}
       </h1>
       {data.summary ? <p className="text-muted mt-1.5 text-sm">{data.summary}</p> : null}
@@ -129,7 +133,7 @@ export default async function MyCoursePage({
               <span className="sr-only">: {next.title}</span>
             </ButtonLink>
           ) : (
-            <p className="rounded-control text-ink mt-4 border border-violet-200 bg-violet-50 px-4 py-3 text-sm">
+            <p className="rounded-control text-ink mt-4 border border-teal-200 bg-teal-50 px-4 py-3 text-sm">
               Waiting for a manager to sign off your practical. There is nothing else to do until
               then.
             </p>
@@ -150,8 +154,8 @@ export default async function MyCoursePage({
                 <Link
                   href={`/my/training/${data.id}/lessons/${lesson.id}`}
                   className={cn(
-                    'rounded-card flex min-h-14 items-center gap-3 border bg-white px-4 py-3 hover:border-violet-300',
-                    isNext ? 'border-violet-300 ring-1 ring-violet-200' : 'border-line',
+                    'rounded-card flex min-h-14 items-center gap-3 border bg-white px-4 py-3 hover:border-teal-300',
+                    isNext ? 'border-teal-300 ring-1 ring-teal-200' : 'border-line',
                   )}
                 >
                   {lesson.state === 'completed' ? (

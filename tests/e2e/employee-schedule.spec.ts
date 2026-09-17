@@ -40,6 +40,16 @@ test('the schedule screens are readable and do not scroll sideways', async ({ pa
   await page.goto('/my/time-off')
   await expect(page.getByRole('heading', { name: 'Ask for time off' })).toBeVisible()
   await expectNoSidewaysScroll(page)
+  // Regression: "Last day" ran past the edge of its card on a phone.
+  const form = page.locator('form').filter({ has: page.getByLabel('First day') })
+  const formBox = (await form.boundingBox())!
+  for (const label of ['First day', 'Last day']) {
+    const box = (await page.getByLabel(label).boundingBox())!
+    expect(box.x, `${label} starts inside the form`).toBeGreaterThanOrEqual(formBox.x - 0.5)
+    expect(box.x + box.width, `${label} ends inside the form`).toBeLessThanOrEqual(
+      formBox.x + formBox.width + 0.5,
+    )
+  }
 
   await page.goto('/my/availability')
   await expect(page.getByRole('heading', { name: 'Every week' })).toBeVisible()

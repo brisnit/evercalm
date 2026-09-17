@@ -182,7 +182,7 @@ export function itemState(item: ItemFacts, now: Date, runCancelled = false): Ite
 
 export const ITEM_STATE_LABELS: Record<
   ItemState,
-  { label: string; tone: 'neutral' | 'violet' | 'success' | 'warning' | 'danger' | 'info' }
+  { label: string; tone: 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' }
 > = {
   not_started: { label: 'To do', tone: 'neutral' },
   due_soon: { label: 'Due soon', tone: 'info' },
@@ -190,7 +190,7 @@ export const ITEM_STATE_LABELS: Record<
   returned: { label: 'Sent back', tone: 'warning' },
   blocked: { label: 'Blocked', tone: 'warning' },
   skipped: { label: 'Skipped', tone: 'neutral' },
-  waiting: { label: 'Waiting for a manager', tone: 'violet' },
+  waiting: { label: 'Waiting for a manager', tone: 'accent' },
   done: { label: 'Done', tone: 'success' },
   cancelled: { label: 'No longer needed', tone: 'neutral' },
 }

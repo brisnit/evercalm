@@ -45,7 +45,7 @@ export default async function AcceptInvitationPage({
 
   return (
     <>
-      <p className="text-xs font-semibold tracking-[0.1em] text-violet-700 uppercase">
+      <p className="text-xs font-semibold tracking-[0.1em] text-teal-700 uppercase">
         You have been invited
       </p>
       <h1 className="font-display text-ink mt-2 text-2xl font-extrabold tracking-tight text-balance">

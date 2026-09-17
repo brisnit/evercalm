@@ -99,7 +99,7 @@ export default async function MyTrainingPage() {
                   <li key={a.id}>
                     <Link
                       href={`/my/training/${a.id}`}
-                      className="rounded-card border-line flex min-h-14 items-center gap-3 border bg-white px-4 py-3 hover:border-violet-300"
+                      className="rounded-card border-line flex min-h-14 items-center gap-3 border bg-white px-4 py-3 hover:border-teal-300"
                     >
                       <CheckMark />
                       <span className="min-w-0 flex-1">
@@ -146,9 +146,9 @@ function NextUp({
     const lesson = upNext.progress.next
     const due = dueLabel(upNext.dueOn, upNext.due)
     return (
-      <Card as="section" className="mt-5 overflow-hidden border-violet-200">
-        <div className="bg-violet-50 px-5 py-4">
-          <p className="text-xs font-semibold tracking-wide text-violet-700 uppercase">Next up</p>
+      <Card as="section" className="mt-5 overflow-hidden border-teal-200">
+        <div className="bg-teal-50 px-5 py-4">
+          <p className="text-xs font-semibold tracking-wide text-teal-700 uppercase">Next up</p>
           <h2 className="font-display text-ink mt-1 text-xl font-bold text-balance">
             {lesson.title}
           </h2>
@@ -221,7 +221,7 @@ function TodoCard({ assignment: a }: { assignment: MyAssignment }) {
   return (
     <Link
       href={`/my/training/${a.id}`}
-      className="rounded-card border-line block border bg-white p-4 hover:border-violet-300"
+      className="rounded-card border-line block border bg-white p-4 hover:border-teal-300"
     >
       <span className="flex items-start justify-between gap-3">
         <span className="text-ink font-medium">{a.courseTitle}</span>

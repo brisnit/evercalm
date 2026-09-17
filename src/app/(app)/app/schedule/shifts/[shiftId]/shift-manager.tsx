@@ -300,7 +300,7 @@ export function ShiftManager({
               ) : null}
 
               {shift.swap ? (
-                <p className="rounded-control border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm">
+                <p className="rounded-control border border-teal-200 bg-teal-50 px-3 py-2.5 text-sm">
                   {shift.swap.requesterName} has asked {shift.swap.recipientName} to{' '}
                   {shift.swap.kind === 'trade' ? 'trade' : 'take'} this shift.{' '}
                   {shift.swap.status === 'pending_manager' ? (

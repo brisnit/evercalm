@@ -34,7 +34,7 @@ export function AcknowledgementPanel({
 
   return (
     <Card
-      className={needsAck && overdue ? 'border-warning/50 mt-5 p-5' : 'mt-5 border-violet-200 p-5'}
+      className={needsAck && overdue ? 'border-warning/50 mt-5 p-5' : 'mt-5 border-teal-200 p-5'}
     >
       <ActionNotice notice={notice} onDismiss={dismiss} className="mb-4" />
 

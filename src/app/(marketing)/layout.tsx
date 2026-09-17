@@ -144,7 +144,7 @@ function FooterLockup() {
     <span className="flex items-center gap-3">
       <span
         aria-hidden="true"
-        className="flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-[linear-gradient(135deg,#8b3ff0_0%,#e64bb0_55%,#3fd0e0_100%)]"
+        className="flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-[linear-gradient(135deg,#2a5c5a_0%,#7fb5a0_55%,#ebd4b8_100%)]"
       >
         <svg viewBox="0 0 24 12" className="h-3 w-6" fill="none" aria-hidden="true">
           <path

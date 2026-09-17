@@ -1,6 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
+ * E2E_PORT runs the suite against its own dev server and database, so a
+ * developer's local data is never reset by a test run:
+ *   E2E_PORT=3100 NEXT_DIST_DIR=.next-e2e DATABASE_URL=... MIGRATION_DATABASE_URL=... npx playwright test
+ */
+const PORT = Number(process.env.E2E_PORT ?? 3000)
+const BASE_URL = `http://localhost:${PORT}`
+
+/**
  * Browser tests.
  *
  * Runs against `next dev`. The production server deliberately refuses to boot
@@ -24,7 +32,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -50,8 +58,8 @@ export default defineConfig({
     // the strict production values are asserted by a unit test.
     // `npm run dev` starts the background worker too; a one-second tick keeps
     // the scheduled-publishing journey fast without changing what it proves.
-    command: 'E2E_RELAX_RATE_LIMIT=true WORKER_INTERVAL_MS=1000 npm run dev',
-    url: 'http://localhost:3000/api/health',
+    command: `E2E_RELAX_RATE_LIMIT=true WORKER_INTERVAL_MS=1000 PORT=${PORT} npm run dev`,
+    url: `${BASE_URL}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     stdout: 'ignore',

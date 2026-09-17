@@ -46,11 +46,11 @@ export function CardHeader({
   )
 }
 
-type Tone = 'neutral' | 'violet' | 'success' | 'warning' | 'danger' | 'info'
+type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
 
 const TONES: Record<Tone, string> = {
   neutral: 'bg-sunk text-muted border-line-strong',
-  violet: 'bg-violet-50 text-violet-700 border-violet-200',
+  accent: 'bg-teal-50 text-teal-700 border-teal-200',
   success: 'bg-success-soft text-success border-success/25',
   warning: 'bg-warning-soft text-warning border-warning/25',
   danger: 'bg-danger-soft text-danger border-danger/25',

@@ -237,7 +237,7 @@ async function walk(
 ) {
   const context = await browser.newContext({
     ...VIEWPORTS[viewportKey],
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${process.env.E2E_PORT ?? 3000}`,
   })
   const page = await context.newPage()
   const errors = trackConsoleErrors(page)

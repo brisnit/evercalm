@@ -103,7 +103,7 @@ export function ImportWizard() {
               }}
               className={
                 dragging
-                  ? 'rounded-card border-2 border-dashed border-violet-600 bg-violet-50 p-6 text-center'
+                  ? 'rounded-card border-2 border-dashed border-teal-600 bg-teal-50 p-6 text-center'
                   : 'rounded-card border-line-strong bg-raise border-2 border-dashed p-6 text-center'
               }
             >

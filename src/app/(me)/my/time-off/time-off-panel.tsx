@@ -47,7 +47,7 @@ export function TimeOffPanel({
           <ActionForm action={requestTimeOffAction} submitLabel="Send request" onSuccess={show}>
             {(state) => (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
                   <Field
                     id="to-start"
                     label="First day"
@@ -91,7 +91,7 @@ export function TimeOffPanel({
                 </label>
 
                 {partOfDay ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
                     <Field id="to-from" label="From" required>
                       {(p) => (
                         <Input {...p} type="time" name="startTime" required defaultValue="09:00" />

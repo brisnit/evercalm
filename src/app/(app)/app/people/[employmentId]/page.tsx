@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import { formatCalendarDate } from '@/lib/dates'
 import { and, eq, isNull } from 'drizzle-orm'
 import { requireActorContext } from '@/server/auth/session'
+import type { Actor } from '@/server/authz'
+import { upcomingShiftsForPerson } from '@/modules/scheduling/employee'
 import { employmentStatusLabel } from '@/modules/people/labels'
 import { withTenant } from '@/server/db'
 import { roleGrants, roles, locations as locationsTable } from '@/server/db/schema'
@@ -33,36 +37,22 @@ export async function generateMetadata({
   params: Promise<{ employmentId: string }>
 }): Promise<Metadata> {
   const { employmentId } = await params
-  const { actor } = await requireActorContext()
-  try {
-    const person = await withTenant(actor.organizationId, (tx) =>
-      getEmployment(tx, actor, employmentId),
-    )
-    return { title: person.displayName }
-  } catch {
-    return { title: 'Employee' }
-  }
+  const data = await loadProfile(employmentId)
+  return { title: typeof data === 'string' ? 'Employee' : data.person.displayName }
 }
 
 /**
- * The employee profile.
- *
- * Sensitive fields (date of birth, emergency contact, personal contact
- * details, licence numbers) are resolved by the SERVICE according to the
- * viewer's capabilities, not filtered in this view - a General Manager's
- * request never returns them at all. The page renders an explicit "withheld"
- * notice rather than silently omitting the section, so it is obvious that
- * information exists and is protected.
+ * Everything the profile shows, read in ONE transaction and shared by the
+ * page and its title through React's per-request cache. Opening a profile
+ * used to read the person twice in separate transactions, and always loaded
+ * the whole directory and every separation even for someone who could not
+ * edit anything; on a hosted database each extra round trip is felt as a
+ * click that does nothing.
  */
-export default async function EmployeeProfilePage({
-  params,
-}: {
-  params: Promise<{ employmentId: string }>
-}) {
-  const { employmentId } = await params
+const loadProfile = cache(async (employmentId: string) => {
   const { actor } = await requireActorContext()
-
-  const data = await withTenant(actor.organizationId, async (tx) => {
+  const editing = mayEdit(actor)
+  return withTenant(actor.organizationId, async (tx) => {
     try {
       const person = await getEmployment(tx, actor, employmentId)
       const grants = await tx
@@ -98,9 +88,12 @@ export default async function EmployeeProfilePage({
         grants,
         credentials: await listCredentials(tx, actor, employmentId),
         onboarding: await getProgressForEmployment(tx, actor, employmentId).catch(() => null),
-        locations: await listLocations(tx, actor),
-        colleagues: await listEmployments(tx, actor).catch(() => []),
-        separations: await listSeparations(tx, actor).catch(() => []),
+        shifts: await upcomingShiftsForPerson(tx, actor, employmentId),
+        locations: editing ? await listLocations(tx, actor) : [],
+        colleagues: editing ? await listEmployments(tx, actor).catch(() => []) : [],
+        separations: can(actor, 'people.separate')
+          ? await listSeparations(tx, actor).catch(() => [])
+          : [],
       }
     } catch (error) {
       if (error instanceof NotFoundError) return 'not_found' as const
@@ -108,6 +101,36 @@ export default async function EmployeeProfilePage({
       throw error
     }
   })
+})
+
+function mayEdit(actor: Actor): boolean {
+  return (
+    canAtAnyLocation(actor, 'people.update') ||
+    canAtAnyLocation(actor, 'people.manage_employment') ||
+    can(actor, 'org.manage_roles') ||
+    can(actor, 'people.separate')
+  )
+}
+
+/**
+ * The employee profile.
+ *
+ * Sensitive fields (date of birth, emergency contact, personal contact
+ * details, licence numbers) are resolved by the SERVICE according to the
+ * viewer's capabilities, not filtered in this view - a General Manager's
+ * request never returns them at all. The page renders an explicit "withheld"
+ * notice rather than silently omitting the section, so it is obvious that
+ * information exists and is protected.
+ */
+export default async function EmployeeProfilePage({
+  params,
+}: {
+  params: Promise<{ employmentId: string }>
+}) {
+  const { employmentId } = await params
+  const { actor } = await requireActorContext()
+
+  const data = await loadProfile(employmentId)
 
   // Someone in another organization, or outside the viewer's locations, is
   // indistinguishable from someone who does not exist: a real 404.
@@ -241,7 +264,7 @@ export default async function EmployeeProfilePage({
                             : `At ${grant.locationName ?? 'a location'}`}
                         </span>
                       </span>
-                      <Badge tone={grant.scope === 'org' ? 'violet' : 'neutral'}>
+                      <Badge tone={grant.scope === 'org' ? 'accent' : 'neutral'}>
                         {grant.scope === 'org' ? 'Organization' : 'Location'}
                       </Badge>
                     </li>
@@ -253,6 +276,42 @@ export default async function EmployeeProfilePage({
         </div>
 
         <div className="flex flex-col gap-5">
+          {data.shifts ? (
+            <Card>
+              <CardHeader
+                title="Active and upcoming shifts"
+                description="Published shifts only. Drafts appear here once they are published."
+              />
+              {data.shifts.length === 0 ? (
+                <p className="text-muted px-5 py-4 text-sm">No published shifts coming up.</p>
+              ) : (
+                <ul className="divide-line divide-y" aria-label="Active and upcoming shifts">
+                  {data.shifts.map((shift) => (
+                    <li key={shift.id}>
+                      <Link
+                        href={`/app/schedule/shifts/${shift.id}`}
+                        className="hover:bg-sunk flex min-h-14 items-center justify-between gap-3 px-5 py-3"
+                      >
+                        <span className="min-w-0">
+                          <span className="text-ink block text-sm font-medium">
+                            {shift.day} · {shift.time}
+                            {shift.endsNextDay ? ' (next day)' : ''}
+                          </span>
+                          <span className="text-muted block truncate text-xs">
+                            {[shift.jobRoleName, shift.stationName, shift.locationName]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </span>
+                        {shift.onNow ? <Badge tone="success">On now</Badge> : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader
               title="Onboarding"
@@ -277,7 +336,7 @@ export default async function EmployeeProfilePage({
                           ? 'warning'
                           : onboarding.state === 'completed'
                             ? 'success'
-                            : 'violet'
+                            : 'accent'
                     }
                   />
                   <p className="text-muted mt-3 text-sm">
@@ -384,10 +443,7 @@ export default async function EmployeeProfilePage({
         </div>
       </div>
 
-      {canAtAnyLocation(actor, 'people.update') ||
-      canAtAnyLocation(actor, 'people.manage_employment') ||
-      can(actor, 'org.manage_roles') ||
-      can(actor, 'people.separate') ? (
+      {mayEdit(actor) ? (
         <div className="mt-5">
           <EmploymentPanels
             employmentId={employmentId}

@@ -71,9 +71,7 @@ test('a checklist step links a published course, and starting onboarding assigns
 
   // One next action on the home screen, not the same lesson twice.
   await page.goto('/my')
-  await expect(
-    page.getByRole('link', { name: 'Continue Allergen awareness for service' }),
-  ).toBeVisible()
-  await expect(page.getByText('Your next lesson is part of your onboarding, above.')).toBeVisible()
-  await expect(page.locator('a[href*="/lessons/"]')).toHaveCount(1)
+  await expect(page.getByTestId('onboarding-card')).toHaveAttribute('href', '/my/onboarding')
+  await expect(page.getByTestId('training-card')).toContainText('Your next course is in onboarding')
+  await expect(page.locator('a[href*="/lessons/"]')).toHaveCount(0)
 })

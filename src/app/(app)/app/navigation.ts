@@ -58,25 +58,34 @@ export const OPERATIONS_CAPABILITIES: readonly Capability[] = [
   'handoff.manage',
 ]
 
-function allowed(actor: Actor, requires: NavItem['requires']): boolean {
+export function allowed(actor: Actor, requires: NavItem['requires']): boolean {
   if (requires === null) return true
   const list: readonly Capability[] = typeof requires === 'string' ? [requires] : requires
   return list.some((capability) => canAtAnyLocation(actor, capability))
 }
 
+/*
+ * Reports are not in the primary navigation (stakeholder round 1): their
+ * figures are already where the work is decided, and they return with
+ * timesheets and payroll. The routes, permissions, exports and tests are
+ * unchanged, so a saved link still opens, or is still refused, exactly as
+ * before. See docs/stakeholder-feedback/round-1.md.
+ */
+export const REPORT_CAPABILITIES: readonly Capability[] = [
+  'report.people',
+  'report.training',
+  'report.operations',
+  'report.communications',
+]
+
 const ITEMS: NavItem[] = [
-  { href: '/app', label: 'Overview', requires: null },
+  { href: '/app', label: 'Home', requires: null },
   { href: '/app/people', label: 'People', requires: 'people.view' },
   { href: '/app/onboarding', label: 'Onboarding', requires: 'onboarding.view_progress' },
   { href: '/app/comms', label: 'Communication', requires: 'announcement.create' },
   { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
   { href: '/app/training', label: 'Training', requires: TRAINING_CAPABILITIES },
   { href: '/app/operations', label: 'Operations', requires: OPERATIONS_CAPABILITIES },
-  {
-    href: '/app/reports',
-    label: 'Reports',
-    requires: ['report.people', 'report.training', 'report.operations', 'report.communications'],
-  },
   { href: '/app/support', label: 'Support', requires: 'support.manage' },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]

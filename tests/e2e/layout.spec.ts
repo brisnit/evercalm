@@ -92,7 +92,7 @@ test('the employee surface fits a phone screen', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
   await expectNoHorizontalOverflow(page, '/my')
 
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
   await expectNoHorizontalOverflow(page, '/my/onboarding')
 })

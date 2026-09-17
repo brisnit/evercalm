@@ -112,7 +112,7 @@ test('the employee surface has no accessibility violations', async ({ page }) =>
 
 test('the employee onboarding screen has no accessibility violations', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
   const results = await scan(page)
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])

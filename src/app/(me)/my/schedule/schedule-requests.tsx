@@ -48,7 +48,7 @@ export function IncomingSwaps({ swaps }: { swaps: MySwap[] }) {
             Needs you
           </h2>
           {swaps.map((swap) => (
-            <Card key={swap.id} className="border-violet-200 p-4">
+            <Card key={swap.id} className="border-teal-200 p-4">
               <p className="text-ink font-medium">
                 {swap.kind === 'trade'
                   ? `${swap.otherName} wants to trade shifts with you`

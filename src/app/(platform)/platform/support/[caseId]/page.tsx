@@ -62,7 +62,7 @@ export default async function PlatformCasePage({
                   m.kind === 'internal'
                     ? 'rounded-card border-warning/40 bg-warning-soft/40 border border-dashed p-4'
                     : m.kind === 'evercalm'
-                      ? 'rounded-card border border-violet-200 bg-violet-50/50 p-4'
+                      ? 'rounded-card border border-teal-200 bg-teal-50/50 p-4'
                       : 'rounded-card border-line border bg-white p-4'
                 }
               >

@@ -104,7 +104,7 @@ export default async function TemplateBuilderPage({
         ) : (
           <Badge tone="warning">Draft — cannot be assigned</Badge>
         )}
-        {template.isDefault ? <Badge tone="violet">Default checklist</Badge> : null}
+        {template.isDefault ? <Badge tone="accent">Default checklist</Badge> : null}
         <span className="text-muted text-sm">
           {data.impact.activeRuns} onboarding now · {data.impact.completedRuns} completed
         </span>

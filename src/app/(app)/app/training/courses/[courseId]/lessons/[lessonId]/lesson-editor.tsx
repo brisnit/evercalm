@@ -397,7 +397,7 @@ function QuestionForm({
                     name="correct"
                     value={i}
                     defaultChecked={question?.kind === 'true_false' ? correct.has(i) : i === 0}
-                    className="size-4 accent-violet-600"
+                    className="size-4 accent-teal-600"
                   />
                   {label}
                 </label>
@@ -419,7 +419,7 @@ function QuestionForm({
                     value={i}
                     defaultChecked={correct.has(i)}
                     aria-label={`Answer ${i + 1} is correct`}
-                    className="size-5 shrink-0 accent-violet-600"
+                    className="size-5 shrink-0 accent-teal-600"
                   />
                   <Input
                     name={`option${i}`}

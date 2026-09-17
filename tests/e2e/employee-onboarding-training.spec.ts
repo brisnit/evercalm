@@ -25,37 +25,35 @@ async function finishLessonsUntilQuiz(page: Page) {
   // `.all()` does not wait: be sure the checklist has rendered first.
   await expect(page.getByRole('checkbox').first()).toBeVisible()
   await page.waitForLoadState('networkidle')
+  // Ticks save as they happen; the last one finishes the lesson.
   for (const box of await page.getByRole('checkbox').all()) await box.check()
-  await page.getByRole('button', { name: 'Mark as done' }).click()
   await page.getByTestId('lesson-moment').getByRole('link', { name: 'Next lesson' }).click()
   await page.waitForLoadState('networkidle')
 }
 
-test('the home screen leads with the course while another onboarding item waits', async ({
+test('home offers a course once, through onboarding, while another item waits', async ({
   page,
 }) => {
   // Both have a linked course next AND one onboarding item blocked elsewhere:
   // Elodie's licence check, Dmitri's food handler card. Runs before the journey
   // below, which changes Dmitri's course on the phone.
-  const people = [
-    { email: PEOPLE.salonNewStylist.email, course: 'Patch testing and colour consultation' },
-    { email: 'dmitri@harborvine.test', course: 'Hot holding, cooling and reheating' },
-  ]
-  for (const { email, course } of people) {
+  const people = [PEOPLE.salonNewStylist.email, 'dmitri@harborvine.test']
+  for (const email of people) {
     await page.context().clearCookies()
     await signIn(page, email)
     await page.goto('/my')
+    // Home offers the course once, through onboarding, not again under training.
     const onboarding = page.getByTestId('onboarding-card')
-    await expect(onboarding.getByRole('link', { name: `Continue ${course}` })).toBeVisible()
-    await expect(onboarding.getByText('1 item waiting', { exact: true })).toBeVisible()
-    await expect(onboarding.getByText(/You can carry on with this in the meantime\./)).toBeVisible()
-    // Not the contradictory badge.
-    await expect(onboarding.getByText('Waiting', { exact: true })).toHaveCount(0)
-    // The training card does not repeat the course.
+    await expect(onboarding).toHaveAttribute('href', '/my/onboarding')
+    await expect(page.getByTestId('training-card')).toContainText(
+      'Your next course is in onboarding',
+    )
+    await expect(page.locator('a[href*="/lessons/"]')).toHaveCount(0)
+    await onboarding.click()
+    await expect(page).toHaveURL(/\/my\/onboarding$/)
     await expect(
-      page.getByText('Your next lesson is part of your onboarding, above.'),
+      page.getByRole('link', { name: /^(Start|Continue) the course$/ }).first(),
     ).toBeVisible()
-    await expect(page.locator('a[href*="/lessons/"]')).toHaveCount(1)
     // No development placeholder on an employee's home screen.
     await expect(page.getByText(/later slice/i)).toHaveCount(0)
     await expectNoSidewaysScroll(page)
@@ -123,8 +121,7 @@ test('onboarding training, from the checklist through the course and back', asyn
   await page.goto('/app/training/sign-offs')
   const card = page.getByRole('article').filter({ hasText: 'Dmitri Sokolov' })
   await page.waitForLoadState('networkidle')
-  for (const box of await card.getByRole('checkbox').all()) await box.check()
-  await card.getByRole('button', { name: 'Sign off' }).click()
+  await card.getByRole('button', { name: 'Approve sign-off' }).click()
   await expect(page.getByTestId('action-notice')).toContainText(
     'Signed off for Dmitri Sokolov. That completes their course.',
   )

@@ -78,11 +78,19 @@ test('a manager builds a week from a template, publishes it, and the employee se
   await as(page, MANAGER)
   await page.goto(`/app/schedule?week=${week}`)
   await expect(page.getByRole('heading', { name: `Week of ${dateLabel(week)}` })).toBeVisible()
-  await expect(page.getByText('Nothing scheduled this week')).toBeVisible()
+  await expect(page.getByTestId('empty-week')).toBeVisible()
+
+  // An empty day offers Add shift, which opens the form with that day chosen.
+  const dayLinks = page.getByRole('link', { name: /^Add shift on / })
+  await expect(dayLinks).toHaveCount(7)
+  await dayLinks.nth(2).click()
+  await expect(page).toHaveURL(new RegExp(`add=${addDays(week, 2)}`))
+  await expect(page.locator('#add-date')).toHaveValue(addDays(week, 2))
+  await expect(page.locator('#add-shift')).toBeInViewport()
 
   // Add Wednesday's dinner shift from the template, for Sam.
+  await page.waitForLoadState('networkidle')
   await page.getByLabel('Template').selectOption({ label: 'Dinner service (16:00–22:30)' })
-  await page.locator('#add-date').selectOption(addDays(week, 2))
   const sam = await page
     .locator('#add-assignee')
     .locator('option', { hasText: 'Sam Whitfield' })

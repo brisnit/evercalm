@@ -69,7 +69,7 @@ export default async function PlatformHomePage() {
               <li key={o.organizationId}>
                 <Link
                   href={`/platform/organizations/${o.organizationId}`}
-                  className="group flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 hover:bg-violet-50/60"
+                  className="group flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 hover:bg-teal-50/60"
                 >
                   <span className="min-w-0">
                     <span className="text-ink block font-semibold group-hover:underline group-hover:underline-offset-4">

@@ -66,7 +66,7 @@ function Inlines({ inlines }: { inlines: Inline[] }) {
               key={index}
               href={inline.href}
               rel="noreferrer"
-              className="text-violet-700 underline underline-offset-2"
+              className="text-teal-700 underline underline-offset-2"
             >
               {inline.text}
             </a>

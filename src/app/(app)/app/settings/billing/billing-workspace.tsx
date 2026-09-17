@@ -100,7 +100,7 @@ export function BillingWorkspace({ provider, summary, plans, contact, history }:
                 >
                   <div className="min-w-0">
                     <p className="text-ink font-semibold">
-                      {plan.name} {plan.current ? <Badge tone="violet">Current plan</Badge> : null}
+                      {plan.name} {plan.current ? <Badge tone="accent">Current plan</Badge> : null}
                     </p>
                     <p className="text-muted text-sm">{plan.summary}</p>
                     <ul className="text-muted mt-1 flex flex-wrap gap-x-3 text-xs">

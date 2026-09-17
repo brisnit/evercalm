@@ -103,7 +103,7 @@ function TemplateCard({ template: t }: { template: TemplateSummary }) {
           <Badge tone="warning">Not published</Badge>
         )}
         {t.draftVersionNumber && t.publishedVersionNumber ? (
-          <Badge tone="violet">Draft {t.draftVersionNumber}</Badge>
+          <Badge tone="accent">Draft {t.draftVersionNumber}</Badge>
         ) : null}
       </div>
       <h3 className="font-display text-ink mt-2 text-base font-bold">

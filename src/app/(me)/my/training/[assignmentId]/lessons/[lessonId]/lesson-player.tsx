@@ -186,11 +186,21 @@ function StepForm({
   )
 }
 
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+/**
+ * A checklist saves itself: every tick is written as it happens, so a person
+ * can leave at any point and pick up where they were. Ticking the last step
+ * finishes the lesson. Saves run one at a time, and only the latest set of
+ * ticks is sent, so a quick run of taps can never land out of order.
+ */
 function Checklist({
   checklist,
   locked,
   completed,
-  ...common
+  assignmentId,
+  lessonId,
+  onDone,
 }: {
   checklist: { items: ContentItem[]; checked: string[] }
   locked: boolean
@@ -202,66 +212,116 @@ function Checklist({
   const [checked, setChecked] = useState(
     () => new Set(completed ? checklist.items.map((i) => i.id) : checklist.checked),
   )
-  const all = checked.size === checklist.items.length
+  const [save, setSave] = useState<{ status: SaveStatus; message?: string }>({ status: 'idle' })
+  const inFlight = useRef(false)
+  const pending = useRef<string[] | null>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
 
-  const list = (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-ink mb-2 text-sm font-semibold">Tick each step</legend>
-      <ul className="flex flex-col gap-2">
-        {checklist.items.map((item) => {
-          const on = checked.has(item.id)
-          return (
-            <li key={item.id}>
-              <label
-                className={cn(
-                  'rounded-control flex min-h-12 items-start gap-3 border px-3.5 py-3 text-[0.9375rem]',
-                  on ? 'border-success/40 bg-success-soft/40' : 'border-line bg-white',
-                )}
-              >
-                <input
-                  type="checkbox"
-                  name="items"
-                  value={item.id}
-                  checked={on}
-                  disabled={locked}
-                  onChange={(e) =>
-                    setChecked((current) => {
-                      const nextSet = new Set(current)
-                      if (e.target.checked) nextSet.add(item.id)
-                      else nextSet.delete(item.id)
-                      return nextSet
-                    })
-                  }
-                  className="mt-0.5 size-5 shrink-0 accent-violet-600"
-                />
-                <span className="text-ink">{item.text}</span>
-              </label>
-            </li>
-          )
-        })}
-      </ul>
-      <p className="text-muted text-sm" aria-live="polite">
-        {checked.size} of {checklist.items.length} ticked
-      </p>
-    </fieldset>
-  )
+  const flush = useCallback(async () => {
+    if (inFlight.current) return
+    while (pending.current) {
+      const items = pending.current
+      pending.current = null
+      inFlight.current = true
+      setSave({ status: 'saving' })
+      const formData = new FormData()
+      formData.set('assignmentId', assignmentId)
+      formData.set('lessonId', lessonId)
+      for (const id of items) formData.append('items', id)
+      try {
+        const result = await saveChecklistAction(IDLE, formData)
+        if (result.status === 'error') {
+          setSave({ status: 'error', message: result.message })
+        } else if (items.length === checklist.items.length) {
+          setSave({ status: 'idle' })
+          onDoneRef.current(result)
+        } else {
+          setSave({ status: 'saved' })
+        }
+      } catch {
+        setSave({
+          status: 'error',
+          message: 'Your progress could not be saved. Check your connection and tick again.',
+        })
+      } finally {
+        inFlight.current = false
+      }
+    }
+  }, [assignmentId, lessonId, checklist.items.length])
 
-  if (locked) {
-    return (
-      <div className="flex flex-col gap-3">
-        {list}
-        {completed ? <Done text="Checklist complete." /> : null}
-      </div>
-    )
+  function toggle(id: string, on: boolean) {
+    const nextSet = new Set(checked)
+    if (on) nextSet.add(id)
+    else nextSet.delete(id)
+    setChecked(nextSet)
+    pending.current = checklist.items.map((i) => i.id).filter((i) => nextSet.has(i))
+    void flush()
   }
+
   return (
-    <StepForm
-      action={saveChecklistAction}
-      submitLabel={all ? 'Mark as done' : 'Save progress'}
-      {...common}
-    >
-      {list}
-    </StepForm>
+    <div className="flex flex-col gap-3">
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-ink mb-2 text-sm font-semibold">Tick each step</legend>
+        <ul className="flex flex-col gap-2">
+          {checklist.items.map((item) => {
+            const on = checked.has(item.id)
+            return (
+              <li key={item.id}>
+                <label
+                  className={cn(
+                    'rounded-control flex min-h-12 items-start gap-3 border px-3.5 py-3 text-[0.9375rem]',
+                    on ? 'border-success/40 bg-success-soft/40' : 'border-line bg-white',
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    name="items"
+                    value={item.id}
+                    checked={on}
+                    disabled={locked}
+                    onChange={(e) => toggle(item.id, e.target.checked)}
+                    className="mt-0.5 size-5 shrink-0 accent-teal-600"
+                  />
+                  <span className="text-ink">{item.text}</span>
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+      </fieldset>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <p className="text-muted">
+          {checked.size} of {checklist.items.length} ticked
+        </p>
+        {locked ? null : (
+          <p
+            role="status"
+            aria-live="polite"
+            data-testid="checklist-save-status"
+            className={cn(
+              'font-medium',
+              save.status === 'error' ? 'text-danger' : 'text-success',
+              save.status === 'saving' && 'text-muted',
+            )}
+          >
+            {save.status === 'saving'
+              ? 'Saving…'
+              : save.status === 'saved'
+                ? 'Progress saved'
+                : save.status === 'error'
+                  ? save.message
+                  : null}
+          </p>
+        )}
+      </div>
+      {completed ? <Done text="Checklist complete." /> : null}
+      {locked ? null : (
+        <p className="text-muted text-sm">
+          Each tick is saved as you go. You can leave and come back to finish.
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -307,7 +367,7 @@ function Quiz({
                             {option.text}
                           </span>
                           <span className="flex gap-1.5">
-                            {chosen ? <Badge tone="violet">Your answer</Badge> : null}
+                            {chosen ? <Badge tone="accent">Your answer</Badge> : null}
                             {right ? <Badge tone="success">Correct</Badge> : null}
                           </span>
                         </li>
@@ -407,13 +467,13 @@ function Quiz({
                 {question.options.map((option) => (
                   <label
                     key={option.id}
-                    className="rounded-control border-line flex min-h-12 items-center gap-3 border bg-white px-3.5 py-2.5 text-[0.9375rem] has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50"
+                    className="rounded-control border-line flex min-h-12 items-center gap-3 border bg-white px-3.5 py-2.5 text-[0.9375rem] has-[:checked]:border-teal-500 has-[:checked]:bg-teal-50"
                   >
                     <input
                       type={question.kind === 'multiple' ? 'checkbox' : 'radio'}
                       name={`q:${question.id}`}
                       value={option.id}
-                      className="size-5 shrink-0 accent-violet-600"
+                      className="size-5 shrink-0 accent-teal-600"
                     />
                     <span className="text-ink">{option.text}</span>
                   </label>
@@ -454,7 +514,7 @@ function Practical({
             >
               <span
                 aria-hidden="true"
-                className="mt-2 size-1.5 shrink-0 rounded-full bg-violet-600"
+                className="mt-2 size-1.5 shrink-0 rounded-full bg-teal-600"
               />
               {c.text}
             </li>
@@ -471,7 +531,7 @@ function Practical({
           }
         />
       ) : state === 'awaiting_signoff' ? (
-        <div className="rounded-card border border-violet-200 bg-violet-50 px-4 py-3">
+        <div className="rounded-card border border-teal-200 bg-teal-50 px-4 py-3">
           <p className="text-ink font-medium">Waiting for sign-off</p>
           <p className="text-muted mt-0.5 text-sm">
             You asked{practical.requestedLabel ? ` on ${practical.requestedLabel}` : ''}. A manager

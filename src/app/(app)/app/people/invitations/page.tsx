@@ -22,9 +22,9 @@ export const dynamic = 'force-dynamic'
 
 const STATUS: Record<
   string,
-  { tone: 'violet' | 'success' | 'neutral' | 'warning'; label: string }
+  { tone: 'accent' | 'success' | 'neutral' | 'warning'; label: string }
 > = {
-  pending: { tone: 'violet', label: 'Waiting' },
+  pending: { tone: 'accent', label: 'Waiting' },
   accepted: { tone: 'success', label: 'Accepted' },
   revoked: { tone: 'neutral', label: 'Revoked' },
   expired: { tone: 'warning', label: 'Expired' },
@@ -71,7 +71,7 @@ export default async function InvitationsPage() {
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
-        <Badge tone="violet">{counts.pending} waiting</Badge>
+        <Badge tone="accent">{counts.pending} waiting</Badge>
         <Badge tone="success">{counts.accepted} accepted</Badge>
         <Badge tone="warning">{counts.expired} expired</Badge>
         <Badge tone="neutral">{counts.revoked} revoked</Badge>

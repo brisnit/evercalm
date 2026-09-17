@@ -158,7 +158,7 @@ export function ReceiptsPanel({
                 aria-pressed={filter === value}
                 className={
                   filter === value
-                    ? 'rounded-control min-h-9 bg-violet-600 px-3 text-xs font-semibold text-white'
+                    ? 'rounded-control min-h-9 bg-teal-600 px-3 text-xs font-semibold text-white'
                     : 'rounded-control border-line text-ink min-h-9 border bg-white px-3 text-xs font-medium'
                 }
               >

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { signIn } from '@/lib/auth-client'
+import { signInErrorMessage } from '@/lib/auth-messages'
 import { Button, Card, Field, Input } from '@/ui/primitives'
 
 /**
@@ -13,7 +13,6 @@ import { Button, Card, Field, Input } from '@/ui/primitives'
  * enumeration oracle.
  */
 export function SignInForm() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -26,11 +25,12 @@ export function SignInForm() {
     try {
       const result = await signIn.email({ email, password })
       if (result.error) {
-        setError('That email and password combination did not match. Please try again.')
+        setError(signInErrorMessage(result.error.status))
         return
       }
-      router.push('/app')
-      router.refresh()
+      // A full page load, so nothing a previous person saw on this device is
+      // kept in the browser's page cache.
+      window.location.assign('/app')
     } catch {
       setError('We could not reach the server. Check your connection and try again.')
     } finally {

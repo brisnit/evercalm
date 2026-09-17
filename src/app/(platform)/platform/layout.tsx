@@ -26,7 +26,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           <Link href="/platform" aria-label="EverCalm team home" className="shrink-0">
             <Logo size="h-8" eager />
           </Link>
-          <span className="rounded-full bg-violet-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+          <span className="rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold text-white">
             EverCalm team
           </span>
           <div className="ml-auto flex items-center gap-3">

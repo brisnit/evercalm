@@ -9,11 +9,11 @@ import { Badge, ButtonLink, ProgressBar } from '@/ui/primitives'
  */
 export const LINKED_STATE: Record<
   LinkedTraining['state'],
-  { label: string; tone: 'success' | 'violet' | 'warning' | 'info' | 'neutral' }
+  { label: string; tone: 'success' | 'accent' | 'warning' | 'info' | 'neutral' }
 > = {
   not_started: { label: 'Not started', tone: 'neutral' },
   in_progress: { label: 'In progress', tone: 'info' },
-  awaiting_signoff: { label: 'Waiting for sign-off', tone: 'violet' },
+  awaiting_signoff: { label: 'Waiting for sign-off', tone: 'accent' },
   completed: { label: 'Course complete', tone: 'success' },
   blocked: { label: 'Needs your manager', tone: 'warning' },
   withdrawn: { label: 'Withdrawn', tone: 'neutral' },
@@ -47,7 +47,7 @@ export function LinkedTrainingCard({ training }: { training: LinkedTraining }) {
           className="mt-2.5"
           value={training.percent}
           label={`${training.completedLessons} of ${training.totalLessons} lessons done`}
-          tone={training.state === 'completed' ? 'success' : 'violet'}
+          tone={training.state === 'completed' ? 'success' : 'accent'}
         />
       ) : null}
       {training.state === 'awaiting_signoff' ? (

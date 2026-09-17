@@ -13,16 +13,16 @@ test('a new hire lands on their next action', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
 
   await expect(page).toHaveURL(/\/my$/)
-  await expect(page.getByText('Do this next')).toBeVisible()
-  await expect(page.getByRole('progressbar', { name: /required steps done/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Open your onboarding' })).toBeVisible()
+  const next = page.getByTestId('onboarding-card')
+  await expect(next.getByRole('heading', { name: 'Do this next' })).toBeVisible()
+  await expect(next).toHaveAttribute('href', '/my/onboarding')
 
   expectNoConsoleErrors(errors)
 })
 
 test('they can open the checklist and mark a step done', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
 
   await expect(page).toHaveURL(/\/my\/onboarding$/)
   await expect(page.getByRole('heading', { name: 'Your onboarding' })).toBeVisible()
@@ -45,7 +45,7 @@ test('a training step shows its course and completes with it, not by hand', asyn
   await signIn(page, PEOPLE.salonNewStylist.email)
   // Navigate by link rather than page.goto: a direct goto races the
   // client-side router that sign-in just started.
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
 
   const step = page
@@ -59,7 +59,7 @@ test('a training step shows its course and completes with it, not by hand', asyn
 
 test('an employee cannot complete their own manager-verified step', async ({ page }) => {
   await signIn(page, PEOPLE.salonNewStylist.email)
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
 
   await expect(page.getByText(/Ask your manager to confirm this/).first()).toBeVisible()
@@ -67,7 +67,7 @@ test('an employee cannot complete their own manager-verified step', async ({ pag
 
 test('the onboarding screen does not scroll sideways on a phone', async ({ page }) => {
   await signIn(page, PEOPLE.harborNewServer.email)
-  await page.getByRole('link', { name: 'Open your onboarding' }).click()
+  await page.getByTestId('onboarding-card').click()
   await expect(page).toHaveURL(/\/my\/onboarding$/)
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

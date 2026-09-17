@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // A second local dev server (the isolated browser-test server) needs its own
+  // build directory; everything else uses the default.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   // Dev-only overlay that sits on top of page content; it obscures the
   // bottom-left of every screen during development and in screenshots.

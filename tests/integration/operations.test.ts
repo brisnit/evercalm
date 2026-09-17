@@ -13,6 +13,7 @@ import {
   updateShift,
 } from '@/modules/scheduling/service'
 import { claimOpenShift, decideClaim } from '@/modules/scheduling/requests'
+import { upcomingShiftsForPerson } from '@/modules/scheduling/employee'
 import {
   isoWeekday,
   localDateOf,
@@ -33,6 +34,8 @@ import { syncOperationsForShifts } from '@/modules/operations/generation'
 import {
   acknowledgeHandoff,
   createHandoff,
+  handoffAssignees,
+  handoffsForMe,
   reopenHandoff,
   resolveHandoff,
 } from '@/modules/operations/handoffs'
@@ -1020,6 +1023,120 @@ describe('handoffs', () => {
       'handoff.reopened',
     ])
     expect(audit[2]!.metadata.previousResolutionNote).toBe('Hinge replaced.')
+  })
+
+  it('can be assigned only to someone who works at the location, who then sees it until read', async () => {
+    const riverside = await location(harborId, 'Riverside')
+    const marcus = await harbor.gmRiverside()
+    const sam = await harbor.sam()
+    const tess = await harbor.gmDowntown()
+    const lumenOwner = await lumen.owner()
+
+    // The task alone is enough: no category or priority needs choosing.
+    const offered = await asTenant(harborId, (tx) => handoffAssignees(tx, marcus, riverside))
+    expect(offered.map((p) => p.id)).toContain(sam.employmentId)
+    expect(offered.map((p) => p.id)).not.toContain(tess.employmentId)
+
+    const title = unique('Restock the host stand')
+    const handoffId = await asTenant(harborId, (tx) =>
+      createHandoff(tx, marcus, {
+        locationId: riverside,
+        shiftId: null,
+        title,
+        assignedEmploymentId: sam.employmentId,
+      }),
+    )
+    const [row] = await query<{ category: string; priority: string; assigned: string }>(
+      'select category, priority, assigned_employment_id as assigned from handoffs where id = $1',
+      [handoffId],
+    )
+    expect(row).toEqual({ category: 'follow_up', priority: 'normal', assigned: sam.employmentId })
+
+    // Someone at another location, or in another organization, is refused alike.
+    for (const outsider of [tess.employmentId, lumenOwner.employmentId, 'not-an-id']) {
+      await expect(
+        asTenant(harborId, (tx) =>
+          createHandoff(tx, marcus, {
+            locationId: riverside,
+            shiftId: null,
+            title: unique('Nope'),
+            assignedEmploymentId: outsider,
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    }
+
+    const audit = await query<{ metadata: { assignedEmploymentId?: string } }>(
+      `select metadata from audit_events where subject_id = $1 and action = 'handoff.created'`,
+      [handoffId],
+    )
+    expect(audit[0]!.metadata.assignedEmploymentId).toBe(sam.employmentId)
+    const [notice] = await query<{ n: string }>(
+      `select count(*) as n from notifications where subject_id = $1 and employment_id = $2`,
+      [handoffId, sam.employmentId],
+    )
+    expect(Number(notice!.n)).toBe(1)
+
+    const before = await asTenant(harborId, (tx) => handoffsForMe(tx, sam))
+    expect(before.map((h) => h.id)).toContain(handoffId)
+    expect(before.find((h) => h.id === handoffId)!.assignedToMe).toBe(true)
+    // Nobody else sees it as theirs.
+    const forMarcus = await asTenant(harborId, (tx) => handoffsForMe(tx, marcus))
+    expect(forMarcus.map((h) => h.id)).not.toContain(handoffId)
+
+    await asTenant(harborId, (tx) => acknowledgeHandoff(tx, sam, handoffId))
+    const after = await asTenant(harborId, (tx) => handoffsForMe(tx, sam))
+    expect(after.map((h) => h.id)).not.toContain(handoffId)
+  })
+})
+
+describe('shifts on an employee profile', () => {
+  it('lists published shifts only, and only where the viewer may see the schedule', async () => {
+    const riverside = await location(harborId, 'Riverside')
+    const marcus = await harbor.gmRiverside()
+    const sam = await harbor.sam()
+    const tess = await harbor.gmDowntown()
+    const dana = await harbor.owner()
+
+    const published = await makeShift(
+      harborId,
+      marcus,
+      riverside,
+      dateIn(41, 2),
+      '09:00',
+      '15:00',
+      sam.employmentId,
+    )
+    await publish(harborId, marcus, published.scheduleId)
+    // A draft in a later week, never published.
+    const draft = await makeShift(
+      harborId,
+      marcus,
+      riverside,
+      dateIn(42, 3),
+      '09:00',
+      '15:00',
+      sam.employmentId,
+    )
+
+    const forDana = await asTenant(harborId, (tx) =>
+      upcomingShiftsForPerson(tx, dana, sam.employmentId, { limit: 100 }),
+    )
+    const ids = forDana!.map((s) => s.id)
+    expect(ids).toContain(published.shiftId)
+    expect(ids).not.toContain(draft.shiftId)
+
+    // Downtown's manager may see schedules, but not Riverside's.
+    const forTess = await asTenant(harborId, (tx) =>
+      upcomingShiftsForPerson(tx, tess, sam.employmentId, { limit: 100 }),
+    )
+    expect(forTess!.map((s) => s.id)).not.toContain(published.shiftId)
+
+    // Someone who can see no schedule gets no section at all.
+    const forSam = await asTenant(harborId, (tx) =>
+      upcomingShiftsForPerson(tx, sam, sam.employmentId),
+    )
+    expect(forSam).toBeNull()
   })
 })
 

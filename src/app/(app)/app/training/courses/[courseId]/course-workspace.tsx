@@ -259,7 +259,7 @@ export function CourseWorkspace(props: Props) {
                   </>
                 ) : draft ? (
                   <>
-                    <div className="rounded-control border border-violet-200 bg-violet-50 px-4 py-3">
+                    <div className="rounded-control border border-teal-200 bg-teal-50 px-4 py-3">
                       <p className="text-ink text-sm font-medium">
                         Draft of version {draft.versionNumber} is not live
                       </p>
@@ -421,7 +421,7 @@ export function CourseWorkspace(props: Props) {
                       Version {entry.versionNumber}
                     </span>
                     {entry.status === 'draft' ? (
-                      <Badge tone="violet">Draft</Badge>
+                      <Badge tone="accent">Draft</Badge>
                     ) : entry.isCurrent ? (
                       <Badge tone="success">Current</Badge>
                     ) : (

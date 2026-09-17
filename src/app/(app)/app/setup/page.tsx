@@ -135,7 +135,7 @@ export default async function SetupPage() {
         <ProgressBar
           value={percent}
           label={`${doneCount} of ${steps.length} steps complete`}
-          tone={percent === 100 ? 'success' : 'violet'}
+          tone={percent === 100 ? 'success' : 'accent'}
         />
         {percent === 100 ? (
           <p className="text-success mt-3 text-sm">

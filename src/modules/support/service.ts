@@ -46,10 +46,10 @@ export const SEVERITY_LABELS: Record<SupportSeverity, { label: string; hint: str
 
 export const STATUS_LABELS: Record<
   SupportStatus,
-  { label: string; tone: 'info' | 'violet' | 'warning' | 'success' }
+  { label: string; tone: 'info' | 'accent' | 'warning' | 'success' }
 > = {
   open: { label: 'Waiting for EverCalm', tone: 'info' },
-  in_progress: { label: 'EverCalm is working on it', tone: 'violet' },
+  in_progress: { label: 'EverCalm is working on it', tone: 'accent' },
   waiting_on_customer: { label: 'Waiting for you', tone: 'warning' },
   resolved: { label: 'Resolved', tone: 'success' },
 }

@@ -11,8 +11,13 @@ test('an employee lands on their own surface with their own location', async ({ 
 
   await expect(page).toHaveURL(/\/my$/)
   await expect(page.getByRole('heading', { name: /Hello, Sam/ })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Where you work' })).toBeVisible()
-  await expect(page.getByText('Riverside').first()).toBeVisible()
+  // Home is a launcher: one card per place to go, and no "Where you work" list.
+  await expect(page.getByRole('heading', { name: 'Where you work' })).toHaveCount(0)
+  const tools = page.getByRole('navigation', { name: 'Your tools' })
+  for (const name of ['Your schedule', 'Your training', 'Messages']) {
+    await expect(tools.getByRole('heading', { name })).toBeVisible()
+  }
+  await expect(tools.getByRole('heading', { name: /^(On now|My shift)$/ })).toBeVisible()
   await expect(page.getByText('Downtown')).toHaveCount(0)
 
   // No administration link for someone with no administrative capability.

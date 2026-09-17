@@ -75,7 +75,7 @@ export default async function SupportCasePage({
               aria-label={`Update from ${m.authorLabel}`}
               className={
                 m.authorType === 'evercalm'
-                  ? 'rounded-card border border-violet-200 bg-violet-50/50 p-4'
+                  ? 'rounded-card border border-teal-200 bg-teal-50/50 p-4'
                   : 'rounded-card border-line border bg-white p-4'
               }
             >

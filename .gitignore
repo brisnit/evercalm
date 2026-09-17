@@ -24,3 +24,6 @@ tsconfig.tsbuildinfo
 # every capture. Regenerate with:
 #   CAPTURE_SCREENSHOTS=1 npx playwright test -g "@screenshots"
 docs/screenshots/
+
+# Isolated browser-test dev server (E2E_PORT)
+.next-e2e/

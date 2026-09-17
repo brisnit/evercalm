@@ -22,6 +22,99 @@ async function expectFitsAndAccessible(page: Page, path: string) {
   expect(results.violations.map((v) => `${path} -> ${v.id}: ${v.help}`)).toEqual([])
 }
 
+test('an owner lands on their tools, with what needs attention one click away', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page)
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app')
+  await expect(page.getByRole('heading', { name: 'Good to see you, Dana', level: 1 })).toBeVisible()
+  for (const tool of [
+    'people',
+    'onboarding',
+    'schedule',
+    'training',
+    'operations',
+    'communication',
+    'settings',
+  ]) {
+    await expect(page.getByTestId(`tool-${tool}`)).toBeVisible()
+  }
+  // No wall of to-dos on Home: the list itself is on its own page.
+  await expect(page.getByRole('heading', { name: 'Decisions waiting' })).toHaveCount(0)
+  await expectFitsAndAccessible(page, '/app')
+
+  // Reports are out of the navigation, and still open for someone allowed.
+  await expect(page.getByRole('link', { name: 'Reports', exact: true })).toHaveCount(0)
+  expect((await page.goto('/app/reports'))?.status()).toBe(200)
+
+  await page.goto('/app')
+  await page.getByTestId('attention-summary').click()
+  await expect(page).toHaveURL(/\/app\/attention$/)
+  await expect(page.getByRole('heading', { name: 'Needs attention', level: 1 })).toBeVisible()
+  await expectFitsAndAccessible(page, '/app/attention')
+
+  await page.goto('/app/people')
+  await expect(page.getByTestId('add-new-hire')).toBeVisible()
+  await page.goto('/app/onboarding')
+  await page.getByTestId('add-new-hire').click()
+  await expect(page).toHaveURL(/\/app\/people\/invite$/)
+  expectNoConsoleErrors(errors)
+})
+
+test('a location manager sees only the tools they can open', async ({ page }) => {
+  await signIn(page, PEOPLE.salonGmPearl.email)
+  await page.goto('/app')
+  const nav = page.getByRole('navigation', { name: 'Administration' })
+  const navLabels = (await nav.locator('a').allTextContents()).map((t) => t.trim())
+  const tools = {
+    people: 'People',
+    onboarding: 'Onboarding',
+    schedule: 'Schedule',
+    training: 'Training',
+    operations: 'Operations',
+    communication: 'Communication',
+    settings: 'Settings',
+  }
+  // A card appears exactly when its section is in this person's navigation.
+  for (const [key, label] of Object.entries(tools)) {
+    await expect(page.getByTestId(`tool-${key}`), label).toHaveCount(
+      navLabels.includes(label) ? 1 : 0,
+    )
+  }
+})
+
+test('signing out of administration, then into another account', async ({ page }) => {
+  await signIn(page, PEOPLE.harborOwner.email)
+  await page.goto('/app')
+  await page.getByRole('banner').getByRole('button', { name: 'Sign out' }).click()
+  await page.waitForURL(/\/signin$/)
+  for (const path of ['/app', '/app/people']) {
+    await page.goto(path)
+    await expect(page, path).toHaveURL(/\/signin$/)
+  }
+  await signIn(page, PEOPLE.harborEmployee.email)
+  await page.goto('/my')
+  await expect(page.getByRole('heading', { name: 'Hello, Sam' })).toBeVisible()
+})
+
+test('too many sign-in attempts are not reported as a wrong password', async ({ page }) => {
+  await page.route('**/api/auth/sign-in/email', (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Too many requests. Please try again later.' }),
+    }),
+  )
+  await page.goto('/signin')
+  await page.waitForLoadState('networkidle')
+  await page.getByLabel('Email').fill(PEOPLE.harborOwner.email)
+  await page.getByLabel('Password').fill('not-the-point-here')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByTestId('signin-error')).toContainText('Too many sign-in attempts')
+  await expect(page.getByTestId('signin-error')).not.toContainText('did not match')
+})
+
 test('an owner reads reports, follows a figure, and downloads a safe CSV', async ({ page }) => {
   const errors = trackConsoleErrors(page)
   await signIn(page, PEOPLE.harborOwner.email)

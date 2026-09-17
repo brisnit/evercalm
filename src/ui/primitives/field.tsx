@@ -33,7 +33,7 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
       <label htmlFor={id} className="text-ink text-sm font-medium">
         {label}
         {required ? (
-          <span className="text-pink-700" aria-hidden="true">
+          <span className="text-coral-700" aria-hidden="true">
             {' '}
             *
           </span>
@@ -71,7 +71,7 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
 export const CONTROL = cn(
   'rounded-control border-field w-full border bg-white',
   'text-ink placeholder:text-faint text-base sm:text-sm',
-  'hover:border-ink/60 focus:border-violet-600',
+  'hover:border-ink/60 focus:border-teal-600',
   'aria-[invalid=true]:border-danger',
   'disabled:bg-sunk disabled:text-muted disabled:border-line-strong disabled:cursor-not-allowed',
 )

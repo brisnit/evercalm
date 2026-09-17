@@ -35,7 +35,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-e2e/types/**/*.ts",
+    ".next-e2e/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "playwright-report", "test-results"]
+  "exclude": ["node_modules", ".next", ".next-e2e", "playwright-report", "test-results"]
 }

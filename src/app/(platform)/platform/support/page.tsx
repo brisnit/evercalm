@@ -30,7 +30,7 @@ export default async function PlatformSupportPage({
       className={cn(
         'inline-flex min-h-11 items-center border-b-2 px-3 text-sm',
         active
-          ? 'text-ink border-violet-600 font-semibold'
+          ? 'text-ink border-teal-600 font-semibold'
           : 'text-muted hover:text-ink border-transparent',
       )}
     >

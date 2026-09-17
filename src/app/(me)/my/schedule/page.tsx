@@ -80,7 +80,7 @@ export default async function MySchedulePage({
                     {shifts.map((shift) => (
                       <li key={shift.id}>
                         <Link href={`/my/schedule/shifts/${shift.id}`} className="block">
-                          <Card className="p-4 hover:border-violet-300">
+                          <Card className="p-4 hover:border-teal-300">
                             <span className="text-ink block text-base font-semibold tabular-nums">
                               {shift.time}
                               {shift.endsNextDay ? ' (next day)' : ''}
@@ -99,7 +99,7 @@ export default async function MySchedulePage({
                             ) : null}
                             {shift.swap ? (
                               <span className="mt-2 block">
-                                <Badge tone="violet">
+                                <Badge tone="accent">
                                   {shift.swap.status === 'pending_manager'
                                     ? 'Swap waiting for a manager'
                                     : 'Swap requested'}

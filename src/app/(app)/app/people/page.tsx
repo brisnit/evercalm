@@ -10,6 +10,7 @@ import { can, canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
 import { Avatar, Badge, ButtonLink, Card, EmptyState, PageHeader, TextLink } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
+import { ToolIcon } from '@/ui/patterns/tool-icon'
 import { PeopleFilters } from './filters'
 
 export const metadata: Metadata = { title: 'People' }
@@ -84,7 +85,10 @@ export default async function PeoplePage({
               <ButtonLink href="/app/people/import" variant="secondary">
                 Import
               </ButtonLink>
-              <ButtonLink href="/app/people/invite">Invite someone</ButtonLink>
+              <ButtonLink href="/app/people/invite" size="lg" data-testid="add-new-hire">
+                <ToolIcon name="plus" className="size-5" />
+                Add new hire
+              </ButtonLink>
             </div>
           ) : undefined
         }

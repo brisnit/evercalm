@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { assertE2eDatabase, E2E_DATABASE_NAME } from '@/server/db/e2e-guard'
 
 /**
  * Reset the database before every browser run.
@@ -15,8 +16,13 @@ import { execFileSync } from 'node:child_process'
  *
  * Set E2E_SKIP_REFRESH=true to iterate on a spec against state you have set up
  * by hand.
+ *
+ * Nothing runs until the guard has confirmed the database is the browser
+ * suite's own: this suite once reseeded a developer's database because the
+ * connection string came from the shell and nothing checked it.
  */
 export default async function globalSetup(): Promise<void> {
+  await assertBrowserTestDatabase()
   await assertServerWillNotThrottle()
 
   if (process.env.E2E_SKIP_REFRESH === 'true') {
@@ -27,6 +33,26 @@ export default async function globalSetup(): Promise<void> {
   // Inherited stdio so a seeding failure is visible rather than swallowed into
   // a wall of confusing assertion errors.
   execFileSync('npm', ['run', '--silent', 'db:refresh'], { stdio: 'inherit' })
+}
+
+/**
+ * Refuse any database but the browser suite's own, by name and by marker,
+ * whether or not this run intends to reseed: the suite mutates state on every
+ * test, not only in its setup.
+ */
+async function assertBrowserTestDatabase(): Promise<void> {
+  for (const [variable, url] of [
+    ['DATABASE_URL', process.env.DATABASE_URL],
+    ['MIGRATION_DATABASE_URL', process.env.MIGRATION_DATABASE_URL],
+  ] as const) {
+    try {
+      await assertE2eDatabase(`run the browser suite with ${variable}`, url)
+    } catch (error) {
+      console.error(`\n[e2e] ${(error as Error).message}\n`)
+      throw error
+    }
+  }
+  console.log(`[e2e] Database checked: ${E2E_DATABASE_NAME}, marked for browser tests.`)
 }
 
 /**
@@ -41,7 +67,7 @@ export default async function globalSetup(): Promise<void> {
  * request and saves the hunt.
  */
 async function assertServerWillNotThrottle(): Promise<void> {
-  const url = 'http://localhost:3000/api/health'
+  const url = `http://localhost:${process.env.E2E_PORT ?? 3000}/api/health`
   let body: { auth?: { rateLimitsRelaxed?: boolean } }
   try {
     const response = await fetch(url)

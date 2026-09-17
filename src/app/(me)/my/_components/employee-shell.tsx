@@ -83,7 +83,7 @@ export function ScheduleTabs({ current }: { current: 'schedule' | 'time-off' | '
               aria-current={current === tab.key ? 'page' : undefined}
               className={
                 current === tab.key
-                  ? 'text-ink inline-flex min-h-11 items-center border-b-2 border-violet-600 px-3 text-sm font-semibold'
+                  ? 'text-ink inline-flex min-h-11 items-center border-b-2 border-teal-600 px-3 text-sm font-semibold'
                   : 'text-muted hover:text-ink inline-flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm'
               }
             >

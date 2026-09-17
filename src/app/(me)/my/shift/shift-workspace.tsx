@@ -14,6 +14,7 @@ import type { HandoffView } from '@/modules/operations/handoffs'
 import type { ItemState, Progress, ShiftPhase } from '@/modules/operations/rules'
 import { cn } from '@/lib/cn'
 import { HandoffCard } from '@/ui/patterns/handoff-card'
+import { HandoffTaskFields } from '@/ui/patterns/handoff-task-fields'
 import { MiniForm } from '@/ui/patterns/mini-form'
 import { NoticeProvider } from '@/ui/patterns/notice-provider'
 import {
@@ -23,7 +24,6 @@ import {
   Field,
   Input,
   ProgressBar,
-  Select,
   TextLink,
   Textarea,
 } from '@/ui/primitives'
@@ -40,7 +40,7 @@ export interface TaskCardData {
   shared: boolean
   state: ItemState
   stateLabel: string
-  stateTone: 'neutral' | 'violet' | 'success' | 'warning' | 'danger' | 'info'
+  stateTone: 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
   dueLabel: string
   reason: string
   returnedNote: string
@@ -71,7 +71,8 @@ interface Props {
   teamTasks: TaskCardData[]
   handedOver: { id: string; title: string; to: string }[]
   handoffs: HandoffView[]
-  categories: { value: string; label: string }[]
+  /** People at this location a handoff can be assigned to. */
+  assignees: { id: string; name: string }[]
   nextShiftId: string | null
   timingHint: string
 }
@@ -113,7 +114,7 @@ export function ShiftWorkspace(props: Props) {
         <p
           className={cn(
             'mt-1 text-sm font-medium',
-            shift.phase === 'during' ? 'text-violet-700' : 'text-muted',
+            shift.phase === 'during' ? 'text-teal-700' : 'text-muted',
           )}
         >
           {shift.phaseLine}
@@ -123,7 +124,7 @@ export function ShiftWorkspace(props: Props) {
       <Card className="mt-5 p-4">
         <ProgressBar
           value={progress.percent}
-          tone={finished ? 'success' : 'violet'}
+          tone={finished ? 'success' : 'accent'}
           label={`${progress.done + progress.skipped} of ${progress.total} finished`}
         />
         <ul className="mt-3 flex flex-wrap gap-2" aria-label="Where things stand">
@@ -138,7 +139,7 @@ export function ShiftWorkspace(props: Props) {
           ) : null}
           {progress.waiting > 0 ? (
             <li>
-              <Badge tone="violet">{progress.waiting} waiting for a manager</Badge>
+              <Badge tone="accent">{progress.waiting} waiting for a manager</Badge>
             </li>
           ) : null}
           <li>
@@ -176,7 +177,7 @@ export function ShiftWorkspace(props: Props) {
             <ol className="mt-3 flex flex-col gap-3">
               {section.items.map((task) => (
                 <li key={task.id}>
-                  <TaskCard task={task} categories={props.categories} lead={task.id === leadId} />
+                  <TaskCard task={task} assignees={props.assignees} lead={task.id === leadId} />
                 </li>
               ))}
             </ol>
@@ -200,7 +201,7 @@ export function ShiftWorkspace(props: Props) {
             <ol className="flex flex-col gap-3 pt-2">
               {props.done.map((task) => (
                 <li key={task.id}>
-                  <TaskCard task={task} categories={props.categories} />
+                  <TaskCard task={task} assignees={props.assignees} />
                 </li>
               ))}
             </ol>
@@ -218,7 +219,7 @@ export function ShiftWorkspace(props: Props) {
             <ol className="flex flex-col gap-3 pt-2">
               {props.teamTasks.map((task) => (
                 <li key={task.id}>
-                  <TaskCard task={task} categories={props.categories} />
+                  <TaskCard task={task} assignees={props.assignees} />
                 </li>
               ))}
             </ol>
@@ -247,7 +248,7 @@ export function ShiftWorkspace(props: Props) {
         </h2>
         <Disclosure label="Leave a handoff for the next shift">
           <p className="text-muted pt-1 text-sm">
-            For anything the next shift or your manager should know.
+            A task for the next shift, or for one person who works here.
           </p>
           <MiniForm
             action={createHandoffAction}
@@ -257,9 +258,9 @@ export function ShiftWorkspace(props: Props) {
             className="mt-3"
           >
             {(state) => (
-              <HandoffFields
+              <HandoffTaskFields
                 prefix="new"
-                categories={props.categories}
+                assignees={props.assignees}
                 errors={state.fieldErrors}
               />
             )}
@@ -290,71 +291,13 @@ export function ShiftWorkspace(props: Props) {
   )
 }
 
-function HandoffFields({
-  prefix,
-  categories,
-  errors,
-}: {
-  prefix: string
-  categories: { value: string; label: string }[]
-  errors?: Record<string, string[]>
-}) {
-  return (
-    <>
-      <Field
-        id={`${prefix}-category`}
-        label="What is it about"
-        required
-        error={errors?.category?.[0]}
-      >
-        {(p) => (
-          <Select {...p} name="category" defaultValue="" required>
-            <option value="" disabled>
-              Choose one
-            </option>
-            {categories.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      <Field id={`${prefix}-title`} label="In a few words" required error={errors?.title?.[0]}>
-        {(p) => (
-          <Input
-            {...p}
-            name="title"
-            maxLength={120}
-            required
-            autoComplete="off"
-            className="text-base sm:text-sm"
-          />
-        )}
-      </Field>
-      <Field id={`${prefix}-body`} label="Details" hint="Optional.">
-        {(p) => <Textarea {...p} name="body" rows={3} maxLength={1500} />}
-      </Field>
-      <label className="text-ink flex min-h-11 items-center gap-3 text-sm">
-        <input
-          type="checkbox"
-          name="priority"
-          value="urgent"
-          className="size-5 accent-violet-600"
-        />
-        Needs attention at the start of the next shift
-      </label>
-    </>
-  )
-}
-
 function TaskCard({
   task,
-  categories,
+  assignees,
   lead = false,
 }: {
   task: TaskCardData
-  categories: { value: string; label: string }[]
+  assignees: { id: string; name: string }[]
   /** The single task whose button is the page's primary action. */
   lead?: boolean
 }) {
@@ -442,9 +385,9 @@ function TaskCard({
                 fullWidth
               >
                 {(state) => (
-                  <HandoffFields
+                  <HandoffTaskFields
                     prefix={`task-${task.id}`}
-                    categories={categories}
+                    assignees={assignees}
                     errors={state.fieldErrors}
                   />
                 )}

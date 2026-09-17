@@ -493,10 +493,22 @@ export async function getProgressForEmployment(
     )
     .orderBy(asc(onboardingStepProgress.position))
 
-  const people = await tx
-    .select({ id: employments.id, displayName: employments.displayName })
-    .from(employments)
-    .where(eq(employments.organizationId, actor.organizationId))
+  // Only the people named on these steps, not everyone in the organization.
+  const namedIds = [
+    ...new Set(rows.flatMap((r) => [r.completedByEmploymentId, r.verifiedByEmploymentId])),
+  ].filter((id): id is string => !!id)
+  const people =
+    namedIds.length === 0
+      ? []
+      : await tx
+          .select({ id: employments.id, displayName: employments.displayName })
+          .from(employments)
+          .where(
+            and(
+              eq(employments.organizationId, actor.organizationId),
+              inArray(employments.id, namedIds),
+            ),
+          )
   const nameOf = new Map(people.map((p) => [p.id, p.displayName]))
 
   const mayVerify = can(actor, 'onboarding.verify', { locationId: subjectLocationId })

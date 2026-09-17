@@ -9,7 +9,7 @@ import { Card, CardHeader, Field, Input } from '@/ui/primitives'
 import { ActionForm } from '@/ui/patterns/action-form'
 
 const SELECT_CLASS =
-  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-violet-600'
+  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-teal-600'
 
 export function StructureForms({
   departments,

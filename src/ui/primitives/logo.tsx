@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { cn } from '@/lib/cn'
-import { WORDMARK, WORDMARK_NEEDS_LIGHT_BACKGROUND } from '../brand'
+import { WORDMARK, WORDMARK_NEEDS_LIGHT_BACKGROUND, WORDMARK_ON_DARK } from '../brand'
 
 /**
  * EverCalm wordmark.
@@ -26,6 +26,7 @@ export function Logo({
   eager?: boolean
 }) {
   const needsChip = onDark && WORDMARK_NEEDS_LIGHT_BACKGROUND
+  const asset = onDark && !WORDMARK_NEEDS_LIGHT_BACKGROUND ? WORDMARK_ON_DARK : WORDMARK
 
   return (
     <span
@@ -36,7 +37,7 @@ export function Logo({
       )}
     >
       <Image
-        src={WORDMARK.src}
+        src={asset.src}
         alt="EverCalm"
         width={WORDMARK.intrinsicWidth}
         height={WORDMARK.intrinsicHeight}

@@ -50,6 +50,39 @@ npm run db:migrate && npm run db:seed
 Integration tests need none of this — they boot their own throwaway instance
 on a free port and tear it down afterwards.
 
+### The browser suite has its own database, and cannot reach yours
+
+The browser suite truncates and reseeds on every run. It therefore runs against
+`evercalm_e2e`, a second database in the same local cluster, on its own dev
+server (port 3100) and its own build directory (`.next-e2e`), so your own
+server on port 3000 and your own data are untouched.
+
+```bash
+npm run db:e2e:setup      # once: create, migrate and mark evercalm_e2e
+npm run test:e2e          # the suite, against evercalm_e2e on port 3100
+npm run test:e2e -- training.spec --project=desktop
+```
+
+Two independent checks stand in front of anything destructive
+(`src/server/db/e2e-guard.ts`):
+
+1. **The name.** A connection string naming anything but `evercalm_e2e` is
+   refused before a connection is opened.
+2. **The marker.** The database must carry `evercalm:e2e`, set with
+   `COMMENT ON DATABASE`. A database marked `evercalm:development`,
+   `evercalm:stakeholder-demo` or `evercalm:production` is refused, and the
+   message says which it found.
+
+Both `npm run test:e2e` (in `globalSetup`, whether or not it reseeds) and
+`npm run db:refresh` require both. `db:refresh` is therefore an
+`evercalm_e2e`-only command: to start your own development data over, use
+`npm run db:seed`, or `npm run db:local:reset` followed by migrate and seed.
+
+This exists because a browser run once reseeded a developer's own database:
+the connection string was inherited from the shell, and nothing checked it.
+`tests/unit/e2e-guard.test.ts` proves the refusals, including `evercalm_dev`,
+the stakeholder demo and production.
+
 ---
 
 ## Neon (shared development, preview, and later production)

@@ -500,7 +500,7 @@ function TaskSummary({ task }: { task: VersionView['sections'][number]['tasks'][
         <Badge tone={task.required ? 'neutral' : 'info'}>
           {task.required ? 'Required' : 'Optional'}
         </Badge>
-        {task.requiresVerification ? <Badge tone="violet">Manager verifies</Badge> : null}
+        {task.requiresVerification ? <Badge tone="accent">Manager verifies</Badge> : null}
         {task.shared ? <Badge tone="neutral">Shared</Badge> : null}
       </div>
       {task.instructions ? (
@@ -617,7 +617,7 @@ function TaskFields({
             type="checkbox"
             name="required"
             defaultChecked={task?.required ?? true}
-            className="size-5 accent-violet-600"
+            className="size-5 accent-teal-600"
           />
           Required
         </label>
@@ -626,7 +626,7 @@ function TaskFields({
             type="checkbox"
             name="requiresVerification"
             defaultChecked={task?.requiresVerification ?? false}
-            className="size-5 accent-violet-600"
+            className="size-5 accent-teal-600"
           />
           A manager verifies it
         </label>
@@ -635,7 +635,7 @@ function TaskFields({
             type="checkbox"
             name="shared"
             defaultChecked={task?.shared ?? false}
-            className="size-5 accent-violet-600"
+            className="size-5 accent-teal-600"
           />
           Shared: anyone on shift at the location that day can do it
         </label>
@@ -678,7 +678,7 @@ function TargetsForm({ draft, options }: { draft: VersionView; options: Template
                   name="locationIds"
                   value={l.id}
                   defaultChecked={draft.targets.locationIds.includes(l.id)}
-                  className="size-5 accent-violet-600"
+                  className="size-5 accent-teal-600"
                 />
                 {l.name}
               </label>
@@ -695,7 +695,7 @@ function TargetsForm({ draft, options }: { draft: VersionView; options: Template
                     name="jobRoleIds"
                     value={r.id}
                     defaultChecked={draft.targets.jobRoleIds.includes(r.id)}
-                    className="size-5 accent-violet-600"
+                    className="size-5 accent-teal-600"
                   />
                   {r.name}
                 </label>
@@ -721,7 +721,7 @@ function TargetsForm({ draft, options }: { draft: VersionView; options: Template
                         name="stationIds"
                         value={s.id}
                         defaultChecked={draft.targets.stationIds.includes(s.id)}
-                        className="size-5 accent-violet-600"
+                        className="size-5 accent-teal-600"
                       />
                       {s.name}
                     </label>

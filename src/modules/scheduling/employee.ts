@@ -2,6 +2,7 @@ import { and, asc, eq, gt, inArray, isNull, lt, ne, or } from 'drizzle-orm'
 import type { Tx } from '@/server/db'
 import { employmentLocations, employments, jobRoles, stations } from '@/server/db/schema'
 import type { Actor } from '@/server/authz'
+import { accessibleLocationIds } from '@/server/authz/can'
 import { NotFoundError } from '@/lib/errors'
 import { loadLocations, type LocationRef } from './access'
 import { detectConflicts, toSecondPerson } from './conflicts'
@@ -584,4 +585,44 @@ export async function nextShift(tx: Tx, actor: Actor, now = new Date()): Promise
   )
   if (!row) return null
   return { ...toMyShift(row, locationsById.get(row.locationId)!), swap: null }
+}
+
+export interface PersonShift extends Omit<MyShift, 'swap'> {
+  onNow: boolean
+}
+
+/**
+ * Someone's shifts that are on now or still to come, for their profile.
+ *
+ * PUBLISHED copies only: a draft is not a shift anyone has been told about.
+ * Only shifts at locations where the viewer may see the whole schedule are
+ * returned; a viewer who can see no schedule anywhere gets null, so the
+ * profile leaves the section out rather than showing an empty one.
+ */
+export async function upcomingShiftsForPerson(
+  tx: Tx,
+  actor: Actor,
+  employmentId: string,
+  { limit = 6, now = new Date() }: { limit?: number; now?: Date } = {},
+): Promise<PersonShift[] | null> {
+  const scope = accessibleLocationIds(actor, 'schedule.view_all')
+  if (scope !== null && scope.length === 0) return null
+  const rows = await publishedShiftRows(
+    tx,
+    actor.organizationId,
+    and(
+      eq(shifts.publishedAssigneeEmploymentId, employmentId),
+      gt(shifts.publishedEndsAt, now),
+      scope === null ? undefined : inArray(shifts.locationId, scope),
+    ),
+  )
+  const kept = rows.slice(0, limit)
+  const locationsById = await loadLocations(tx, actor.organizationId, [
+    ...new Set(kept.map((r) => r.locationId)),
+  ])
+  return kept.flatMap((row) => {
+    const location = locationsById.get(row.locationId)
+    if (!location || !row.startsAt || !row.endsAt) return []
+    return [{ ...toMyShift(row, location), onNow: row.startsAt <= now }]
+  })
 }

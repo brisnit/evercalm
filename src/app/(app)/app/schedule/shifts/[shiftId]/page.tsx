@@ -63,7 +63,7 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
           <Badge tone="warning">Not yet published</Badge>
         )}
         {shift.unpublishedChange ? <Badge tone="info">Changed since publishing</Badge> : null}
-        {shift.isOpen ? <Badge tone="violet">Open shift</Badge> : null}
+        {shift.isOpen ? <Badge tone="accent">Open shift</Badge> : null}
         {shift.conflicts.some((c) => c.severity === 'block') ? (
           <Badge tone="danger">Conflict</Badge>
         ) : null}

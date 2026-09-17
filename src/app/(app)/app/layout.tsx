@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="text-muted mr-1 hidden text-sm md:inline">{actor.displayName}</span>
             <Link
               href="/my"
-              className="rounded-control text-muted hover:text-ink inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-violet-50"
+              className="rounded-control text-muted hover:text-ink inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-teal-50"
             >
               My work
             </Link>

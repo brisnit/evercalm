@@ -84,7 +84,7 @@ function Console() {
             title="Allergen Handling refresher"
             detail="7 of 9 complete · due Sunday"
             badge="In progress"
-            badgeClass="bg-pink-50 text-pink-700"
+            badgeClass="bg-coral-50 text-coral-700"
           />
           <Row
             title="Jordan T. · Day 3 onboarding"

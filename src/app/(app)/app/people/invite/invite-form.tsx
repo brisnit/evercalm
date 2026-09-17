@@ -7,7 +7,7 @@ import { Button, Field, Input } from '@/ui/primitives'
 const INITIAL: InviteActionState = { status: 'idle' }
 
 const SELECT_CLASS =
-  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-violet-600'
+  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-teal-600'
 
 const ROLES = [
   { key: 'employee', label: 'Employee', hint: 'Their own schedule, training, and tasks.' },

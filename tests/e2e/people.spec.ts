@@ -190,6 +190,9 @@ test.describe('professional credentials', () => {
   test('surface expiry on the salon dashboard', async ({ page }) => {
     await signIn(page, PEOPLE.salonOwner.email)
     await page.goto('/app')
+    // Home keeps the count; the detail is one click away.
+    await page.getByTestId('attention-summary').click()
+    await expect(page).toHaveURL(/\/app\/attention$/)
 
     await expect(page.getByText('Credentials to chase')).toBeVisible()
     // Priyanka's licence is seeded as already expired.

@@ -438,6 +438,7 @@ export async function completeHandoffTaskAction(
         priority: readString(formData, 'priority'),
         title: readString(formData, 'title'),
         body: readString(formData, 'body'),
+        assignedEmploymentId: readString(formData, 'assignedEmploymentId') || null,
       }).then(() => undefined),
     'Handoff saved. The next shift will see it.',
     'The handoff could not be saved.',
@@ -515,8 +516,9 @@ export async function createHandoffAction(
         priority: readString(formData, 'priority'),
         title: readString(formData, 'title'),
         body: readString(formData, 'body'),
+        assignedEmploymentId: readString(formData, 'assignedEmploymentId') || null,
       }).then(() => undefined),
-    'Handoff left for the next shift.',
+    'Handoff saved.',
     'The handoff could not be saved.',
   )
 }

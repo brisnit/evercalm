@@ -106,7 +106,7 @@ export function PeopleWorkspace({
                     onClick={() => setFilter(f.key)}
                     className={
                       filter === f.key
-                        ? 'inline-flex min-h-9 items-center rounded-full bg-violet-600 px-3 text-sm font-medium text-white'
+                        ? 'inline-flex min-h-9 items-center rounded-full bg-teal-600 px-3 text-sm font-medium text-white'
                         : 'border-line-strong text-ink hover:bg-sunk inline-flex min-h-9 items-center rounded-full border bg-white px-3 text-sm'
                     }
                   >
@@ -117,7 +117,7 @@ export function PeopleWorkspace({
             </div>
 
             {movable > 0 && currentVersion !== null ? (
-              <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b bg-violet-50 px-5 py-3">
+              <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b bg-teal-50 px-5 py-3">
                 <p className="text-ink min-w-0 flex-1 basis-60 text-sm">
                   {movable} {movable === 1 ? 'person has' : 'people have'} not started and{' '}
                   {movable === 1 ? 'is' : 'are'} on an older version. Anyone who has started stays
@@ -168,7 +168,7 @@ export function PeopleWorkspace({
                             ? 'success'
                             : row.statusKey === 'overdue'
                               ? 'danger'
-                              : 'violet'
+                              : 'accent'
                         }
                       />
                       <p className="text-muted text-xs">
@@ -318,7 +318,7 @@ export function PeopleWorkspace({
                                   name="employmentIds"
                                   value={p.id}
                                   disabled={p.open}
-                                  className="mt-0.5 size-4 accent-violet-600"
+                                  className="mt-0.5 size-4 accent-teal-600"
                                 />
                                 <span className="min-w-0">
                                   <span className={p.open ? 'text-muted block' : 'text-ink block'}>
@@ -378,7 +378,7 @@ export function PeopleWorkspace({
                               name="required"
                               value="required"
                               defaultChecked
-                              className="size-4 accent-violet-600"
+                              className="size-4 accent-teal-600"
                             />
                             Required
                           </label>
@@ -387,7 +387,7 @@ export function PeopleWorkspace({
                               type="radio"
                               name="required"
                               value="optional"
-                              className="size-4 accent-violet-600"
+                              className="size-4 accent-teal-600"
                             />
                             Optional
                           </label>

@@ -199,7 +199,7 @@ export function AvailabilityPanel({
                   All day
                 </label>
                 {!exceptionAllDay ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
                     <Field id="ex-start" label="From" required>
                       {(p) => (
                         <Input {...p} type="time" name="startTime" required defaultValue="09:00" />

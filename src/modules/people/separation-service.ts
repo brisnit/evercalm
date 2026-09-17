@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { employments, roleGrants, separations } from '@/server/db/schema'
 import type { Tx } from '@/server/db'
 import { newId } from '@/lib/ids'
@@ -362,10 +362,16 @@ export async function listSeparations(tx: Tx, actor: Actor): Promise<SeparationR
 
   // Resolve the two named humans separately: joining the same table three
   // times obscures more than it saves.
+  if (rows.length === 0) return []
+  const namedIds = [
+    ...new Set(rows.flatMap((r) => [r.requestedByEmploymentId, r.approvedByEmploymentId])),
+  ].filter((id): id is string => !!id)
   const people = await tx
     .select({ id: employments.id, displayName: employments.displayName })
     .from(employments)
-    .where(eq(employments.organizationId, actor.organizationId))
+    .where(
+      and(eq(employments.organizationId, actor.organizationId), inArray(employments.id, namedIds)),
+    )
   const nameOf = new Map(people.map((p) => [p.id, p.displayName]))
 
   return rows.map((r) => ({

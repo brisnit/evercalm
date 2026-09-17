@@ -1,6 +1,12 @@
-import { and, desc, eq, gt, inArray, lt, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Tx } from '@/server/db'
-import { locations, organizations, shifts } from '@/server/db/schema'
+import {
+  employmentLocations,
+  employments,
+  locations,
+  organizations,
+  shifts,
+} from '@/server/db/schema'
 import type { Actor } from '@/server/authz'
 import { can } from '@/server/authz/can'
 import { AUDIT_ACTIONS, recordAuditEvent } from '@/server/audit'
@@ -32,6 +38,10 @@ import {
  * location sees what is open; acknowledging says "I have read this"; a manager
  * resolves it when it is dealt with.
  *
+ * A handoff may be assigned to one person who works at the location. They
+ * are told in the app, it waits on their Home until they have read it, and it
+ * leads the handoffs on their next shift.
+ *
  * Nothing is deleted: the table refuses DELETE, acknowledgements are
  * append-only, and resolving or reopening is audited with what it replaced.
  */
@@ -49,6 +59,8 @@ export interface HandoffView {
   body: string
   authorEmploymentId: string
   authorName: string
+  assignedName: string | null
+  assignedToMe: boolean
   shiftLabel: string | null
   businessDate: string
   createdAt: Date
@@ -124,7 +136,11 @@ async function toViews(
     industryOf(tx, org),
   ])
   const names = await employmentNames(tx, org, [
-    ...rows.flatMap((r) => [r.authorEmploymentId, r.resolvedByEmploymentId]),
+    ...rows.flatMap((r) => [
+      r.authorEmploymentId,
+      r.resolvedByEmploymentId,
+      r.assignedEmploymentId,
+    ]),
     ...acks.map((a) => a.employmentId),
   ])
   const shiftById = new Map(shiftRows.map((s) => [s.id, s]))
@@ -148,6 +164,8 @@ async function toViews(
       body: r.body,
       authorEmploymentId: r.authorEmploymentId,
       authorName: names.get(r.authorEmploymentId) ?? 'Someone',
+      assignedName: r.assignedEmploymentId ? (names.get(r.assignedEmploymentId) ?? null) : null,
+      assignedToMe: r.assignedEmploymentId === actor.employmentId,
       shiftLabel: label ? `${label.day}, ${label.time}` : null,
       businessDate: r.businessDate,
       createdAt: r.createdAt,
@@ -203,7 +221,62 @@ export async function handoffsForShift(
     )
     .orderBy(...ORDER)
     .limit(30)
-  return toViews(tx, actor, rows)
+  const views = await toViews(tx, actor, rows)
+  // What was handed to this person leads, still in the usual order within.
+  return [...views.filter((v) => v.assignedToMe), ...views.filter((v) => !v.assignedToMe)]
+}
+
+/**
+ * Open handoffs assigned to this person that they have not read yet - what
+ * Home shows the moment they open the app.
+ */
+export async function handoffsForMe(tx: Tx, actor: Actor): Promise<HandoffView[]> {
+  const rows = await tx
+    .select()
+    .from(handoffs)
+    .where(
+      and(
+        eq(handoffs.organizationId, actor.organizationId),
+        eq(handoffs.assignedEmploymentId, actor.employmentId),
+        eq(handoffs.status, 'open'),
+      ),
+    )
+    .orderBy(...ORDER)
+    .limit(10)
+  const views = await toViews(tx, actor, rows)
+  return views.filter((v) => !v.acknowledgedByMe && !v.isMine && canReadAt(actor, v.locationId))
+}
+
+/**
+ * The people a handoff at this location can be assigned to: everyone active
+ * who works there. Only offered to someone who may read the location's
+ * handoffs, so it never lists people at a location outside their reach.
+ */
+export async function handoffAssignees(
+  tx: Tx,
+  actor: Actor,
+  locationId: string,
+): Promise<{ id: string; name: string }[]> {
+  if (!canReadAt(actor, locationId)) return []
+  return tx
+    .select({ id: employments.id, name: employments.displayName })
+    .from(employmentLocations)
+    .innerJoin(
+      employments,
+      and(
+        eq(employments.organizationId, employmentLocations.organizationId),
+        eq(employments.id, employmentLocations.employmentId),
+      ),
+    )
+    .where(
+      and(
+        eq(employmentLocations.organizationId, actor.organizationId),
+        eq(employmentLocations.locationId, locationId),
+        eq(employments.status, 'active'),
+        isNull(employments.archivedAt),
+      ),
+    )
+    .orderBy(employments.displayName)
 }
 
 export interface HandoffList {
@@ -293,25 +366,31 @@ export async function openHandoffsAt(
 // ---------------------------------------------------------------------------
 
 export interface HandoffInput {
-  category: string
-  priority: string
+  /** Optional since round 1: the simple form asks only for the task. */
+  category?: string
+  priority?: string
   title: string
-  body: string
+  body?: string
+  /** Who it is for; empty for whoever is on next. */
+  assignedEmploymentId?: string | null
 }
 
 export function validateHandoff(input: HandoffInput) {
   const errors: Record<string, string[]> = {}
-  if (!(HANDOFF_CATEGORIES as readonly string[]).includes(input.category)) {
+  // No category chosen is a plain follow-up; a category that is not one of
+  // ours is still refused.
+  const category = input.category ? input.category : 'follow_up'
+  if (!(HANDOFF_CATEGORIES as readonly string[]).includes(category)) {
     errors.category = ['Choose what this is about.']
   }
   const title = input.title.replace(/\s+/g, ' ').trim().slice(0, HANDOFF_LIMITS.title)
-  if (!title) errors.title = ['Say in a few words what the next shift needs to know.']
+  if (!title) errors.title = ['Write the task: what needs doing.']
   if (Object.keys(errors).length > 0) throw new ValidationError(errors)
   return {
-    category: input.category as HandoffCategory,
+    category: category as HandoffCategory,
     priority: input.priority === 'urgent' ? ('urgent' as const) : ('normal' as const),
     title,
-    body: input.body.replace(/\r\n/g, '\n').trim().slice(0, HANDOFF_LIMITS.body),
+    body: (input.body ?? '').replace(/\r\n/g, '\n').trim().slice(0, HANDOFF_LIMITS.body),
   }
 }
 
@@ -328,6 +407,7 @@ export async function insertHandoff(
   now: Date,
 ): Promise<string> {
   const values = validateHandoff(input)
+  const assignee = await requireAssignee(tx, actor, input.locationId, input.assignedEmploymentId)
   const id = newId()
   await tx.insert(handoffs).values({
     id,
@@ -337,6 +417,7 @@ export async function insertHandoff(
     businessDate: input.businessDate,
     ...values,
     authorEmploymentId: actor.employmentId,
+    assignedEmploymentId: assignee?.id ?? null,
     taskItemId: input.taskItemId ?? null,
     createdAt: now,
     updatedAt: now,
@@ -347,9 +428,71 @@ export async function insertHandoff(
     subjectType: 'handoff',
     subjectId: id,
     locationId: input.locationId,
-    metadata: { category: values.category, priority: values.priority },
+    metadata: {
+      category: values.category,
+      priority: values.priority,
+      assignedEmploymentId: assignee?.id ?? null,
+    },
   })
+  if (assignee && assignee.id !== actor.employmentId) {
+    await notifyOperationsPeople(
+      tx,
+      actor.organizationId,
+      [
+        {
+          employmentId: assignee.id,
+          subjectType: 'handoff',
+          subjectId: id,
+          title: `Handed to you: ${values.title}`,
+          preview: `From ${actor.displayName}.`,
+          href: '/my',
+          purpose: 'assigned',
+        },
+      ],
+      now,
+    )
+  }
   return id
+}
+
+/**
+ * An assignee must be someone active who works at the handoff's location.
+ * Anyone else - another location, another organization, someone who has
+ * left, or an id that is not ours - is refused as a field error, without
+ * saying which.
+ */
+async function requireAssignee(
+  tx: Tx,
+  actor: Actor,
+  locationId: string,
+  employmentId: string | null | undefined,
+): Promise<{ id: string } | null> {
+  if (!employmentId) return null
+  const refuse = () =>
+    new ValidationError({ assignedEmploymentId: ['Choose someone who works at this location.'] })
+  if (!isUuid(employmentId)) throw refuse()
+  const [row] = await tx
+    .select({ id: employments.id })
+    .from(employmentLocations)
+    .innerJoin(
+      employments,
+      and(
+        eq(employments.organizationId, employmentLocations.organizationId),
+        eq(employments.id, employmentLocations.employmentId),
+      ),
+    )
+    .where(
+      and(
+        eq(employmentLocations.organizationId, actor.organizationId),
+        eq(employmentLocations.locationId, locationId),
+        eq(employmentLocations.employmentId, employmentId),
+        eq(employments.status, 'active'),
+        isNull(employments.archivedAt),
+      ),
+    )
+    .limit(1)
+  if (!row) throw refuse()
+  return row
 }
 
 /**

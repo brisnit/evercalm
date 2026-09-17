@@ -100,8 +100,8 @@ export function EmployeeNav({ variant }: { variant: 'bar' | 'inline' }) {
                   className={cn(
                     'rounded-control inline-flex min-h-11 items-center px-3 text-sm transition-colors',
                     active
-                      ? 'text-ink bg-violet-50 font-semibold'
-                      : 'text-muted hover:text-ink hover:bg-violet-50/70',
+                      ? 'text-ink bg-teal-50 font-semibold'
+                      : 'text-muted hover:text-ink hover:bg-teal-50/70',
                   )}
                 >
                   {item.label}
@@ -131,7 +131,7 @@ export function EmployeeNav({ variant }: { variant: 'bar' | 'inline' }) {
                   'relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-medium transition-colors',
                   "before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:content-['']",
                   active
-                    ? 'text-violet-700 before:bg-violet-600'
+                    ? 'text-teal-700 before:bg-teal-600'
                     : 'text-muted hover:text-ink before:bg-transparent',
                 )}
               >

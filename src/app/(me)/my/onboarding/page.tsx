@@ -55,21 +55,21 @@ export default async function MyOnboardingPage() {
                     ? 'success'
                     : progress.state === 'overdue'
                       ? 'warning'
-                      : 'violet'
+                      : 'accent'
                 }
               />
               {nextStep ? (
                 <a
                   href={`#step-${nextStep.id}`}
-                  className="rounded-control group mt-4 flex items-center justify-between gap-3 border border-violet-200 bg-violet-50 px-4 py-3 hover:border-violet-400"
+                  className="rounded-control group mt-4 flex items-center justify-between gap-3 border border-teal-200 bg-teal-50 px-4 py-3 hover:border-teal-400"
                 >
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-violet-700">Next up</span>
+                    <span className="block text-sm font-semibold text-teal-700">Next up</span>
                     <span className="text-ink mt-0.5 block font-medium">{progress.nextAction}</span>
                   </span>
                   <span
                     aria-hidden="true"
-                    className="text-violet-700 transition-transform group-hover:translate-y-0.5"
+                    className="text-teal-700 transition-transform group-hover:translate-y-0.5"
                   >
                     ↓
                   </span>
@@ -153,12 +153,12 @@ export default async function MyOnboardingPage() {
 }
 
 function StepStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { tone: 'success' | 'warning' | 'neutral' | 'violet'; label: string }> =
+  const map: Record<string, { tone: 'success' | 'warning' | 'neutral' | 'accent'; label: string }> =
     {
       completed: { tone: 'success', label: 'Done' },
       blocked: { tone: 'warning', label: 'Waiting' },
       waived: { tone: 'neutral', label: 'Waived' },
-      pending: { tone: 'violet', label: 'To do' },
+      pending: { tone: 'accent', label: 'To do' },
     }
   const { tone, label } = map[status] ?? map.pending!
   return <Badge tone={tone}>{label}</Badge>

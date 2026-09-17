@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
-import { signOut } from '@/lib/auth-client'
+import { SIGN_OUT_FAILED } from '@/lib/auth-messages'
+import { signOutAndLeave } from '@/lib/sign-out'
 import { Avatar, Button } from '@/ui/primitives'
 
 /**
@@ -44,12 +45,10 @@ export function AccountMenu({
     setBusy(true)
     setError(null)
     try {
-      const result = await signOut()
-      if (result?.error) throw new Error(result.error.message)
-      window.location.replace('/signin')
+      await signOutAndLeave()
     } catch {
       setBusy(false)
-      setError('You could not be signed out. Check your connection and try again.')
+      setError(SIGN_OUT_FAILED)
     }
   }
 
@@ -80,7 +79,7 @@ export function AccountMenu({
         aria-controls={panelId}
         aria-label={`Account: ${name}`}
         onClick={() => setOpen((value) => !value)}
-        className="rounded-control text-ink hover:bg-sunk flex min-h-11 items-center gap-2 px-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none"
+        className="rounded-control text-ink hover:bg-sunk flex min-h-11 items-center gap-2 px-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none"
       >
         <Avatar name={name} size="sm" />
         <span className="max-w-[7rem] truncate">{firstName}</span>

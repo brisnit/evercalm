@@ -9,7 +9,7 @@ import { buttonClasses, type ButtonSize, type ButtonVariant } from './button'
  *
  *   ButtonLink  navigation that is the page's action ("Invite someone"). Same
  *               variants and sizes as Button.
- *   TextLink    navigation inside or beside text. Always violet and
+ *   TextLink    navigation inside or beside text. Always teal and
  *               underlined, never colour alone. `standalone` gives a link that
  *               sits on its own a 44px tall hit area.
  *   BackLink    the way up from a detail page, in the same place every time.
@@ -35,8 +35,8 @@ export function TextLink({
     <Link
       {...props}
       className={cn(
-        'font-medium text-violet-700 underline decoration-violet-300 decoration-1 underline-offset-4',
-        'transition-colors hover:text-violet-800 hover:decoration-violet-700',
+        'font-medium text-teal-700 underline decoration-teal-300 decoration-1 underline-offset-4',
+        'transition-colors hover:text-teal-800 hover:decoration-teal-700',
         standalone && 'inline-flex min-h-11 items-center',
         className,
       )}

@@ -363,7 +363,7 @@ export function Composer({
                         <span
                           className={
                             rule.mode === 'include'
-                              ? 'inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700'
+                              ? 'inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700'
                               : 'bg-danger-soft text-danger inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium'
                           }
                         >
@@ -421,7 +421,7 @@ function AudiencePicker({
           aria-pressed={mode === 'include'}
           className={
             mode === 'include'
-              ? 'rounded-control min-h-9 bg-violet-600 px-3 text-xs font-semibold text-white'
+              ? 'rounded-control min-h-9 bg-teal-600 px-3 text-xs font-semibold text-white'
               : 'rounded-control border-line text-ink min-h-9 border bg-white px-3 text-xs font-medium'
           }
         >
@@ -450,7 +450,7 @@ function AudiencePicker({
                   <button
                     type="button"
                     onClick={() => onAdd(option, mode)}
-                    className="border-line text-ink rounded-full border bg-white px-3 py-1.5 text-xs font-medium hover:border-violet-400 hover:text-violet-700"
+                    className="border-line text-ink rounded-full border bg-white px-3 py-1.5 text-xs font-medium hover:border-teal-400 hover:text-teal-700"
                   >
                     {option.label}
                     {option.hint ? <span className="text-faint"> · {option.hint}</span> : null}

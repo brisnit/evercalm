@@ -87,7 +87,7 @@ export default async function TemplatesPage({
                         status={template.status}
                         archived={template.archivedAt !== null}
                       />
-                      {template.isDefault ? <Badge tone="violet">Default</Badge> : null}
+                      {template.isDefault ? <Badge tone="accent">Default</Badge> : null}
                       {template.hasDraft && template.status === 'published' ? (
                         <Badge tone="warning">
                           Draft v{template.draftVersionNumber} in progress

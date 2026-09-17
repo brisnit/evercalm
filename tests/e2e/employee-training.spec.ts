@@ -41,11 +41,18 @@ test('a learner sees what is done and next, works through lessons, and asks for 
   await page.getByRole('link', { name: /^Continue/ }).click()
   await expect(page.getByRole('heading', { name: 'Before you mix', level: 1 })).toBeVisible()
   await page.waitForLoadState('networkidle')
+  // Each tick saves itself: there is no save button to miss, and leaving and
+  // coming back keeps the tick.
+  await expect(page.getByRole('button', { name: 'Save progress' })).toHaveCount(0)
   await page.getByLabel('The formula card is updated before you mix').check()
-  await page.getByRole('button', { name: 'Save progress' }).click()
-  await expect(page.getByTestId('lesson-moment')).toContainText('Saved: 1 of 5 checked.')
+  await expect(page.getByTestId('checklist-save-status')).toHaveText('Progress saved')
+  await page.getByTestId('training-trail').getByRole('link', { name: 'Exit to Training' }).click()
+  await expect(page).toHaveURL(/\/my\/training$/)
+  await page.goBack()
+  await expect(page.getByRole('heading', { name: 'Before you mix', level: 1 })).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('The formula card is updated before you mix')).toBeChecked()
   for (const box of await page.getByRole('checkbox').all()) await box.check()
-  await page.getByRole('button', { name: 'Mark as done' }).click()
   await expect(page.getByTestId('lesson-moment')).toContainText(
     'Halfway there: 3 of 5 lessons done. Next: Knowledge check.',
   )
@@ -85,7 +92,7 @@ test('a learner sees what is done and next, works through lessons, and asks for 
   await expect(page.getByTestId('lesson-moment')).toContainText('Sign-off requested.')
   await expect(page.getByText('Waiting for sign-off').first()).toBeVisible()
 
-  await page.getByRole('link', { name: 'Course', exact: true }).click()
+  await page.getByTestId('training-trail').getByRole('link', { name: 'Course overview' }).click()
   await expect(page.getByRole('progressbar', { name: '4 of 5 lessons done' })).toBeVisible()
   await expect(page.getByText(/Waiting for a manager to sign off your practical/)).toBeVisible()
 })

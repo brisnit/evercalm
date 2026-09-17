@@ -5,8 +5,8 @@ import { isUuid } from '@/lib/uuid'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { clockLabel, type TaskView } from '@/modules/operations/items'
-import { handoffCategoryLabel, ITEM_STATE_LABELS, describeTiming } from '@/modules/operations/rules'
-import { HANDOFF_CATEGORIES } from '@/modules/operations/rules'
+import { ITEM_STATE_LABELS, describeTiming } from '@/modules/operations/rules'
+import { handoffAssignees } from '@/modules/operations/handoffs'
 import { getMyShiftWork, STAYS_CURRENT_AFTER_END_MS } from '@/modules/operations/work'
 import { formatShift } from '@/modules/scheduling/time'
 import { EmptyState, TextLink } from '@/ui/primitives'
@@ -34,12 +34,17 @@ export default async function MyShiftWorkPage({
   const { actor } = await requireActorContext()
   const now = new Date()
 
-  const work = await withTenant(actor.organizationId, (tx) =>
-    getMyShiftWork(tx, actor, { shiftId: shiftParam ?? null, now }),
-  ).catch((error: unknown) => {
+  const loaded = await withTenant(actor.organizationId, async (tx) => {
+    const found = await getMyShiftWork(tx, actor, { shiftId: shiftParam ?? null, now })
+    return {
+      work: found,
+      assignees: found ? await handoffAssignees(tx, actor, found.shift.locationId) : [],
+    }
+  }).catch((error: unknown) => {
     if (error instanceof NotFoundError) notFound()
     throw error
   })
+  const { work, assignees } = loaded
 
   if (!work) {
     return (
@@ -168,10 +173,7 @@ export default async function MyShiftWorkPage({
           to: t.assignedName ?? 'someone else',
         }))}
         handoffs={work.handoffs}
-        categories={HANDOFF_CATEGORIES.map((c) => ({
-          value: c,
-          label: handoffCategoryLabel(c, work.industry),
-        }))}
+        assignees={assignees.filter((a) => a.id !== actor.employmentId)}
         nextShiftId={work.nextShiftId}
         timingHint={describeTiming('shift_start', 0)}
       />

@@ -27,7 +27,7 @@ export function SectionNav({ items }: { items: { href: string; label: string }[]
                 className={cn(
                   'inline-flex min-h-11 items-center border-b-2 px-3 text-sm whitespace-nowrap',
                   active
-                    ? 'text-ink border-violet-600 font-semibold'
+                    ? 'text-ink border-teal-600 font-semibold'
                     : 'text-muted hover:border-line-strong hover:text-ink border-transparent',
                 )}
               >

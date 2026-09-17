@@ -10,6 +10,7 @@ import { myLesson } from '@/modules/training/learner'
 import { AnnouncementBody } from '@/ui/patterns/announcement-body'
 import { BackLink, ProgressBar, TextLink } from '@/ui/primitives'
 import { EmployeeShell } from '../../../../_components/employee-shell'
+import { TrainingTrail } from '../../../_components/training-trail'
 import { LessonPlayer } from './lesson-player'
 
 export const metadata: Metadata = { title: 'Lesson' }
@@ -41,10 +42,9 @@ export default async function MyLessonPage({
   const lastAttempt = quiz?.attempts.at(-1) ?? null
 
   return (
-    <EmployeeShell back={{ href: courseHref, label: 'Course' }}>
-      <p className="text-faint text-xs font-semibold tracking-[0.1em] uppercase">
-        {assignment.courseTitle}
-      </p>
+    <EmployeeShell back={{ href: '/my/training', label: 'Training' }}>
+      <TrainingTrail up={{ href: courseHref, label: 'Course overview' }} />
+      <p className="text-muted text-sm font-medium">{assignment.courseTitle}</p>
       <h1 className="font-display text-ink mt-1 text-2xl font-extrabold tracking-tight text-balance">
         {lesson.title}
       </h1>
@@ -56,7 +56,7 @@ export default async function MyLessonPage({
         className="mt-4"
         value={assignment.progress.percent}
         label={`${assignment.progress.completed} of ${assignment.progress.total} lessons done`}
-        tone={assignment.progress.state === 'completed' ? 'success' : 'violet'}
+        tone={assignment.progress.state === 'completed' ? 'success' : 'accent'}
       />
       {assignment.status === 'completed' ? (
         <p className="text-muted mt-3 text-sm">

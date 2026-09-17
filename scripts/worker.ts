@@ -27,7 +27,26 @@ config({ path: '.env.local', quiet: true })
 config({ quiet: true })
 
 const ROOT = path.resolve(import.meta.dirname, '..')
-const STATUS_FILE = path.join(ROOT, '.tmp', 'worker.json')
+
+/**
+ * One status file per database, so the browser suite's worker and a
+ * developer's own worker do not mistake each other for themselves: they run
+ * side by side against evercalm_e2e and evercalm_dev, and a single shared
+ * file made the second one exit as "already running".
+ */
+function statusFile(): string {
+  const database = (() => {
+    try {
+      return new URL(process.env.DATABASE_URL ?? '').pathname.replace(/^\//, '')
+    } catch {
+      return ''
+    }
+  })()
+  const suffix = database && database !== 'evercalm_dev' ? `-${database}` : ''
+  return path.join(ROOT, '.tmp', `worker${suffix}.json`)
+}
+
+const STATUS_FILE = statusFile()
 const DEFAULT_INTERVAL_MS = 15_000
 
 interface WorkerStatus {

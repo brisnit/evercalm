@@ -3,7 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2'
 import { getEnv } from '@/lib/env'
 import { globalDb } from '@/server/db/global'
-import { authRateLimitRules, shouldRelaxRateLimits } from './rate-limits'
+import { authRateLimitRules, rateLimitMode } from './rate-limits'
 import { accounts, rateLimits, sessions, users, verifications } from '@/server/db/identity-schema'
 
 /**
@@ -81,7 +81,13 @@ function buildAuth() {
       window: 60,
       max: 20,
       customRules: authRateLimitRules(
-        shouldRelaxRateLimits(env.NODE_ENV, process.env.E2E_RELAX_RATE_LIMIT),
+        rateLimitMode({
+          nodeEnv: env.NODE_ENV,
+          // The VALIDATED value, not process.env: lib/env.ts accepts only
+          // "stakeholder-demo", so nothing else can reach the demo allowance.
+          environment: env.EVERCALM_ENVIRONMENT,
+          e2eFlag: process.env.E2E_RELAX_RATE_LIMIT,
+        }),
       ),
     },
 

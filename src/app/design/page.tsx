@@ -22,17 +22,19 @@ export const metadata: Metadata = { title: 'Design system' }
  */
 
 const SWATCHES: { token: string; hex: string; note: string }[] = [
-  { token: 'ink', hex: '#040404', note: '20.50:1 - AAA' },
-  { token: 'violet-600', hex: '#7C24F5', note: '6.13:1 - AA, primary action' },
-  { token: 'violet-700', hex: '#6B17DB', note: '7.58:1 - AAA, hover' },
-  { token: 'violet-300', hex: '#A56BFF', note: '4.88:1 on charcoal' },
-  { token: 'pink-500', hex: '#EA33A9', note: '3.79:1 - fills and display only' },
-  { token: 'pink-700', hex: '#B8177F', note: '6.06:1 - AA, pink text' },
-  { token: 'muted', hex: '#5A5766', note: '7.02:1 - AAA' },
-  { token: 'success', hex: '#146C43', note: '6.45:1 - AA' },
-  { token: 'warning', hex: '#8C5200', note: '6.32:1 - AA' },
-  { token: 'danger', hex: '#C02626', note: '5.92:1 - AA' },
-  { token: 'info', hex: '#1D4FD8', note: '6.64:1 - AA' },
+  { token: 'ink / navy-800', hex: '#1E2D3D', note: '14.02:1 - AAA, primary text' },
+  { token: 'teal-600', hex: '#2A5C5A', note: '7.56:1 - AAA, primary action and links' },
+  { token: 'teal-700', hex: '#234B49', note: '9.66:1 - AAA, small accent text' },
+  { token: 'teal-300', hex: '#7FB5B0', note: '7.18:1 on charcoal' },
+  { token: 'sage-400', hex: '#7FB5A0', note: '2.33:1 - fills, borders and icons only' },
+  { token: 'sage-700 / success', hex: '#2E6B54', note: '6.27:1 - AA, sage text' },
+  { token: 'sand-200', hex: '#F5E6D3', note: '1.23:1 - a surface colour, never text' },
+  { token: 'coral-400', hex: '#E8856C', note: '2.62:1 - fills, borders and icons only' },
+  { token: 'coral-700 / warning', hex: '#A34128', note: '6.28:1 - AA, coral text' },
+  { token: 'muted', hex: '#4E5A68', note: '7.03:1 - AAA' },
+  { token: 'faint', hex: '#67727F', note: '4.89:1 - AA' },
+  { token: 'danger', hex: '#A8172B', note: '7.44:1 - AA, crimson, never coral' },
+  { token: 'info', hex: '#26557A', note: '7.89:1 - AA' },
 ]
 
 export default function DesignPage() {
@@ -44,8 +46,9 @@ export default function DesignPage() {
         Design system
       </h1>
       <p className="text-muted mt-2 max-w-xl">
-        Every colour below was measured against WCAG 2.2 AA. Brand pink fails for normal text on
-        white, so it is a fill and display colour only.
+        Every colour below was measured against WCAG 2.2 AA. Soft Sage, Warm Sand and Coral Pop fail
+        for normal text on white, so they are fill, border and icon colours; their darker variants
+        carry text.
       </p>
 
       <section className="mt-10">
@@ -106,7 +109,7 @@ export default function DesignPage() {
         <h2 className="font-display text-ink text-xl font-extrabold">Badges</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge>Neutral</Badge>
-          <Badge tone="violet">Violet</Badge>
+          <Badge tone="accent">Accent</Badge>
           <Badge tone="success">Verified</Badge>
           <Badge tone="warning">Due soon</Badge>
           <Badge tone="danger">Overdue</Badge>

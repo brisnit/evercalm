@@ -68,7 +68,7 @@ export function ActionNotice({
       role="status"
       data-testid="action-notice"
       className={
-        'rounded-control border-success/30 bg-success-soft text-success flex items-start justify-between gap-3 border px-3.5 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ' +
+        'rounded-control border-success/30 bg-success-soft text-success flex items-start justify-between gap-3 border px-3.5 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ' +
         (className ?? '')
       }
     >

@@ -46,7 +46,7 @@ export default async function ValuesPage() {
             ) : (
               <ul className="flex flex-col gap-4">
                 {values.map((value) => (
-                  <li key={value.id} className="border-l-2 border-violet-600 pl-4">
+                  <li key={value.id} className="border-l-2 border-teal-600 pl-4">
                     <h3 className="font-display text-ink text-base font-bold">{value.title}</h3>
                     <p className="text-muted mt-1 text-sm">{value.body}</p>
                   </li>
@@ -70,7 +70,7 @@ export default async function ValuesPage() {
             ) : (
               <ul className="flex flex-col gap-4">
                 {standards.map((standard) => (
-                  <li key={standard.id} className="border-l-2 border-pink-500 pl-4">
+                  <li key={standard.id} className="border-coral-400 border-l-2 pl-4">
                     <h3 className="font-display text-ink text-base font-bold">{standard.title}</h3>
                     <p className="text-muted mt-1 text-sm">{standard.body}</p>
                   </li>

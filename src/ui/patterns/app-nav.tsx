@@ -15,7 +15,7 @@ import { cn } from '@/lib/cn'
  * three rows of links.
  *
  * The current section is marked with `aria-current="page"` as well as weight
- * and a violet rule, so position never depends on colour alone.
+ * and a teal rule, so position never depends on colour alone.
  */
 export function AppNav({
   label,
@@ -45,7 +45,7 @@ export function AppNav({
           aria-expanded={open}
           aria-controls={listId}
           onClick={() => setOpen((value) => !value)}
-          className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-2 text-sm font-medium hover:bg-violet-50 lg:hidden"
+          className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-2 text-sm font-medium hover:bg-teal-50 lg:hidden"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" className="size-4">
             {open ? (
@@ -88,8 +88,8 @@ export function AppNav({
                     'rounded-control relative flex min-h-11 items-center px-3 text-sm transition-colors',
                     "lg:after:absolute lg:after:inset-x-3 lg:after:bottom-0 lg:after:h-0.5 lg:after:rounded-full lg:after:content-['']",
                     active
-                      ? 'text-ink bg-violet-50 font-semibold lg:bg-transparent lg:after:bg-violet-600'
-                      : 'text-muted hover:text-ink hover:bg-violet-50/70',
+                      ? 'text-ink bg-teal-50 font-semibold lg:bg-transparent lg:after:bg-teal-600'
+                      : 'text-muted hover:text-ink hover:bg-teal-50/70',
                   )}
                 >
                   {item.label}

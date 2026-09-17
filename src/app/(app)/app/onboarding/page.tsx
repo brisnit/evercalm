@@ -6,8 +6,18 @@ import { withTenant } from '@/server/db'
 import { listProgress } from '@/modules/onboarding/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
-import { Avatar, Badge, Card, EmptyState, PageHeader, ProgressBar, TextLink } from '@/ui/primitives'
+import {
+  Avatar,
+  Badge,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+  ProgressBar,
+  TextLink,
+} from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
+import { ToolIcon } from '@/ui/patterns/tool-icon'
 
 export const metadata: Metadata = { title: 'Onboarding' }
 export const dynamic = 'force-dynamic'
@@ -22,11 +32,11 @@ export const dynamic = 'force-dynamic'
 
 const STATE_META: Record<
   string,
-  { tone: 'danger' | 'warning' | 'violet' | 'neutral' | 'success'; label: string; heading: string }
+  { tone: 'danger' | 'warning' | 'accent' | 'neutral' | 'success'; label: string; heading: string }
 > = {
   blocked: { tone: 'danger', label: 'Blocked', heading: 'Blocked — needs a decision' },
   overdue: { tone: 'warning', label: 'Overdue', heading: 'Overdue' },
-  in_progress: { tone: 'violet', label: 'In progress', heading: 'On track' },
+  in_progress: { tone: 'accent', label: 'In progress', heading: 'On track' },
   not_started: { tone: 'neutral', label: 'Not started', heading: 'Not started' },
   completed: { tone: 'success', label: 'Complete', heading: 'Complete' },
 }
@@ -61,6 +71,14 @@ export default async function OnboardingBoardPage() {
       <PageHeader
         title="Onboarding"
         description="Everyone working through their first weeks, ordered by what needs you most."
+        action={
+          canAtAnyLocation(actor, 'people.invite') ? (
+            <ButtonLink href="/app/people/invite" size="lg" data-testid="add-new-hire">
+              <ToolIcon name="plus" className="size-5" />
+              Add new hire
+            </ButtonLink>
+          ) : undefined
+        }
       />
 
       {progress.length === 0 ? (
@@ -117,7 +135,7 @@ export default async function OnboardingBoardPage() {
                                   ? 'warning'
                                   : group.state === 'completed'
                                     ? 'success'
-                                    : 'violet'
+                                    : 'accent'
                             }
                           />
                         </div>

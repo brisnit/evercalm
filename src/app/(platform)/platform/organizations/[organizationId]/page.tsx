@@ -248,11 +248,11 @@ export default async function PlatformOrganizationPage({
                 </ul>
                 <p className="text-muted mt-3 text-xs">
                   Service checks:{' '}
-                  <a href="/api/health" className="text-violet-700 underline underline-offset-4">
+                  <a href="/api/health" className="text-teal-700 underline underline-offset-4">
                     health
                   </a>{' '}
                   ·{' '}
-                  <a href="/api/ready" className="text-violet-700 underline underline-offset-4">
+                  <a href="/api/ready" className="text-teal-700 underline underline-offset-4">
                     readiness
                   </a>
                 </p>

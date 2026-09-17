@@ -40,7 +40,7 @@ export function Disclosure({
         aria-expanded={open}
         aria-controls={`${id}-panel`}
         onClick={() => setOpen((value) => !value)}
-        className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-medium hover:bg-violet-50/60"
+        className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-medium hover:bg-teal-50/60"
       >
         <svg
           aria-hidden="true"

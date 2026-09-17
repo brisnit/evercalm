@@ -12,17 +12,20 @@ import { cn } from '@/lib/cn'
 export function ProgressBar({
   value,
   label,
-  tone = 'violet',
+  tone = 'accent',
   className,
 }: {
   value: number
   label: string
-  tone?: 'violet' | 'success' | 'warning' | 'danger'
+  tone?: 'accent' | 'success' | 'warning' | 'danger'
   className?: string
 }) {
   const clamped = Math.max(0, Math.min(100, Math.round(value)))
+  // Progress is sage in this palette. sage-600 rather than the lighter brand
+  // sage: a progress bar carries meaning, so its fill needs 3:1 against the
+  // track (sage-600 is 3.98:1 on sunk; brand sage-400 would be 2.0:1).
   const fill = {
-    violet: 'bg-violet-600',
+    accent: 'bg-sage-600',
     success: 'bg-success',
     warning: 'bg-warning',
     danger: 'bg-danger',
@@ -52,8 +55,8 @@ export function ProgressBar({
 }
 
 /**
- * A compact ring for dashboards. The gradient is one of the three sanctioned
- * uses of the brand gradient in the product.
+ * A compact ring for dashboards. Deep Teal into Soft Sage: progress is sage
+ * in this palette, and coral is kept for what needs attention.
  */
 export function ProgressRing({
   value,
@@ -80,8 +83,8 @@ export function ProgressRing({
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--color-violet-600)" />
-            <stop offset="100%" stopColor="var(--color-pink-500)" />
+            <stop offset="0%" stopColor="var(--color-teal-600)" />
+            <stop offset="100%" stopColor="var(--color-sage-400)" />
           </linearGradient>
         </defs>
         <circle

@@ -27,7 +27,7 @@ export default function ContactPage() {
         <p className="mt-4">
           <a
             href="mailto:hello@evercalm.example"
-            className="font-medium text-violet-700 underline underline-offset-4 hover:text-violet-800"
+            className="font-medium text-teal-700 underline underline-offset-4 hover:text-teal-800"
           >
             hello@evercalm.example
           </a>

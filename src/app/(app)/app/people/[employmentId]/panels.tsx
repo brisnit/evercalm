@@ -29,7 +29,7 @@ import { ConfirmAction } from '@/ui/patterns/confirm-action'
  */
 
 const SELECT_CLASS =
-  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-violet-600'
+  'min-h-11 w-full rounded-control border border-line-strong bg-white px-3 text-sm text-ink hover:border-faint focus:border-teal-600'
 
 const ROLE_OPTIONS = [
   { key: 'employee', label: 'Employee' },
@@ -120,7 +120,7 @@ export function EmploymentPanels({
               onClick={() => setTab(t.key)}
               className={
                 tab === t.key
-                  ? 'text-ink inline-flex min-h-11 items-center border-b-2 border-violet-600 px-3 text-sm font-semibold'
+                  ? 'text-ink inline-flex min-h-11 items-center border-b-2 border-teal-600 px-3 text-sm font-semibold'
                   : 'text-muted hover:text-ink inline-flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm'
               }
             >

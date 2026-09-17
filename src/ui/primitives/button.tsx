@@ -4,20 +4,20 @@ import { cn } from '@/lib/cn'
 /**
  * Button.
  *
- * Brand pink is never used as a text-bearing fill: at 3.79:1 white text on
- * #EA33A9 fails AA. The primary action is violet-600 (6.13:1).
+ * Soft Sage and Coral Pop are never used as text-bearing fills: at 2.33:1 and
+ * 2.62:1 white text on them fails AA. The primary action is Deep Teal
+ * teal-600 (7.56:1 on white); destructive stays crimson, never coral.
  */
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 border border-transparent',
+  primary: 'bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800 border border-transparent',
   secondary:
-    'bg-white text-ink border border-field/70 hover:bg-violet-50 hover:border-violet-400 active:bg-violet-100',
+    'bg-white text-ink border border-field/70 hover:bg-teal-50 hover:border-teal-400 active:bg-teal-100',
   ghost: 'bg-transparent text-muted border border-transparent hover:bg-sunk hover:text-ink',
-  danger: 'bg-danger text-white hover:bg-[#a31f1f] active:bg-[#8a1a1a] border border-transparent',
+  danger: 'bg-danger text-white hover:bg-[#8f1424] active:bg-[#76101e] border border-transparent',
 }
 
 const SIZES: Record<Size, string> = {

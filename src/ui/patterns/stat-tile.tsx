@@ -47,7 +47,7 @@ export function StatTile({
       className={cn(
         'group rounded-card border-line relative flex flex-col gap-0.5 overflow-hidden border bg-white p-4 pl-5',
         "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
-        'hover:shadow-lift focus-visible:shadow-lift transition-[box-shadow,border-color] hover:border-violet-300',
+        'hover:shadow-lift focus-visible:shadow-lift transition-[box-shadow,border-color] hover:border-teal-300',
         mark,
       )}
     >

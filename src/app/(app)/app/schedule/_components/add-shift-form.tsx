@@ -6,7 +6,7 @@ import { ActionForm } from '@/ui/patterns/action-form'
 import { Field, Input } from '@/ui/primitives'
 
 export const SELECT_CLASS =
-  'rounded-control border-line-strong text-ink hover:border-faint min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600 aria-[invalid=true]:border-danger'
+  'rounded-control border-line-strong text-ink hover:border-faint min-h-11 w-full border bg-white px-3 text-sm focus:border-teal-600 aria-[invalid=true]:border-danger'
 
 interface TemplateOption {
   id: string
@@ -26,6 +26,7 @@ interface TemplateOption {
 export function AddShiftForm({
   locationId,
   days,
+  defaultDate,
   templates,
   jobRoles,
   stations,
@@ -33,6 +34,8 @@ export function AddShiftForm({
 }: {
   locationId: string
   days: { date: string; label: string }[]
+  /** The day chosen from the week board, preselected. */
+  defaultDate?: string
   templates: TemplateOption[]
   jobRoles: { id: string; name: string }[]
   stations: { id: string; name: string }[]
@@ -87,7 +90,12 @@ export function AddShiftForm({
 
           <Field id="add-date" label="Day" required error={state.fieldErrors?.date?.[0]}>
             {(p) => (
-              <select {...p} name="date" defaultValue={days[0]?.date} className={SELECT_CLASS}>
+              <select
+                {...p}
+                name="date"
+                defaultValue={defaultDate ?? days[0]?.date}
+                className={SELECT_CLASS}
+              >
                 {days.map((d) => (
                   <option key={d.date} value={d.date}>
                     {d.label}

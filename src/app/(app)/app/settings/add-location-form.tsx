@@ -42,7 +42,7 @@ export function AddLocationForm() {
             name="timezone"
             defaultValue="America/Los_Angeles"
             required
-            className="rounded-control border-field text-ink hover:border-faint min-h-11 w-full border bg-white px-3 text-sm focus:border-violet-600"
+            className="rounded-control border-field text-ink hover:border-faint min-h-11 w-full border bg-white px-3 text-sm focus:border-teal-600"
           >
             {SUPPORTED_TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>

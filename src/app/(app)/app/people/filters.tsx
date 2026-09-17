@@ -58,7 +58,7 @@ export function PeopleFilters({ locations }: { locations: { id: string; name: st
           name="location"
           defaultValue={params.get('location') ?? ''}
           onChange={(e) => apply({ location: e.target.value })}
-          className="rounded-control border-line-strong text-ink hover:border-faint min-h-11 border bg-white px-3 text-sm focus:border-violet-600"
+          className="rounded-control border-line-strong text-ink hover:border-faint min-h-11 border bg-white px-3 text-sm focus:border-teal-600"
         >
           <option value="">All locations</option>
           {locations.map((l) => (
@@ -78,7 +78,7 @@ export function PeopleFilters({ locations }: { locations: { id: string; name: st
           name="status"
           defaultValue={params.get('status') ?? ''}
           onChange={(e) => apply({ status: e.target.value })}
-          className="rounded-control border-line-strong text-ink hover:border-faint min-h-11 border bg-white px-3 text-sm focus:border-violet-600"
+          className="rounded-control border-line-strong text-ink hover:border-faint min-h-11 border bg-white px-3 text-sm focus:border-teal-600"
         >
           <option value="">Any status</option>
           <option value="active">Active</option>

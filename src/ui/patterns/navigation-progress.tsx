@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 /**
- * A thin violet bar at the top of the window while the next page is on its
+ * A thin teal bar at the top of the window while the next page is on its
  * way. Pages here are rendered on the server, so without it a slow query
  * looks like a click that did nothing.
  *
@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react'
  * and a streamed response is committed to 200 before a page can answer 404 -
  * which would turn another tenant's record into a soft 404.
  *
- * Starts on a same-origin link click; stops when the address changes (checked
+ * Starts on a same-origin link click, marking that link as on its way; stops when the address changes (checked
  * cheaply while it runs) or after a few seconds. Purely visual (aria-hidden).
  * Reduced motion shows a still bar.
  */
@@ -22,6 +22,15 @@ export function NavigationProgress() {
   const [active, setActive] = useState(false)
 
   useEffect(() => setActive(false), [pathname])
+
+  // The link that was pressed shows it straight away, so a person sees their
+  // tap land even while the next page is still on the server.
+  useEffect(() => {
+    if (active) return
+    for (const link of document.querySelectorAll('a[data-navigating]')) {
+      link.removeAttribute('data-navigating')
+    }
+  }, [active])
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -33,6 +42,7 @@ export function NavigationProgress() {
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin) return
       if (url.pathname === window.location.pathname && url.search === window.location.search) return
+      anchor.setAttribute('data-navigating', '')
       setActive(true)
     }
     document.addEventListener('click', onClick)
@@ -54,11 +64,8 @@ export function NavigationProgress() {
 
   if (!active) return null
   return (
-    <div
-      aria-hidden="true"
-      className="fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-violet-100"
-    >
-      <div className="h-full w-2/5 bg-gradient-to-r from-violet-600 to-pink-500 motion-safe:animate-[ec-progress_1.1s_ease-in-out_infinite]" />
+    <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-teal-100">
+      <div className="to-sage-400 h-full w-2/5 bg-gradient-to-r from-teal-600 motion-safe:animate-[ec-progress_1.1s_ease-in-out_infinite]" />
     </div>
   )
 }

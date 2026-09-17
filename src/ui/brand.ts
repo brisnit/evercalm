@@ -27,9 +27,19 @@ export interface BrandAsset {
  *
  * The published asset is cropped to the alpha bounding box, so `height` now
  * means the height of the visible mark and layouts get the size they ask for.
+ *
+ * COLOUR (round 1, September 2026): recoloured from the supplied artwork onto
+ * the stakeholder palette, part by part - wordmark Navy #1E2D3D, hands Deep
+ * Teal #2A5C5A, central light Coral #E8856C, rays Soft Sage #7FB5A0. Shapes
+ * are untouched: `scripts/recolour-wordmark.py` separates the parts by
+ * connected components and rewrites colour only, so every pixel keeps its
+ * original alpha and the letterforms and proportions are the supplied ones.
+ * The original black and violet/magenta file is still at
+ * `/brand/evercalm-wordmark.png`, so this is one line to revert, and a
+ * production SVG would replace the src and nothing else.
  */
 export const WORDMARK: BrandAsset = {
-  src: '/brand/evercalm-wordmark.png',
+  src: '/brand/evercalm-wordmark-brand.png',
   intrinsicWidth: 568,
   intrinsicHeight: 193,
   aspectRatio: 568 / 193,
@@ -37,8 +47,20 @@ export const WORDMARK: BrandAsset = {
 }
 
 /**
- * The wordmark is dark type on transparency, so on dark grounds it must sit
- * on a light chip rather than be colour-inverted - inverting would turn the
- * brand gradient green.
+ * On a navy ground the navy wordmark is 1.18:1 and Deep Teal hands are 2.18:1,
+ * so a dark variant changes ONLY those two colours - the wordmark to Warm Sand
+ * (13.47:1) and the hands to the light teal used for dark surfaces (7.18:1).
+ * The coral light and sage rays already pass there (6.29:1 and 7.09:1) and are
+ * unchanged, so the mark reads as the same mark. Shapes are identical: it is
+ * the same artwork through the same script.
  */
-export const WORDMARK_NEEDS_LIGHT_BACKGROUND = true
+export const WORDMARK_ON_DARK: BrandAsset = {
+  ...WORDMARK,
+  src: '/brand/evercalm-wordmark-brand-on-dark.png',
+}
+
+/**
+ * The mark no longer needs a light chip on dark grounds: WORDMARK_ON_DARK is
+ * legible on navy by itself.
+ */
+export const WORDMARK_NEEDS_LIGHT_BACKGROUND = false

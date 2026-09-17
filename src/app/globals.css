@@ -3,80 +3,130 @@
 /* ==========================================================================
    EverCalm design tokens.
 
-   Every colour below was measured against WCAG 2.2 AA rather than assumed.
-   Two results constrain the whole system and are encoded here:
+   The stakeholder palette (round 1) is the source of truth:
 
-     - Brand pink #EA33A9 is 3.79:1 on white and FAILS AA for normal text.
-       It is a display, fill, border and icon colour. Pink TEXT uses
-       --color-pink-700 (#B8177F, 6.06:1).
-     - Brand violet #7C24F5 is 2.72:1 on charcoal and FAILS on dark surfaces.
-       Dark surfaces use --color-violet-300 (#A56BFF, 4.88:1).
+     Deep Teal  #2A5C5A  primary actions, selected navigation, links
+     Soft Sage  #7FB5A0  secondary accents, success, progress
+     Warm Sand  #F5E6D3  calm backgrounds and highlighted surfaces
+     Coral Pop  #E8856C  selective attention and warning emphasis
+     Navy       #1E2D3D  primary text, headings, dark surfaces
 
-   Do not introduce a colour here without measuring it first.
+   Three of those five fail WCAG 2.2 AA as small text on white, so each has a
+   measured darker variant for text while the stakeholder colour itself stays
+   as fills, borders, icons and large display accents:
+
+     Soft Sage  2.33:1 -> sage-700  #2E6B54 (6.27:1) for success text
+     Coral Pop  2.62:1 -> coral-700 #A34128 (6.28:1) for warning text
+     Warm Sand  1.23:1 -> a background only; never text
+
+   Every ratio below was measured, not assumed, against white unless noted.
+   "canvas" is the application ground #FAF6F0; "dark" is navy-900 #14202C.
+   Derived colours and their purpose are documented in docs/design-system.md.
    ========================================================================== */
 
 @theme {
   /* --- brand ------------------------------------------------------------ */
-  --color-ink: #040404; /* 20.50:1 on white - AAA */
-  --color-charcoal: #1e1e1e; /* dark section ground */
+  --color-ink: #1e2d3d; /* NAVY. 14.02:1 on white, 13.02 on canvas - AAA */
+  --color-charcoal: #14202c; /* dark section ground. 16.50:1 behind white text */
 
-  --color-violet-50: #f6f0ff;
-  --color-violet-100: #ece0ff;
-  --color-violet-200: #d9c2ff;
-  --color-violet-300: #a56bff; /* 4.88:1 on charcoal - AA on dark */
-  --color-violet-400: #9147f9;
-  --color-violet-500: #8a35f7;
-  --color-violet-600: #7c24f5; /* BRAND. 6.13:1 on white - AA */
-  --color-violet-700: #6b17db; /* 7.58:1 on white - AAA */
-  --color-violet-800: #5a10be;
-  --color-violet-900: #400a89;
+  /* Deep Teal: primary actions, selected navigation, interactive links. */
+  --color-teal-50: #f0f6f5;
+  --color-teal-100: #dcebe9;
+  --color-teal-200: #b6d6d2;
+  --color-teal-300: #7fb5b0; /* 7.18:1 on dark - AA on dark surfaces */
+  --color-teal-400: #4a8a86;
+  --color-teal-500: #35706d; /* 5.69:1 - hover and focus rings */
+  --color-teal-600: #2a5c5a; /* BRAND. 7.56:1 on white, 7.02 on canvas - AAA */
+  --color-teal-700: #234b49; /* 9.66:1 - small accent text */
+  --color-teal-800: #1c3c3b;
+  --color-teal-900: #142a29;
 
-  --color-pink-50: #fdeff8;
-  --color-pink-100: #fbdcf0;
-  --color-pink-200: #f7b9e0;
-  --color-pink-300: #f27aca; /* 6.68:1 on charcoal - AA on dark */
-  --color-pink-400: #ee4fb5;
-  --color-pink-500: #ea33a9; /* BRAND. 3.79:1 - large text and fills ONLY */
-  --color-pink-600: #d2208f;
-  --color-pink-700: #b8177f; /* 6.06:1 on white - AA. Pink TEXT uses this. */
-  --color-pink-800: #a01070;
+  /* Soft Sage: secondary accents, success, progress. */
+  --color-sage-50: #f1f8f5;
+  --color-sage-100: #e2f0ea;
+  --color-sage-200: #c4e0d4;
+  --color-sage-300: #a6d0be; /* 9.73:1 on dark */
+  --color-sage-400: #7fb5a0; /* BRAND. 2.33:1 - fills, borders and icons ONLY */
+  --color-sage-500: #5e9b85;
+  --color-sage-600: #4a7f6b;
+  --color-sage-700: #2e6b54; /* 6.27:1 on white, 5.83 on canvas. Sage TEXT uses this. */
+  --color-sage-800: #275746;
+  --color-sage-900: #1d4335;
 
-  /* --- neutrals (biased toward the violet accent, not pure grey) --------- */
+  /* Warm Sand: calm backgrounds and highlighted surfaces. Never text. */
+  --color-sand-50: #fdfbf8;
+  --color-sand-100: #faf2e6;
+  --color-sand-200: #f5e6d3; /* BRAND. 1.23:1 - a surface colour */
+  --color-sand-300: #ebd4b8;
+  --color-sand-400: #ddbe99;
+  --color-sand-500: #c9a278;
+  --color-sand-600: #a9835b;
+  --color-sand-700: #8a6746;
+  --color-sand-800: #6b4f36;
+  --color-sand-900: #4c3826;
+
+  /* Coral Pop: selective attention and warning emphasis. Never a destructive
+     action - that stays danger red, which is a different hue family. */
+  --color-coral-50: #fdf2ee;
+  --color-coral-100: #fbe3db;
+  --color-coral-200: #f6c6b7;
+  --color-coral-300: #f0a68f; /* 8.29:1 on dark */
+  --color-coral-400: #e8856c; /* BRAND. 2.62:1 - fills, borders and icons ONLY */
+  --color-coral-500: #dc6647;
+  --color-coral-600: #c24f31;
+  --color-coral-700: #a34128; /* 6.28:1 on white, 5.83 on canvas. Coral TEXT uses this. */
+  --color-coral-800: #8a3a22;
+  --color-coral-900: #6b2c1a;
+
+  /* Navy, as a scale for text, dark surfaces and structure. */
+  --color-navy-50: #f3f5f7;
+  --color-navy-100: #e5e9ed;
+  --color-navy-200: #c8cfd7;
+  --color-navy-300: #9fa9b5; /* 6.93:1 on dark */
+  --color-navy-400: #67727f;
+  --color-navy-500: #4e5a68;
+  --color-navy-600: #35495c;
+  --color-navy-700: #27394a;
+  --color-navy-800: #1e2d3d; /* BRAND navy */
+  --color-navy-900: #14202c;
+
+  /* --- neutrals (warmed toward sand, not pure grey) --------------------- */
   --color-ground: #ffffff;
-  --color-raise: #faf9fc;
-  --color-sunk: #f3f1f7;
-  --color-line: #e3e0ea;
-  --color-line-strong: #cfcad9; /* dividers and card edges only (1.6:1) */
+  --color-raise: #fdfbf8;
+  --color-sunk: #f3ede5;
+  --color-line: #eae3d9;
+  --color-line-strong: #d6ccbe; /* dividers and card edges only (1.59:1) */
   /* Form-control boundaries need 3:1 against their ground (WCAG 1.4.11):
-     3.70:1 on white, 3.34:1 on canvas. */
-  --color-field: #878299;
-  /* The application ground: pale lavender behind white surfaces. Every text
-     token stays AA on it (muted 6.36:1, faint 5.29:1, violet-600 5.54:1). */
-  --color-canvas: #f5f2fd;
-  --color-faint: #66627a; /* 5.84:1 on white - AA */
-  --color-muted: #5a5766; /* 7.02:1 on white - AAA */
+     3.65:1 on white, 3.39:1 on canvas. */
+  --color-field: #7c8794;
+  /* The application ground: warm sand behind white surfaces. Every text token
+     stays AA on it (muted 6.53:1, faint 4.55:1, teal-600 7.02:1). */
+  --color-canvas: #faf6f0;
+  --color-faint: #67727f; /* 4.89:1 on white, 4.55 on canvas - AA */
+  --color-muted: #4e5a68; /* 7.03:1 on white, 6.53 on canvas - AAA on white */
 
-  /* --- semantic (separate from the brand accent) ------------------------ */
-  --color-success: #146c43; /* 6.45:1 */
-  --color-success-soft: #e8f5ee;
-  --color-warning: #8c5200; /* 6.32:1 */
-  --color-warning-soft: #fdf2e3;
-  --color-danger: #c02626; /* 5.92:1 */
-  --color-danger-soft: #fdeaea;
-  --color-info: #1d4fd8; /* 6.64:1 */
-  --color-info-soft: #e8eefc;
+  /* --- semantic (kept separate from the brand accents) ------------------
+     Success is sage, warning is coral, and DESTRUCTIVE STAYS RED: danger is a
+     crimson that shares no hue with coral, so "delete" and "worth a look"
+     can never read as the same thing. */
+  --color-success: #2e6b54; /* 6.27:1 - sage-700 */
+  --color-success-soft: #e7f2ec;
+  --color-warning: #a34128; /* 6.28:1 - coral-700 */
+  --color-warning-soft: #fbede6;
+  --color-danger: #a8172b; /* 7.44:1 - crimson, deliberately not coral */
+  --color-danger-soft: #fbe9ec;
+  --color-info: #26557a; /* 7.89:1 */
+  --color-info-soft: #e9eff5;
 
   /* --- marketing surfaces -----------------------------------------------
-     The public site runs a deeper, more saturated palette than the product:
-     an indigo ink and a bluer violet accent. Kept as its own group so a
-     change made for a landing page cannot drift the application's contrast.
-     Ratios are against white unless noted. */
-  --color-deep: #171240; /* headings.   17.54:1 - AAA */
-  --color-quiet: #393366; /* body copy.  11.42:1 - AAA */
-  --color-accent: #6b4df1; /* fills and large text. 5.31:1 - AA */
-  --color-accent-strong: #5a3ae4; /* small accent text. 6.65:1 - AAA */
-  --color-lift: #f7f5ff; /* pale section ground */
-  --color-mist: #eeebfa; /* deeper section ground */
+     The public site runs deeper grounds than the product, from the same five
+     colours. Ratios are against white unless noted. */
+  --color-deep: #14202c; /* headings.   16.50:1 - AAA */
+  --color-quiet: #27394a; /* body copy.  11.86:1 - AAA */
+  --color-accent: #2a5c5a; /* fills and large text. 7.56:1 - AAA */
+  --color-accent-strong: #234b49; /* small accent text.   9.66:1 - AAA */
+  --color-lift: #faf6f0; /* pale sand section ground */
+  --color-mist: #f1e9de; /* deeper sand section ground */
 
   /* --- type ------------------------------------------------------------- */
   --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
@@ -108,7 +158,7 @@
 
   /* Focus is never removed, only restyled. Visible on every focusable thing. */
   :focus-visible {
-    outline: 2px solid var(--color-violet-600);
+    outline: 2px solid var(--color-teal-600);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -120,7 +170,30 @@
   */
   input[type='checkbox'],
   input[type='radio'] {
-    accent-color: var(--color-violet-600);
+    accent-color: var(--color-teal-600);
+  }
+
+  /*
+    iPhone Safari draws date and time fields with a native minimum width that
+    ignores the column they sit in, so a field could run past its card. They
+    may shrink to their column like any other input, and their value sits at
+    the start of the field as typed text does.
+  */
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    min-width: 0;
+    max-width: 100%;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: start;
+  }
+
+  /* A pressed link while its page loads (set by NavigationProgress). */
+  a[data-navigating] {
+    cursor: progress;
+    background-color: color-mix(in oklab, var(--color-teal-600) 7%, transparent);
+    text-decoration-color: var(--color-teal-600);
   }
 
   /* Numbers that line up in columns must be tabular. */

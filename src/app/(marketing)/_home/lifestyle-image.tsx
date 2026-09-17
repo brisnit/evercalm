@@ -39,7 +39,7 @@ export function LifestylePhoto({
       data-placeholder-image={image.id}
       className={cn(
         'border-accent/30 relative flex max-w-full flex-col justify-end overflow-hidden rounded-[1.15rem] border border-dashed',
-        'bg-[linear-gradient(160deg,#f7f5ff_0%,#eeebfa_55%,#fdeff8_100%)] p-4',
+        'bg-[linear-gradient(160deg,#fdfbf8_0%,#faf2e6_55%,#f5e6d3_100%)] p-4',
         className,
       )}
       style={{ aspectRatio: image.ratio }}

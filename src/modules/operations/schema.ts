@@ -483,6 +483,8 @@ export const handoffs = pgTable(
     title: text('title').notNull(),
     body: text('body').notNull().default(''),
     authorEmploymentId: uuid('author_employment_id').notNull(),
+    /** Who the handoff is for. Null means whoever is on next at the location. */
+    assignedEmploymentId: uuid('assigned_employment_id'),
     taskItemId: uuid('task_item_id'),
     status: text('status').notNull().default('open'),
     resolvedByEmploymentId: uuid('resolved_by_employment_id'),
@@ -507,6 +509,11 @@ export const handoffs = pgTable(
       foreignColumns: [employments.organizationId, employments.id],
       name: 'handoffs_author_tenant_fk',
     }),
+    foreignKey({
+      columns: [t.organizationId, t.assignedEmploymentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'handoffs_assignee_tenant_fk',
+    }),
     check(
       'handoffs_category_check',
       sql`${t.category} in ('staffing','inventory','maintenance','safety','guest','follow_up')`,
@@ -518,6 +525,7 @@ export const handoffs = pgTable(
       sql`(${t.status} = 'resolved') = (${t.resolvedAt} is not null and ${t.resolvedByEmploymentId} is not null)`,
     ),
     index('handoffs_location_idx').on(t.organizationId, t.locationId, t.status, t.createdAt),
+    index('handoffs_assignee_idx').on(t.organizationId, t.assignedEmploymentId, t.status),
   ],
 )
 

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
+import { cn } from '@/lib/cn'
 import { can, canAtAnyLocation } from '@/server/authz/can'
 import { locationsWhere } from '@/modules/scheduling/access'
 import {
@@ -44,7 +45,7 @@ export const dynamic = 'force-dynamic'
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ location?: string; week?: string }>
+  searchParams: Promise<{ location?: string; week?: string; add?: string }>
 }) {
   const params = await searchParams
   const { actor } = await requireActorContext()
@@ -103,6 +104,7 @@ export default async function SchedulePage({
         : board.totals.unpublishedChanges > 0
           ? 'changed'
           : 'published'
+  const addDay = board.days.find((d) => d.date === params.add) ?? null
   const shiftsByDay = new Map<string, BoardShift[]>()
   for (const shift of board.shifts) {
     shiftsByDay.set(shift.localDate, [...(shiftsByDay.get(shift.localDate) ?? []), shift])
@@ -174,40 +176,34 @@ export default async function SchedulePage({
 
       <section aria-label="Shifts by day" className="mt-5">
         {board.shifts.length === 0 ? (
-          <EmptyState
-            title="Nothing scheduled this week"
-            description={
-              data.templates.length > 0
-                ? 'Add shifts from your templates, or one at a time.'
-                : 'Add a shift, or create templates for the patterns you repeat every week.'
-            }
-          />
-        ) : (
-          <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-7" aria-label="Days of the week">
-            {board.days.map((day) => {
-              const shifts = shiftsByDay.get(day.date) ?? []
-              return (
-                <li
-                  key={day.date}
-                  className="rounded-card border-line bg-raise min-w-0 border p-2.5"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 px-1 xl:block">
-                    <h3 className="text-ink text-sm font-semibold">{day.label}</h3>
-                    <p className="text-muted text-xs">
-                      {day.shifts === 0
-                        ? 'No shifts'
-                        : `${day.shifts} · ${formatDuration(day.scheduledMinutes)}`}
-                      {day.unassigned > 0 ? ` · ${day.unassigned} to fill` : ''}
-                    </p>
-                  </div>
-                  {day.timeOff.length > 0 ? (
-                    <p className="text-muted mt-1 px-1 text-xs">
-                      <span className="font-semibold">Off:</span>{' '}
-                      {day.timeOff
-                        .map((t) => `${t.displayName}${t.status === 'pending' ? ' (asked)' : ''}`)
-                        .join(', ')}
-                    </p>
-                  ) : null}
+          <p className="text-muted mb-3 text-sm" data-testid="empty-week">
+            Nothing is scheduled this week yet.
+            {data.canDraft ? ' Choose Add shift on any day to start.' : ''}
+          </p>
+        ) : null}
+        <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-7" aria-label="Days of the week">
+          {board.days.map((day) => {
+            const shifts = shiftsByDay.get(day.date) ?? []
+            return (
+              <li key={day.date} className="rounded-card border-line bg-raise min-w-0 border p-2.5">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-2 px-1 xl:block">
+                  <h3 className="text-ink text-sm font-semibold">{day.label}</h3>
+                  <p className="text-muted text-xs">
+                    {day.shifts === 0
+                      ? 'No shifts'
+                      : `${day.shifts} · ${formatDuration(day.scheduledMinutes)}`}
+                    {day.unassigned > 0 ? ` · ${day.unassigned} to fill` : ''}
+                  </p>
+                </div>
+                {day.timeOff.length > 0 ? (
+                  <p className="text-muted mt-1 px-1 text-xs">
+                    <span className="font-semibold">Off:</span>{' '}
+                    {day.timeOff
+                      .map((t) => `${t.displayName}${t.status === 'pending' ? ' (asked)' : ''}`)
+                      .join(', ')}
+                  </p>
+                ) : null}
+                {shifts.length > 0 ? (
                   <ul className="mt-2 flex flex-col gap-2">
                     {shifts.map((shift) => (
                       <li key={shift.id}>
@@ -215,11 +211,33 @@ export default async function SchedulePage({
                       </li>
                     ))}
                   </ul>
-                </li>
-              )
-            })}
-          </ol>
-        )}
+                ) : null}
+                {data.canDraft ? (
+                  <Link
+                    href={`/app/schedule?${new URLSearchParams({
+                      location: location.id,
+                      week: board.weekStart,
+                      add: day.date,
+                    })}#add-shift`}
+                    aria-label={`Add shift on ${day.label}`}
+                    className={cn(
+                      'rounded-control text-accent-strong mt-2 flex min-h-11 items-center justify-center gap-1.5 text-sm font-semibold',
+                      'hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500',
+                      shifts.length === 0
+                        ? 'border-accent/40 border border-dashed bg-white'
+                        : 'border-line border bg-white/60',
+                    )}
+                  >
+                    <span aria-hidden="true" className="text-base leading-none">
+                      +
+                    </span>
+                    Add shift
+                  </Link>
+                ) : null}
+              </li>
+            )
+          })}
+        </ol>
       </section>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start [&>*]:min-w-0">
@@ -227,12 +245,14 @@ export default async function SchedulePage({
           <div id="add-shift" className="scroll-mt-6">
             <Card>
               <CardHeader
-                title="Add a shift"
+                title={addDay ? `Add a shift on ${addDay.label}` : 'Add a shift'}
                 description="Pick a template to fill in the times, or enter your own."
               />
               <div className="p-5">
                 <AddShiftForm
+                  key={addDay?.date ?? 'any'}
                   locationId={location.id}
+                  defaultDate={addDay?.date}
                   days={board.days.map((d) => ({ date: d.date, label: d.label }))}
                   templates={data.templates.map((t) => ({
                     id: t.id,
@@ -334,7 +354,7 @@ function ShiftCard({ shift }: { shift: BoardShift }) {
   return (
     <Link
       href={`/app/schedule/shifts/${shift.id}`}
-      className={`rounded-control block border bg-white p-2.5 hover:border-violet-300 focus-visible:outline-2 focus-visible:outline-violet-600 ${
+      className={`rounded-control block border bg-white p-2.5 hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-teal-600 ${
         blocking ? 'border-danger/50' : 'border-line'
       }`}
     >
@@ -364,9 +384,9 @@ function ShiftCard({ shift }: { shift: BoardShift }) {
           {!blocking && warnings > 0 ? <Badge tone="warning">Check</Badge> : null}
           {shift.unpublishedChange ? <Badge tone="info">Not published</Badge> : null}
           {shift.pendingClaims > 0 ? (
-            <Badge tone="violet">{shift.pendingClaims} asked</Badge>
+            <Badge tone="accent">{shift.pendingClaims} asked</Badge>
           ) : null}
-          {shift.activeSwapStatus ? <Badge tone="violet">Swap</Badge> : null}
+          {shift.activeSwapStatus ? <Badge tone="accent">Swap</Badge> : null}
         </span>
       ) : null}
     </Link>

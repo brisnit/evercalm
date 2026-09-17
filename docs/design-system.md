@@ -5,53 +5,93 @@ every primitive in every state at **`/design`** (development only).
 
 ## Colour
 
-Every value was **measured** against WCAG 2.2 AA, not assumed. Two measurements
-constrain the whole system:
+The stakeholder palette (round 1, September 2026) is the source of truth:
 
-| Token                    | Hex       |             On white | Verdict                      |
-| ------------------------ | --------- | -------------------: | ---------------------------- |
-| `ink`                    | `#040404` |              20.50:1 | AAA — body and headings      |
-| `violet-600` **primary** | `#7C24F5` |               6.13:1 | AA — text and button fills   |
-| `violet-700`             | `#6B17DB` |               7.58:1 | AAA — hover, active          |
-| `violet-300`             | `#A56BFF` | 4.88:1 _on charcoal_ | AA on dark surfaces          |
-| `pink-500` **brand**     | `#EA33A9` |           **3.79:1** | **FAILS AA for normal text** |
-| `pink-700`               | `#B8177F` |               6.06:1 | AA — pink _text_             |
-| `pink-300`               | `#F27ACA` | 6.68:1 _on charcoal_ | AA on dark surfaces          |
-| `muted`                  | `#5A5766` |               7.02:1 | AAA — secondary text         |
-| `faint`                  | `#66627A` |               5.84:1 | AA — tertiary text           |
-| `success`                | `#146C43` |               6.45:1 | AA                           |
-| `warning`                | `#8C5200` |               6.32:1 | AA                           |
-| `danger`                 | `#C02626` |               5.92:1 | AA                           |
-| `info`                   | `#1D4FD8` |               6.64:1 | AA                           |
+| Stakeholder colour | Hex       | Role in the product                         |
+| ------------------ | --------- | ------------------------------------------- |
+| **Navy**           | `#1E2D3D` | Primary text, headings, dark surfaces       |
+| **Deep Teal**      | `#2A5C5A` | Primary actions, selected navigation, links |
+| **Soft Sage**      | `#7FB5A0` | Secondary accents, success, progress        |
+| **Warm Sand**      | `#F5E6D3` | Calm backgrounds and highlighted surfaces   |
+| **Coral Pop**      | `#E8856C` | Selective attention and warning emphasis    |
 
-### Three rules this produces
+Every value was **measured** against WCAG 2.2 AA, not assumed. Three of the
+five fail as small text on white, which is what the derived variants are for.
 
-1. **Brand pink is never small text on white.** It is a display (≥24px), fill,
-   border, and icon colour. Pink text uses `pink-700`.
-2. **Brand violet fails on charcoal (2.72:1).** Dark surfaces use `violet-300`.
-   "Use the brand colour everywhere" would have broken every dark section.
-3. `#00C2E0` cyan is **decorative only** at 2.14:1 — illustration and fills,
-   never text and never an icon carrying meaning alone. The usable blue accent
-   is `info #1D4FD8`.
+| Token                  | Hex       |             On white | On canvas | Verdict                          |
+| ---------------------- | --------- | -------------------: | --------: | -------------------------------- |
+| `ink` (navy-800)       | `#1E2D3D` |              14.02:1 |   13.02:1 | AAA — body and headings          |
+| `charcoal` (navy-900)  | `#14202C` |              16.50:1 |         — | dark section ground              |
+| `teal-600` **primary** | `#2A5C5A` |               7.56:1 |    7.02:1 | AAA — link text and button fills |
+| `teal-700`             | `#234B49` |               9.66:1 |    8.97:1 | AAA — small accent text, hover   |
+| `teal-500`             | `#35706D` |               5.69:1 |    5.29:1 | AA — focus rings, hover fills    |
+| `teal-300`             | `#7FB5B0` | 7.18:1 _on charcoal_ |         — | AA on dark surfaces              |
+| `sage-400` **brand**   | `#7FB5A0` |           **2.33:1** |         — | **fills, borders, icons only**   |
+| `sage-300`             | `#A6D0BE` | 9.73:1 _on charcoal_ |         — | AA on dark surfaces              |
+| `sand-200` **brand**   | `#F5E6D3` |           **1.23:1** |         — | **a surface colour, never text** |
+| `coral-400` **brand**  | `#E8856C` |           **2.62:1** |         — | **fills, borders, icons only**   |
+| `coral-300`            | `#F0A68F` | 8.29:1 _on charcoal_ |         — | AA on dark surfaces              |
+| `muted` (navy-500)     | `#4E5A68` |               7.03:1 |    6.53:1 | AAA on white — secondary text    |
+| `faint` (navy-400)     | `#67727F` |               4.89:1 |    4.55:1 | AA — tertiary text               |
+
+### Derived colours, and why each exists
+
+Each stakeholder colour that cannot carry small text has exactly one darker
+variant. The stakeholder colour itself stays as fills, borders, icons and
+large display accents, so the palette still reads as theirs.
+
+| Derived token           | Hex                   | Derived from         |        On white | Exists because                                                            |
+| ----------------------- | --------------------- | -------------------- | --------------: | ------------------------------------------------------------------------- |
+| `sage-700` / `success`  | `#2E6B54`             | Soft Sage            |          6.27:1 | Soft Sage is 2.33:1; success **text**, ticks and "Verified" need AA       |
+| `coral-700` / `warning` | `#A34128`             | Coral Pop            |          6.28:1 | Coral Pop is 2.62:1; warning **text** and "Overdue" labels need AA        |
+| `teal-700`              | `#234B49`             | Deep Teal            |          9.66:1 | Small accent text and hover/active depth over the 7.56:1 brand teal       |
+| `teal-500`              | `#35706D`             | Deep Teal            |          5.69:1 | Focus rings and secondary hover fills that must stay distinct from rest   |
+| `teal-300`              | `#7FB5B0`             | Deep Teal            |               — | Deep Teal is 2.18:1 on navy-900; dark surfaces need a light teal (7.18:1) |
+| `sage-300`              | `#A6D0BE`             | Soft Sage            |               — | Same reason on dark grounds (9.73:1 on charcoal)                          |
+| `coral-300`             | `#F0A68F`             | Coral Pop            |               — | Same reason on dark grounds (8.29:1 on charcoal)                          |
+| `navy-500` (`muted`)    | `#4E5A68`             | Navy                 |          7.03:1 | Secondary text that is navy-family but lighter than `ink`                 |
+| `navy-400` (`faint`)    | `#67727F`             | Navy                 |          4.89:1 | Tertiary text, the lightest navy that still passes AA                     |
+| `field`                 | `#7C8794`             | Navy                 |          3.65:1 | Control boundaries need 3:1 (WCAG 1.4.11); 3.39:1 on canvas               |
+| `line` / `line-strong`  | `#EAE3D9` / `#D6CCBE` | Warm Sand            | 1.27:1 / 1.59:1 | Dividers and card edges, warmed to sit on sand rather than grey           |
+| `canvas`                | `#FAF6F0`             | Warm Sand            |               — | The application ground: a calm sand tint that keeps every text token AA   |
+| `raise` / `sunk`        | `#FDFBF8` / `#F3EDE5` | Warm Sand            |               — | Raised and recessed surfaces within a card                                |
+| `mist`                  | `#F1E9DE`             | Warm Sand            |               — | Deeper marketing section ground                                           |
+| `danger`                | `#A8172B`             | (not in the palette) |          7.44:1 | Destructive actions must never read as a coral accent — see below         |
+| `info`                  | `#26557A`             | (not in the palette) |          7.89:1 | Neutral information that is not a primary action                          |
+
+### Four rules this produces
+
+1. **Soft Sage, Warm Sand and Coral Pop are never small text on white.** They
+   are display (≥24px), fill, border and icon colours. Their text forms are
+   `sage-700` and `coral-700`; Warm Sand is never text at all.
+2. **Deep Teal fails on dark grounds (2.18:1 on navy-900).** Dark surfaces use
+   `teal-300`, `sage-300` and `coral-300`.
+3. **Destructive stays crimson.** `danger #A8172B` deliberately shares no hue
+   with Coral Pop, so "delete this" and "worth a look" can never be confused.
+   Coral carries attention and warning; crimson carries loss and failure.
+4. **Semantic colour stays separate from the brand accent**, so "this needs
+   attention" never competes with "this is EverCalm".
 
 > `faint` was originally `#7A7688` and shipped failing at 4.40:1. The axe scan
 > in `tests/e2e/accessibility.spec.ts` caught it. That is the scan earning its
 > place — measure, do not eyeball.
 
-Semantic colour (success/warning/danger/info) is deliberately separate from the
-brand accent, so "this needs attention" never competes with "this is EverCalm".
-
-### Grounds and edges (refinement pass, September 2026)
+### Grounds and edges
 
 | Token         | Hex       | Use                                                                       | Measured                                                 |
 | ------------- | --------- | ------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `canvas`      | `#F5F2FD` | Application ground behind white surfaces (admin, employee, EverCalm team) | muted 6.36:1, faint 5.29:1, violet-600 5.54:1 on it      |
-| `field`       | `#878299` | Boundary of every text input, select and textarea                         | 3.70:1 on white, 3.34:1 on canvas (WCAG 1.4.11 asks 3:1) |
-| `line-strong` | `#CFCAD9` | Dividers and card edges only — never a control boundary                   | 1.6:1                                                    |
+| `canvas`      | `#FAF6F0` | Application ground behind white surfaces (admin, employee, EverCalm team) | muted 6.53:1, faint 4.55:1, teal-600 7.02:1 on it        |
+| `field`       | `#7C8794` | Boundary of every text input, select and textarea                         | 3.65:1 on white, 3.39:1 on canvas (WCAG 1.4.11 asks 3:1) |
+| `line-strong` | `#D6CCBE` | Dividers and card edges only — never a control boundary                   | 1.59:1                                                   |
 
-The product's surfaces are white cards on pale lavender. Violet marks what is
-current (navigation, selected tab) and what is primary; hot pink marks the one
-thing that needs a person, and completion moments.
+The product's surfaces are white cards on warm sand. Deep Teal marks what is
+current (navigation, selected tab) and what is primary; Soft Sage marks
+progress and completion; Coral Pop marks the one thing that needs a person.
+
+**Disabled controls** sit at 60% opacity, which drops white-on-teal to about
+2.6:1. WCAG 2.2 exempts inactive components (1.4.3), and disabled state is
+never the only signal — the control is also unclickable and, where it matters,
+explained in words.
 
 ## Type
 
@@ -128,9 +168,35 @@ The wordmark is dark type on transparency, so on dark grounds it sits on a
 light chip rather than being colour-inverted — inverting would turn the brand
 gradient green.
 
+**The wordmark carries the palette, part by part** (September 2026, at the
+owner's request):
+
+| Part          | Colour              | On white | On navy |
+| ------------- | ------------------- | -------: | ------: |
+| Wordmark      | Navy `#1E2D3D`      |  14.02:1 |  1.18:1 |
+| Hands         | Deep Teal `#2A5C5A` |   7.56:1 |  2.18:1 |
+| Central light | Coral Pop `#E8856C` |   2.62:1 |  6.29:1 |
+| Rays          | Soft Sage `#7FB5A0` |   2.33:1 |  7.09:1 |
+
+`scripts/recolour-wordmark.py` separates the parts by connected components on
+the supplied artwork and rewrites colour only — every pixel keeps its original
+alpha, so letterforms, proportions and the hand/light drawing are exactly as
+supplied (verified: zero pixels differ in alpha from the original).
+
+Two assets come out of it. `evercalm-wordmark-brand.png` is the mark.
+`evercalm-wordmark-brand-on-dark.png` changes only the two colours that fail on
+a navy ground — the wordmark to Warm Sand (13.47:1) and the hands to the light
+teal used on dark surfaces (7.18:1) — so the light chip is no longer needed.
+The original black and violet/magenta artwork is untouched at
+`evercalm-wordmark.png`; reverting is one line in `src/ui/brand.ts`.
+
+A logotype is exempt from contrast minimums (WCAG 1.4.3, 1.4.11), but the mark
+was measured anyway and is legible at 22px through 72px on white, the canvas
+ground, Warm Sand and navy.
+
 ## Deliberately avoided
 
-Beige and sage palettes · tiny eyebrow text · decorative dots and dashes ·
+Tiny eyebrow text · decorative dots and dashes ·
 walls of identical-weight cards · low-contrast buttons · ambiguous clickability
 · gratuitous gradients · dashboards of vanity metrics. **Every number on a
 dashboard must be something a person can act on** — which is why the Slice 1

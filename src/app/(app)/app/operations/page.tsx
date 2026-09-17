@@ -34,11 +34,11 @@ export const dynamic = 'force-dynamic'
 
 const INTERVENTION_LABELS: Record<
   Intervention,
-  { label: string; tone: 'danger' | 'warning' | 'violet' }
+  { label: string; tone: 'danger' | 'warning' | 'accent' }
 > = {
   blocked: { label: 'Blocked', tone: 'danger' },
   overdue: { label: 'Overdue', tone: 'danger' },
-  waiting: { label: 'Waiting to verify', tone: 'violet' },
+  waiting: { label: 'Waiting to verify', tone: 'accent' },
   skipped_required: { label: 'Required, skipped', tone: 'warning' },
   returned: { label: 'Sent back', tone: 'warning' },
 }
@@ -199,7 +199,7 @@ export default async function OperationsBoardPage({
                           <ProgressBar
                             className="mt-3"
                             value={shift.progress.percent}
-                            tone={shift.state === 'complete' ? 'success' : 'violet'}
+                            tone={shift.state === 'complete' ? 'success' : 'accent'}
                             label={`${shift.progress.done + shift.progress.skipped} of ${shift.progress.total} finished`}
                           />
                         ) : null}
@@ -308,13 +308,13 @@ function Figure({
   const quiet = value === 0 || value === '0%'
   const box = {
     neutral: 'before:bg-transparent',
-    attention: 'before:bg-violet-500',
+    attention: 'before:bg-teal-500',
     urgent: 'before:bg-danger',
     good: 'before:bg-transparent',
   }[quiet ? 'neutral' : tone]
   const text = {
     neutral: 'text-ink',
-    attention: 'text-violet-700',
+    attention: 'text-teal-700',
     urgent: 'text-danger',
     good: 'text-success',
   }[tone]
@@ -432,7 +432,7 @@ function Groups({
             </div>
             <ProgressBar
               value={group.progress.percent}
-              tone={group.state === 'complete' ? 'success' : 'violet'}
+              tone={group.state === 'complete' ? 'success' : 'accent'}
               label={`${group.progress.done + group.progress.skipped} of ${group.progress.total} finished${group.progress.waiting ? ` · ${group.progress.waiting} to verify` : ''}`}
             />
           </li>

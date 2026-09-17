@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Pricing' }
 export default function PricingPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-16">
-      <Badge tone="violet">Pilot programme</Badge>
+      <Badge tone="accent">Pilot programme</Badge>
       <h1 className="font-display text-ink mt-4 text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
         Pricing is set with our pilot partners
       </h1>

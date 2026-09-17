@@ -96,7 +96,7 @@ export default async function InboxPage({
                 aria-current={active ? 'page' : undefined}
                 className={
                   active
-                    ? 'rounded-control bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white'
+                    ? 'rounded-control bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white'
                     : 'rounded-control border-line text-ink hover:bg-sunk border bg-white px-3.5 py-2 text-sm font-medium'
                 }
               >
@@ -154,7 +154,7 @@ export default async function InboxPage({
                     <Card
                       className={
                         item.unread
-                          ? 'relative overflow-hidden border-violet-300 p-4'
+                          ? 'relative overflow-hidden border-teal-300 p-4'
                           : 'relative overflow-hidden p-4'
                       }
                     >
@@ -162,10 +162,10 @@ export default async function InboxPage({
 
                       <div className="flex flex-wrap items-center gap-2">
                         {item.unread ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-[0.6875rem] font-semibold text-violet-700">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-2.5 py-1 text-[0.6875rem] font-semibold text-teal-700">
                             <span
                               aria-hidden="true"
-                              className="h-1.5 w-1.5 rounded-full bg-violet-600"
+                              className="h-1.5 w-1.5 rounded-full bg-teal-600"
                             />
                             Unread
                           </span>
@@ -222,7 +222,7 @@ export default async function InboxPage({
 
 function chipClass(active: boolean): string {
   return active
-    ? 'rounded-full bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700'
+    ? 'rounded-full bg-teal-100 px-3 py-1.5 text-xs font-semibold text-teal-700'
     : 'border-line text-muted hover:text-ink rounded-full border bg-white px-3 py-1.5 text-xs font-medium'
 }
 

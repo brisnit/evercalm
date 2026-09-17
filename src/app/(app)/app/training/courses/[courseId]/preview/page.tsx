@@ -77,7 +77,7 @@ export default async function PreviewPage({
                 aria-current={entry.versionNumber === version.versionNumber ? 'page' : undefined}
                 className={
                   entry.versionNumber === version.versionNumber
-                    ? 'rounded-full bg-violet-600 px-3 py-1 font-medium text-white'
+                    ? 'rounded-full bg-teal-600 px-3 py-1 font-medium text-white'
                     : 'border-line-strong text-ink hover:bg-sunk rounded-full border bg-white px-3 py-1'
                 }
               >
@@ -88,7 +88,7 @@ export default async function PreviewPage({
           </nav>
         ) : null}
 
-        <p className="rounded-card text-ink border border-violet-200 bg-violet-50 px-4 py-3 text-sm">
+        <p className="rounded-card text-ink border border-teal-200 bg-teal-50 px-4 py-3 text-sm">
           This is what employees see, lesson by lesson. Nothing here is saved. Correct answers are
           marked for you; employees see them only after they pass.
         </p>

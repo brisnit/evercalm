@@ -166,7 +166,7 @@ function CourseRow({
           {showDrafts &&
           course.draftVersionNumber !== null &&
           course.publishedVersionNumber !== null ? (
-            <Badge tone="violet">Draft of version {course.draftVersionNumber}</Badge>
+            <Badge tone="accent">Draft of version {course.draftVersionNumber}</Badge>
           ) : null}
           <span className="text-muted text-xs">
             {course.lessonCount} {course.lessonCount === 1 ? 'lesson' : 'lessons'} · about{' '}

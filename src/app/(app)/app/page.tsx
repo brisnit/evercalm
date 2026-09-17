@@ -1,288 +1,147 @@
 import Link from 'next/link'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
-import { listLocations } from '@/modules/org/service'
-import { listEmployments, listExpiringCredentials } from '@/modules/people/service'
+import { listEmployments } from '@/modules/people/service'
 import { listProgress } from '@/modules/onboarding/service'
-import { listInvitations } from '@/modules/invitations/service'
-import { can, canAtAnyLocation } from '@/server/authz/can'
-import { ForbiddenError } from '@/lib/errors'
-import {
-  Avatar,
-  Badge,
-  ButtonLink,
-  Card,
-  CardHeader,
-  EmptyState,
-  PageHeader,
-  ProgressRing,
-  TextLink,
-} from '@/ui/primitives'
 import { attentionItems } from '@/modules/reports/attention'
+import { canAtAnyLocation } from '@/server/authz/can'
+import { ForbiddenError } from '@/lib/errors'
+import { cn } from '@/lib/cn'
+import { ToolCard } from '@/ui/patterns/tool-card'
+import { ToolIcon } from '@/ui/patterns/tool-icon'
+import { attentionSummary, launcherTools } from './launcher'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * Administration overview.
+ * Administration home: a launcher.
  *
- * Every figure on this page is something a person can act on, and each links
- * to where they would act. There is no headcount-for-its-own-sake tile and no
- * chart of nothing: if a system has not shipped, it is simply absent.
+ * Owners and managers sign in to get somewhere, fast. So Home is a short
+ * welcome, one small box saying how much needs a decision (the list itself is
+ * one click away on Needs attention), and a card for each tool this person can
+ * open. Nothing here is a feed.
  */
 
 async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn()
   } catch (error) {
-    // A capability the actor lacks is not an error on a dashboard - that
-    // section simply does not appear for them.
     if (error instanceof ForbiddenError) return fallback
     throw error
   }
 }
 
-export default async function AppOverviewPage() {
-  const { actor } = await requireActorContext()
+export default async function AppHomePage() {
+  const { actor, activeOrganization } = await requireActorContext()
 
   const data = await withTenant(actor.organizationId, async (tx) => ({
-    locations: await listLocations(tx, actor),
-    people: await safely(() => listEmployments(tx, actor), []),
-    onboarding: await safely(() => listProgress(tx, actor), []),
-    credentials: await safely(() => listExpiringCredentials(tx, actor), []),
-    invitations: await safely(() => listInvitations(tx, actor), []),
+    people: canAtAnyLocation(actor, 'people.view')
+      ? await safely(() => listEmployments(tx, actor), [])
+      : [],
+    onboarding: canAtAnyLocation(actor, 'onboarding.view_progress')
+      ? await safely(() => listProgress(tx, actor), [])
+      : [],
     attention: await attentionItems(tx, actor),
   }))
 
-  const activePeople = data.people.filter((p) => p.status === 'active')
-
+  const active = data.people.filter((p) => p.status === 'active').length
+  const onboarding = data.onboarding.filter((p) => p.state !== 'completed').length
+  const tools = launcherTools(actor, data.attention, {
+    people: data.people.length > 0 ? `${active} active` : null,
+    onboarding:
+      onboarding > 0 ? `${onboarding} ${onboarding === 1 ? 'person' : 'people'} onboarding` : null,
+  })
+  const summary = attentionSummary(data.attention)
   const firstName = actor.displayName.split(' ')[0] ?? actor.displayName
-  const mayViewPeople = canAtAnyLocation(actor, 'people.view')
-  const mayViewOnboarding = canAtAnyLocation(actor, 'onboarding.view_progress')
-  const mayInvite = canAtAnyLocation(actor, 'people.invite')
 
   return (
     <>
-      <PageHeader
-        title={`Good to see you, ${firstName}`}
-        description={
-          data.attention.length === 0
-            ? 'Nothing needs a decision right now. Here is how things stand.'
-            : `${data.attention.length} ${data.attention.length === 1 ? 'thing needs' : 'things need'} a decision.`
-        }
-        action={
-          mayInvite ? (
-            <ButtonLink href="/app/people/invite" variant="secondary">
-              Invite someone
-            </ButtonLink>
-          ) : undefined
-        }
-      />
+      <div className="mb-5 sm:mb-6">
+        <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
+          Good to see you, {firstName}
+        </h1>
+        <p className="text-muted mt-1">{activeOrganization.organizationName}</p>
+      </div>
 
-      <Card as="section" className="overflow-hidden">
-        <div className="border-line flex flex-wrap items-baseline justify-between gap-2 border-b px-5 py-4">
-          <h2 className="font-display text-ink text-lg font-bold">Needs you</h2>
-          <p className="text-muted text-sm">Last 30 days, for the locations you look after</p>
-        </div>
-        {data.attention.length === 0 ? (
-          <div className="flex items-center gap-3 px-5 py-5">
-            <span
-              aria-hidden="true"
-              className="bg-success-soft text-success flex size-9 shrink-0 items-center justify-center rounded-full"
-            >
-              <svg viewBox="0 0 16 16" fill="none" className="size-4">
-                <path
-                  d="m3.5 8.5 3 3 6-7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+      <Link
+        href="/app/attention"
+        data-testid="attention-summary"
+        className={cn(
+          'group rounded-card mb-6 flex flex-wrap items-center gap-x-5 gap-y-3 border bg-white px-4 py-3.5 sm:px-5',
+          'transition-[border-color,box-shadow] hover:border-teal-300 hover:shadow-[0_6px_20px_-12px_rgba(30,45,61,0.35)]',
+          'focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2',
+          summary.total > 0 ? 'border-teal-200' : 'border-line',
+        )}
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-10 shrink-0 items-center justify-center rounded-full',
+              summary.total > 0 ? 'bg-coral-50 text-coral-700' : 'bg-success-soft text-success',
+            )}
+          >
+            <ToolIcon name={summary.total > 0 ? 'alert' : 'checklist'} className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="text-ink block font-semibold">Needs attention</span>
+            <span className="text-muted block text-sm">
+              {summary.total === 0
+                ? 'Nothing needs a decision right now'
+                : `${summary.kinds} ${summary.kinds === 1 ? 'kind of decision' : 'kinds of decisions'} waiting`}
             </span>
-            <p className="text-ink">
-              Nothing needs a decision right now.{' '}
-              <span className="text-muted">
-                New requests, blocked work and sign-offs appear here.
-              </span>
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-line divide-y">
-            {data.attention.map((item) => (
-              <li key={item.key}>
-                <Link
-                  href={item.href}
-                  className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-violet-50/60"
-                >
-                  <span
-                    className={
-                      item.tone === 'urgent'
-                        ? 'bg-danger-soft text-danger font-display flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full px-2 text-base font-extrabold tabular-nums'
-                        : 'bg-warning-soft text-warning font-display flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full px-2 text-base font-extrabold tabular-nums'
-                    }
-                  >
-                    {item.count}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="text-ink block font-semibold group-hover:underline group-hover:underline-offset-4">
-                      {item.label}
-                    </span>
-                    <span className="text-muted block text-sm">
-                      {item.area} · {item.detail}
-                    </span>
-                  </span>
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    className="text-faint size-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-700"
-                  >
-                    <path
-                      d="M6 3.5 10.5 8 6 12.5"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Link>
+          </span>
+        </span>
+        {summary.top.length > 0 ? (
+          <ul className="flex flex-wrap gap-2" aria-label="Waiting">
+            {summary.top.map((item) => (
+              <li
+                key={item.key}
+                className="bg-canvas text-ink inline-flex items-baseline gap-1.5 rounded-full px-3 py-1 text-sm"
+              >
+                <span className="font-display font-extrabold tabular-nums">{item.count}</span>
+                <span className="text-muted">{item.label}</span>
               </li>
             ))}
           </ul>
-        )}
-      </Card>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
-        {mayViewOnboarding ? (
-          <Card>
-            <CardHeader
-              title="Onboarding"
-              description="Newest hires first, with whatever is blocking them."
-              action={
-                <TextLink href="/app/onboarding" className="text-sm">
-                  View all
-                </TextLink>
-              }
-            />
-            <div className="p-5">
-              {data.onboarding.length === 0 ? (
-                <EmptyState
-                  title="Nobody is onboarding right now"
-                  description="When you invite someone and assign them a checklist, their progress appears here."
-                />
-              ) : (
-                <ul className="flex flex-col gap-2.5">
-                  {data.onboarding.slice(0, 5).map((person) => (
-                    <li key={person.assignmentId}>
-                      <Link
-                        href={`/app/people/${person.employmentId}`}
-                        className="rounded-control border-line hover:bg-raise flex items-center gap-3 border px-3.5 py-3"
-                      >
-                        <ProgressRing value={person.percentComplete} label={person.employeeName} />
-                        <span className="min-w-0 flex-1">
-                          <span className="text-ink block truncate text-sm font-medium">
-                            {person.employeeName}
-                          </span>
-                          <span className="text-muted block truncate text-xs">
-                            {person.nextAction ?? 'All steps complete'}
-                          </span>
-                        </span>
-                        <OnboardingStateBadge state={person.state} />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </Card>
         ) : null}
+        <span className="text-accent-strong inline-flex items-center gap-1 text-sm font-semibold">
+          {summary.total > 0 ? 'Review' : 'Open'}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            fill="none"
+            className="size-4 transition-transform group-hover:translate-x-0.5"
+          >
+            <path
+              d="M6 3.5 10.5 8 6 12.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </Link>
 
-        <div className="flex flex-col gap-5">
-          {mayViewPeople ? (
-            <Card>
-              <CardHeader
-                title="Credentials to chase"
-                description="Expired or expiring within 45 days."
+      <section aria-labelledby="tools-heading">
+        <h2 id="tools-heading" className="sr-only">
+          Your tools
+        </h2>
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {tools.map((tool) => (
+            <li key={tool.key} className="min-w-0">
+              <ToolCard
+                href={tool.href}
+                label={tool.label}
+                icon={tool.icon}
+                status={tool.status}
+                tone={tool.tone}
+                testId={`tool-${tool.key}`}
               />
-              <div className="p-5">
-                {data.credentials.length === 0 ? (
-                  <EmptyState
-                    title="Everything current"
-                    description="No licences or certifications need renewing in the next 45 days."
-                  />
-                ) : (
-                  <ul className="flex flex-col gap-2.5">
-                    {data.credentials.slice(0, 6).map((row) => (
-                      <li
-                        key={row.credential.id}
-                        className="rounded-control border-line flex items-center gap-3 border px-3.5 py-2.5"
-                      >
-                        <Avatar name={row.employeeName} size="sm" />
-                        <span className="min-w-0 flex-1">
-                          <span className="text-ink block truncate text-sm font-medium">
-                            {row.employeeName}
-                          </span>
-                          <span className="text-muted block truncate text-xs">
-                            {row.credential.name}
-                          </span>
-                        </span>
-                        <Badge
-                          tone={row.credential.expiryState === 'expired' ? 'danger' : 'warning'}
-                        >
-                          {row.credential.expiryState === 'expired'
-                            ? 'Expired'
-                            : `${row.credential.daysUntilExpiry}d`}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </Card>
-          ) : null}
-
-          <Card>
-            <CardHeader title="Your organization" />
-            <dl className="divide-line divide-y">
-              {[
-                ['Active people', String(activePeople.length)],
-                ['Locations', String(data.locations.length)],
-                [
-                  'Your access',
-                  actor.grants.map((g) => g.roleName).join(', ') || 'No roles granted',
-                ],
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-4 px-5 py-3">
-                  <dt className="text-muted text-sm">{label}</dt>
-                  <dd className="text-ink text-right text-sm font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-            {can(actor, 'org.manage_locations') ? (
-              <div className="border-line border-t px-5 py-3">
-                <TextLink href="/app/setup" className="text-sm">
-                  Continue company setup
-                </TextLink>
-              </div>
-            ) : null}
-          </Card>
-        </div>
-      </div>
+            </li>
+          ))}
+        </ul>
+      </section>
     </>
   )
-}
-
-export function OnboardingStateBadge({ state }: { state: string }) {
-  const config: Record<
-    string,
-    { tone: 'neutral' | 'violet' | 'success' | 'warning' | 'danger'; label: string }
-  > = {
-    completed: { tone: 'success', label: 'Complete' },
-    blocked: { tone: 'danger', label: 'Blocked' },
-    overdue: { tone: 'warning', label: 'Overdue' },
-    in_progress: { tone: 'violet', label: 'In progress' },
-    not_started: { tone: 'neutral', label: 'Not started' },
-  }
-  const { tone, label } = config[state] ?? { tone: 'neutral' as const, label: state }
-  return <Badge tone={tone}>{label}</Badge>
 }

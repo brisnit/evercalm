@@ -4,16 +4,19 @@ import Link from 'next/link'
 import { EmployeeHeader } from './_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
-import { listLocations } from '@/modules/org/service'
 import { getEmployment, listCredentials } from '@/modules/people/service'
 import { getProgressForEmployment } from '@/modules/onboarding/service'
 import { inboxDigest } from '@/modules/comms/inbox'
 import { nextShift } from '@/modules/scheduling/employee'
 import { myTraining, type MyTraining } from '@/modules/training/learner'
-import { dueLabel } from '@/modules/training/progress'
 import { myShiftWorkSummary, type ShiftWorkSummary } from '@/modules/operations/work'
-import { PriorityMark } from '@/ui/patterns/priority-mark'
-import { Badge, ButtonLink, Card, CardHeader, ProgressBar, TextLink } from '@/ui/primitives'
+import { handoffsForMe } from '@/modules/operations/handoffs'
+import { HandoffCard } from '@/ui/patterns/handoff-card'
+import { NoticeProvider } from '@/ui/patterns/notice-provider'
+import { cn } from '@/lib/cn'
+import { ToolCard } from '@/ui/patterns/tool-card'
+import type { ToolIconName } from '@/ui/patterns/tool-icon'
+import { Badge, ButtonLink, Card, CardHeader } from '@/ui/primitives'
 
 export const metadata: Metadata = { title: 'My work' }
 export const dynamic = 'force-dynamic'
@@ -22,15 +25,15 @@ export const dynamic = 'force-dynamic'
  * Employee home - mobile-first, and a separate information architecture from
  * /app rather than a narrowed version of it.
  *
- * Ordered by the product promise: what do I need to do next, then what have I
- * finished, then where do I work. Sections whose systems have not shipped are
- * simply absent: no placeholder card stands in for them.
+ * A launcher: anything that must not wait (a message to confirm, an urgent
+ * notice, a credential running out) in full view, then one card for each
+ * place a person goes - their shift, schedule, next onboarding step, training
+ * and messages - each with a single line. Detail is one tap away.
  */
 export default async function MyWorkPage() {
   const { actor } = await requireActorContext()
 
   const data = await withTenant(actor.organizationId, async (tx) => ({
-    locations: await listLocations(tx, actor),
     me: await getEmployment(tx, actor, actor.employmentId),
     onboarding: await getProgressForEmployment(tx, actor, actor.employmentId),
     credentials: await listCredentials(tx, actor, actor.employmentId),
@@ -38,6 +41,7 @@ export default async function MyWorkPage() {
     nextShift: await nextShift(tx, actor),
     training: await myTraining(tx, actor),
     shiftWork: await myShiftWorkSummary(tx, actor),
+    handedToMe: await handoffsForMe(tx, actor),
   }))
 
   // When onboarding's next step IS a course, there is one next action, not two:
@@ -64,24 +68,29 @@ export default async function MyWorkPage() {
     !/^(Blocked|Waiting for sign-off|Waiting on EverCalm):/.test(data.onboarding.nextAction)
   const carryOn = data.onboarding?.state === 'blocked' && nextIsActionable && waitingItems > 0
 
-  const myLocations = data.locations.filter((l) => actor.locationIds.includes(l.id))
   const hasAdminAccess = actor.grants.some((g) => g.capabilities.size > 0)
   const firstName = actor.displayName.split(' ')[0] ?? actor.displayName
-  // One primary action on the screen: the most demanding thing to do next.
   const inboxDemands = data.inbox.acknowledgementsDue > 0 || data.inbox.urgentUnread > 0
-  const shiftOpen =
-    !!data.shiftWork && (data.shiftWork.progress.open > 0 || data.shiftWork.progress.waiting > 0)
-  const lead: 'inbox' | 'shift' | 'onboarding' | 'none' = inboxDemands
-    ? 'inbox'
-    : shiftOpen
-      ? 'shift'
-      : data.onboarding?.nextAction
-        ? 'onboarding'
-        : 'none'
-  const scheduleRepeatsShift = !!data.shiftWork && data.nextShift?.id === data.shiftWork.shiftId
   const attentionCredentials = data.credentials.filter(
     (c) => c.expiryState === 'expired' || c.expiryState === 'expiring_soon',
   )
+
+  const cards = homeCards({
+    shiftWork: data.shiftWork,
+    nextShift: data.nextShift,
+    onboarding: data.onboarding
+      ? {
+          nextAction: data.onboarding.nextAction,
+          state: data.onboarding.state,
+          requiredDone: data.onboarding.requiredDone,
+          requiredTotal: data.onboarding.requiredTotal,
+          carryOn,
+        }
+      : null,
+    onboardingLesson,
+    training: data.training,
+    inbox: data.inbox,
+  })
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -96,151 +105,43 @@ export default async function MyWorkPage() {
         }
       />
 
-      <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
+      <main
+        id="main"
+        className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-5 sm:py-7 md:max-w-3xl"
+      >
         <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
           Hello, {firstName}
         </h1>
-        <p className="text-muted mt-1 text-sm">
-          {data.me.jobTitle ?? 'Team member'}
-          {data.me.homeLocationName ? ` · ${data.me.homeLocationName}` : ''}
-        </p>
+        <p className="text-muted mt-1 text-sm">{data.me.jobTitle ?? 'Team member'}</p>
 
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="mt-5 flex flex-col gap-4">
           {/*
-            Communication comes before onboarding only when it is genuinely
-            more demanding: something needs confirming, or an urgent notice is
-            unread. Otherwise the inbox is a quiet line further down, because
-            "Do this next" must not become a wall of everything.
+            What must not wait stays in full view above the launcher: a message
+            to confirm, an urgent or safety notice, a credential running out.
           */}
           {inboxDemands ? <InboxCallout digest={data.inbox} /> : null}
 
-          {data.shiftWork ? (
-            <ShiftWorkCard summary={data.shiftWork} primary={lead === 'shift'} />
-          ) : null}
-
-          <Card>
-            <CardHeader
-              title="Your schedule"
-              description={
-                !data.nextShift
-                  ? 'No upcoming shifts have been published for you yet.'
-                  : scheduleRepeatsShift
-                    ? 'Your next shift is above.'
-                    : 'Your next shift'
-              }
-              action={
-                <TextLink href="/my/schedule" className="text-sm">
-                  Open schedule
-                </TextLink>
-              }
-            />
-            {data.nextShift && !scheduleRepeatsShift ? (
-              <Link
-                href={`/my/schedule/shifts/${data.nextShift.id}`}
-                className="block p-5 pt-4 hover:bg-violet-50/50"
+          {data.handedToMe.length > 0 ? (
+            <NoticeProvider>
+              <section
+                aria-labelledby="handed-to-you"
+                data-testid="handed-to-you"
+                className="rounded-card flex flex-col gap-3 border border-teal-300 bg-white p-4 sm:p-5"
               >
-                <span className="text-ink block font-medium">
-                  {data.nextShift.day} · {data.nextShift.time}
-                  {data.nextShift.endsNextDay ? ' (next day)' : ''}
-                </span>
-                <span className="text-muted block text-sm">
-                  {[
-                    data.nextShift.jobRoleName,
-                    data.nextShift.stationName,
-                    data.nextShift.locationName,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </Link>
-            ) : null}
-            <div className="border-line flex flex-wrap gap-x-5 border-t px-5 py-1 text-sm">
-              <TextLink href="/my/time-off" standalone>
-                Time off
-              </TextLink>
-              <TextLink href="/my/availability" standalone>
-                Availability
-              </TextLink>
-            </div>
-          </Card>
-
-          {data.onboarding ? (
-            <div data-testid="onboarding-card">
-              <Card className="overflow-hidden">
-                <div className="border-line border-b bg-white px-5 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-violet-700">
-                        {data.onboarding.nextAction ? 'Do this next' : 'Onboarding'}
-                      </p>
-                      <p className="font-display text-ink mt-1 text-lg font-bold text-balance">
-                        {data.onboarding.nextAction ?? 'You are all caught up'}
-                      </p>
-                    </div>
-                    {carryOn ? (
-                      <Badge tone="neutral">
-                        {waitingItems} {waitingItems === 1 ? 'item' : 'items'} waiting
-                      </Badge>
-                    ) : data.onboarding.state === 'blocked' ? (
-                      <Badge tone="warning">Waiting</Badge>
-                    ) : data.onboarding.state === 'overdue' ? (
-                      <Badge tone="danger">Overdue</Badge>
-                    ) : data.onboarding.state === 'completed' ? (
-                      <Badge tone="success">Complete</Badge>
-                    ) : null}
-                  </div>
+                <div>
+                  <p className="text-coral-700 text-sm font-semibold">Handed to you</p>
+                  <h2 id="handed-to-you" className="font-display text-ink text-lg font-extrabold">
+                    {data.handedToMe.length === 1
+                      ? '1 task left for you'
+                      : `${data.handedToMe.length} tasks left for you`}
+                  </h2>
                 </div>
-                <div className="px-5 py-4">
-                  <ProgressBar
-                    value={data.onboarding.percentComplete}
-                    label={`${data.onboarding.requiredDone} of ${data.onboarding.requiredTotal} required steps done`}
-                    tone={
-                      data.onboarding.state === 'completed'
-                        ? 'success'
-                        : data.onboarding.state === 'overdue'
-                          ? 'warning'
-                          : 'violet'
-                    }
-                  />
-                  {carryOn ? (
-                    <p className="text-muted mt-2 text-sm">
-                      {waitingItems === 1
-                        ? '1 other item is waiting on someone else.'
-                        : `${waitingItems} other items are waiting on someone else.`}{' '}
-                      You can carry on with this in the meantime.
-                    </p>
-                  ) : null}
-                  {onboardingLesson ? (
-                    <>
-                      <ButtonLink
-                        href={onboardingLesson.href}
-                        variant={lead === 'onboarding' ? 'primary' : 'secondary'}
-                        className="mt-4 w-full"
-                      >
-                        Continue {onboardingLesson.courseTitle}
-                      </ButtonLink>
-                      <ButtonLink href="/my/onboarding" variant="secondary" className="mt-2 w-full">
-                        Open your onboarding
-                      </ButtonLink>
-                    </>
-                  ) : (
-                    <ButtonLink
-                      href="/my/onboarding"
-                      variant={lead === 'onboarding' ? 'primary' : 'secondary'}
-                      className="mt-4 w-full"
-                    >
-                      Open your onboarding
-                    </ButtonLink>
-                  )}
-                </div>
-              </Card>
-            </div>
+                {data.handedToMe.map((handoff) => (
+                  <HandoffCard key={handoff.id} handoff={handoff} />
+                ))}
+              </section>
+            </NoticeProvider>
           ) : null}
-
-          <TrainingCard
-            training={data.training}
-            onboardingAssignmentId={onboardingLesson?.assignmentId ?? null}
-          />
 
           {attentionCredentials.length > 0 ? (
             <Card>
@@ -270,73 +171,175 @@ export default async function MyWorkPage() {
             </Card>
           ) : null}
 
-          <Card>
-            <CardHeader title="Where you work" />
-            <div className="px-5 py-3">
-              {myLocations.length === 0 ? (
-                <p className="text-muted text-sm">
-                  You are not assigned to a location yet. Your manager can assign you one.
-                </p>
-              ) : (
-                <ul className="divide-line flex flex-col divide-y">
-                  {myLocations.map((l) => (
-                    <li key={l.id} className="flex items-center justify-between gap-3 py-2">
-                      <span className="text-ink text-sm font-medium">{l.name}</span>
-                      {l.city ? <Badge tone="neutral">{l.city}</Badge> : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Messages"
-              description={inboxDescription(data.inbox)}
-              action={
-                <TextLink href="/my/inbox" className="text-sm">
-                  Open inbox
-                </TextLink>
-              }
-            />
-            {/* A preview only when there is something new; read messages live in the inbox. */}
-            {data.inbox.headline &&
-            (data.inbox.unreadCount > 0 || data.inbox.acknowledgementsDue > 0) ? (
-              <div className="p-5 pt-4">
-                <Link href={`/my/inbox/${data.inbox.headline.announcementId}`} className="block">
-                  <span className="flex flex-wrap items-center gap-2">
-                    {data.inbox.headline.unread ? <Badge tone="violet">Unread</Badge> : null}
-                    <PriorityMark priority={data.inbox.headline.priority} />
-                    <span className="text-faint text-xs">{data.inbox.headline.categoryName}</span>
-                  </span>
-                  <span className="text-ink mt-2 block font-medium">
-                    {data.inbox.headline.title}
-                  </span>
-                  <span className="text-muted mt-0.5 line-clamp-2 block text-sm">
-                    {data.inbox.headline.preview}
-                  </span>
-                </Link>
-              </div>
-            ) : null}
-          </Card>
+          <nav aria-label="Your tools">
+            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {cards.map((card, index) => (
+                <li
+                  key={card.key}
+                  className={cn(
+                    'min-w-0',
+                    index === 0 && cards.length % 2 === 1 && 'col-span-2 md:col-span-3',
+                  )}
+                >
+                  <ToolCard
+                    size={index === 0 && cards.length % 2 === 1 ? 'sm' : 'md'}
+                    href={card.href}
+                    label={card.label}
+                    icon={card.icon}
+                    status={card.status}
+                    tone={card.tone}
+                    heading="h2"
+                    className="h-full"
+                    testId={card.testId}
+                  />
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </main>
     </div>
   )
 }
 
-/** The line under the Messages header, in plain words. */
+interface HomeCard {
+  key: string
+  label: string
+  href: string
+  icon: ToolIconName
+  status: string
+  tone: 'calm' | 'attention'
+  testId: string
+}
+
+/**
+ * The five places an employee goes from Home, each with one line. Detail -
+ * progress bars, task lists, message previews - lives one tap away. A course
+ * that onboarding is already pointing at is not offered again under training.
+ */
+function homeCards({
+  shiftWork,
+  nextShift: next,
+  onboarding,
+  onboardingLesson,
+  training,
+  inbox,
+}: {
+  shiftWork: ShiftWorkSummary | null
+  nextShift: { id: string; day: string; time: string; endsNextDay: boolean } | null
+  onboarding: {
+    nextAction: string | null
+    state: string
+    requiredDone: number
+    requiredTotal: number
+    carryOn: boolean
+  } | null
+  onboardingLesson: { assignmentId: string; href: string; courseTitle: string } | null
+  training: MyTraining
+  inbox: { unreadCount: number; acknowledgementsDue: number }
+}): HomeCard[] {
+  const cards: HomeCard[] = []
+
+  if (shiftWork && shiftWork.phase === 'during') {
+    const left = shiftWork.progress.open
+    cards.push({
+      key: 'shift',
+      label: 'On now',
+      href: `/my/shift?shift=${shiftWork.shiftId}`,
+      icon: 'clock',
+      status:
+        shiftWork.needsAttention > 0
+          ? `${shiftWork.time} · ${shiftWork.needsAttention} ${shiftWork.needsAttention === 1 ? 'task needs' : 'tasks need'} you`
+          : left > 0
+            ? `${shiftWork.time} · ${left} to do`
+            : `${shiftWork.time} · all done`,
+      tone: shiftWork.needsAttention > 0 ? 'attention' : 'calm',
+      testId: 'shift-work-card',
+    })
+  } else {
+    const upcoming = shiftWork ?? next
+    cards.push({
+      key: 'shift',
+      label: 'My shift',
+      href: shiftWork ? `/my/shift?shift=${shiftWork.shiftId}` : '/my/shift',
+      icon: 'clock',
+      status: upcoming
+        ? `${upcoming.day} · ${upcoming.time}${upcoming.endsNextDay ? ' (next day)' : ''}`
+        : 'No shift coming up',
+      tone: 'calm',
+      testId: shiftWork ? 'shift-work-card' : 'my-shift-card',
+    })
+  }
+
+  cards.push({
+    key: 'schedule',
+    label: 'Your schedule',
+    href: '/my/schedule',
+    icon: 'calendar',
+    status: next ? 'Shifts, time off and availability' : 'Nothing published for you yet',
+    tone: 'calm',
+    testId: 'schedule-card',
+  })
+
+  if (onboarding) {
+    const done = !onboarding.nextAction
+    cards.push({
+      key: 'next',
+      label: done ? 'Onboarding' : 'Do this next',
+      href: '/my/onboarding',
+      icon: 'next',
+      status: done
+        ? 'All caught up'
+        : `${onboarding.nextAction}${onboarding.state === 'overdue' ? ' · overdue' : ''}`,
+      tone: !done && onboarding.state === 'overdue' ? 'attention' : 'calm',
+      testId: 'onboarding-card',
+    })
+  }
+
+  cards.push({
+    key: 'training',
+    label: 'Your training',
+    href: '/my/training',
+    icon: 'book',
+    status: trainingLine(training, onboardingLesson?.assignmentId ?? null),
+    tone: training.overview.active.some((a) => a.due.kind === 'past') ? 'attention' : 'calm',
+    testId: 'training-card',
+  })
+
+  cards.push({
+    key: 'messages',
+    label: 'Messages',
+    href: '/my/inbox',
+    icon: 'inbox',
+    status: inboxDescription(inbox),
+    tone: inbox.acknowledgementsDue > 0 || inbox.unreadCount > 0 ? 'attention' : 'calm',
+    testId: 'messages-card',
+  })
+
+  return cards
+}
+
+function trainingLine(training: MyTraining, onboardingAssignmentId: string | null): string {
+  const { overview } = training
+  const active = overview.active.filter((a) => a.id !== onboardingAssignmentId)
+  if (active.length === 0) {
+    if (onboardingAssignmentId) return 'Your next course is in onboarding'
+    return overview.completed.length > 0 ? 'All caught up' : 'Nothing assigned yet'
+  }
+  return `${active.length} ${active.length === 1 ? 'course' : 'courses'} to finish`
+}
+
+/** The Messages card's line, in plain words. */
 function inboxDescription(digest: { unreadCount: number; acknowledgementsDue: number }): string {
   if (digest.acknowledgementsDue > 0) {
     return `${digest.acknowledgementsDue} ${
       digest.acknowledgementsDue === 1 ? 'message needs' : 'messages need'
-    } your confirmation.`
+    } your confirmation`
   }
   if (digest.unreadCount > 0) {
-    return `${digest.unreadCount} unread ${digest.unreadCount === 1 ? 'message' : 'messages'}.`
+    return `${digest.unreadCount} unread ${digest.unreadCount === 1 ? 'message' : 'messages'}`
   }
-  return 'Everything is read.'
+  return 'Everything is read'
 }
 
 /**
@@ -369,8 +372,8 @@ function InboxCallout({
       : `${digest.urgentUnread} urgent ${digest.urgentUnread === 1 ? 'message' : 'messages'} to read`
 
   return (
-    <Card className="border-violet-300 p-5">
-      <p className="text-sm font-semibold text-pink-700">Needs you</p>
+    <Card className="border-teal-300 p-5">
+      <p className="text-coral-700 text-sm font-semibold">Needs you</p>
       <h2 className="font-display text-ink mt-1 text-lg font-extrabold">{heading}</h2>
       {digest.overdueAcknowledgements > 0 ? (
         <p className="text-warning mt-1.5 text-sm font-semibold">
@@ -392,143 +395,5 @@ function InboxCallout({
         </ButtonLink>
       </div>
     </Card>
-  )
-}
-
-/**
- * Training on the home screen: the one lesson to do next, and the tally.
- * The full picture is a tap away, under Training.
- */
-function TrainingCard({
-  training,
-  onboardingAssignmentId,
-}: {
-  training: MyTraining
-  /** The course onboarding already points at, so it is not offered twice. */
-  onboardingAssignmentId: string | null
-}) {
-  const { overview } = training
-  const upNext =
-    overview.upNext && overview.upNext.id !== onboardingAssignmentId
-      ? overview.upNext
-      : (overview.active.find((a) => a.progress.next && a.id !== onboardingAssignmentId) ?? null)
-  const lesson = upNext?.progress.next ?? null
-  const due = upNext ? dueLabel(upNext.dueOn, upNext.due) : null
-  const active = overview.active.length
-  const completed = overview.completed.length
-
-  const description =
-    active > 0
-      ? `${active} to finish · ${completed} completed`
-      : completed > 0
-        ? `All caught up · ${completed} completed`
-        : 'Nothing assigned to you yet.'
-
-  return (
-    <Card>
-      <CardHeader
-        title="Your training"
-        description={description}
-        action={
-          <TextLink href="/my/training" className="text-sm">
-            Open training
-          </TextLink>
-        }
-      />
-      {upNext && lesson ? (
-        <div className="p-5 pt-4">
-          <p className="text-sm font-semibold text-violet-700">Next up</p>
-          <Link href={`/my/training/${upNext.id}/lessons/${lesson.id}`} className="mt-1 block">
-            <span className="text-ink block font-medium">{lesson.title}</span>
-            <span className="text-muted block text-sm">
-              {upNext.courseTitle}
-              {due ? ` · ${due}` : ''}
-            </span>
-          </Link>
-          <ProgressBar
-            className="mt-3"
-            value={upNext.progress.percent}
-            label={`${upNext.progress.completed} of ${upNext.progress.total} lessons done`}
-          />
-        </div>
-      ) : onboardingAssignmentId ? (
-        <p className="text-muted p-5 pt-4 text-sm">
-          Your next lesson is part of your onboarding, above.
-        </p>
-      ) : active > 0 ? (
-        <p className="text-muted p-5 pt-4 text-sm">
-          Waiting for a manager to sign off your practical. Nothing else to do right now.
-        </p>
-      ) : null}
-    </Card>
-  )
-}
-
-/**
- * The shift in front of you and how much of its work is left. Only shown when
- * the current or next shift has duties; the workspace is one tap away.
- */
-function ShiftWorkCard({
-  summary,
-  primary,
-}: {
-  summary: ShiftWorkSummary
-  /** Whether this is the screen's one primary action. */
-  primary: boolean
-}) {
-  const { progress } = summary
-  const when =
-    summary.phase === 'during'
-      ? 'On now'
-      : summary.phase === 'after'
-        ? 'Just finished'
-        : summary.phase === 'before'
-          ? 'Starting soon'
-          : 'Your next shift'
-  const finished = progress.open === 0 && progress.waiting === 0
-  const line = finished
-    ? 'Everything is finished.'
-    : [
-        summary.needsAttention > 0
-          ? `${summary.needsAttention} ${summary.needsAttention === 1 ? 'needs' : 'need'} attention`
-          : null,
-        summary.beforeShift > 0 ? `${summary.beforeShift} before you start` : null,
-        `${progress.open} still to do`,
-        progress.waiting > 0 ? `${progress.waiting} waiting for a manager` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-
-  return (
-    <div data-testid="shift-work-card">
-      <Card className={summary.needsAttention > 0 ? 'border-warning/40' : undefined}>
-        <div className="px-5 py-4">
-          <p className="text-sm font-semibold text-violet-700">{when}</p>
-          <p className="font-display text-ink mt-1 text-lg font-bold">
-            {summary.day} · {summary.time}
-            {summary.endsNextDay ? ' (next day)' : ''}
-          </p>
-          <p className="text-muted text-sm">{summary.locationName}</p>
-          <ProgressBar
-            className="mt-3"
-            value={progress.percent}
-            tone={finished ? 'success' : 'violet'}
-            label={`${progress.done + progress.skipped} of ${progress.total} shift tasks finished`}
-          />
-          <p
-            className={`mt-2 text-sm ${summary.needsAttention > 0 ? 'text-warning font-semibold' : 'text-muted'}`}
-          >
-            {line}
-          </p>
-          <ButtonLink
-            href={`/my/shift?shift=${summary.shiftId}`}
-            variant={primary ? 'primary' : 'secondary'}
-            className="mt-4 w-full"
-          >
-            Open shift work
-          </ButtonLink>
-        </div>
-      </Card>
-    </div>
   )
 }
