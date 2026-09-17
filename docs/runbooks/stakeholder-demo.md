@@ -19,22 +19,33 @@ always refused (`src/server/db/demo-guard.ts`).
 
 ## Releasing to the demo
 
-The demo tracks a dedicated release branch, `stakeholder-demo`, so merging work
-into `main` never changes what stakeholders are looking at.
+The demo tracks a dedicated release branch, `stakeholder-demo`, and **nothing
+reaches the public URL automatically**. Pushing that branch moves the approved
+release pointer; a separate, explicit production deployment builds and
+publishes it.
 
 **How that is enforced.** Vercel's _Production Branch_ control is not available
 on this account's dashboard, and the REST API and CLI do not expose it
 (verified September 2026: `PATCH /v9/projects/:id` rejects every branch
 property, and `POST /v9/projects/:id/link` accepts `productionBranch` but
-ignores it). So the guard is an **Ignored Build Step** on `evercalm-demo`:
+ignores it). The guard is an **Ignored Build Step** on `evercalm-demo`:
 
 ```sh
-if [ "$VERCEL_GIT_COMMIT_REF" = "stakeholder-demo" ]; then exit 1; else echo "Skipping: $VERCEL_GIT_COMMIT_REF is not the stakeholder-demo release branch." && exit 0; fi
+if [ "$VERCEL_ENV" = production ] && [ "$VERCEL_GIT_COMMIT_REF" = stakeholder-demo ]; then exit 1; else echo "Skipped: only an explicit production deploy from stakeholder-demo builds ($VERCEL_ENV/$VERCEL_GIT_COMMIT_REF)."; exit 0; fi
 ```
 
-Vercel treats exit 0 as "skip this build" and exit 1 as "build it", so every
-ref except `stakeholder-demo` is skipped. A push to `main` is CANCELED before
-it builds, and the live deployment stays where it is.
+Vercel treats exit 0 as "skip this build" and exit 1 as "build it", so:
+
+| Event                                              | `VERCEL_ENV` / ref                | Result                   |
+| -------------------------------------------------- | --------------------------------- | ------------------------ |
+| Push to `main`                                     | `production` / `main`             | **Skipped** (canceled)   |
+| Push to `stakeholder-demo`                         | `preview` / `stakeholder-demo`    | **Skipped** (canceled)   |
+| Explicit production deploy from the release branch | `production` / `stakeholder-demo` | **Builds and publishes** |
+
+Automatic previews are skipped on purpose, not by accident: the demo's nine
+environment variables are Production-scoped only, so a preview build could not
+start the application anyway, and putting the demo's database credentials into
+Preview scope to "fix" that would widen where they live for no benefit.
 
 ### Releasing
 
@@ -48,10 +59,11 @@ it builds, and the live deployment stays where it is.
    git push origin stakeholder-demo                # never --force
    ```
 
-3. That push builds (the guard allows it), but as a **preview**: Vercel still
-   considers `main` its production branch, so the public alias does not move on
-   its own. Create the production deployment from the same ref, which carries
-   the commit SHA in its metadata:
+   This push deliberately produces **no build**. It records which commit is
+   approved; nothing on the public URL changes yet.
+
+3. Publish it, which is the step that builds. The deployment is git-sourced, so
+   it records the commit it came from:
 
    ```bash
    curl -X POST "https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1" \
@@ -60,9 +72,6 @@ it builds, and the live deployment stays where it is.
           "target":"production",
           "gitSource":{"type":"github","repoId":1367815947,"ref":"stakeholder-demo"}}'
    ```
-
-   `vercel promote <preview-url>` is the alternative: it moves the alias to a
-   build that already exists, without rebuilding.
 
 4. Verify afterwards: `/api/health` (RLS enforced), `/api/ready` (expected
    migration and worker), a sign-in for one owner and one employee, and that
