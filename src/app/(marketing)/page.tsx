@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Container, SECTION, SectionHeading } from './_home/parts'
-import { HeroMock } from './_home/hero-mock'
+import { HeroVideo } from './_home/hero-video'
 import { Icon, type IconName } from './_home/icons'
 import { IndustryTabs, type Industry } from './_home/industry-tabs'
 import { IMAGERY } from './_home/imagery'
@@ -370,10 +370,10 @@ function Hero() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(52rem_26rem_at_-2%_-14%,#e2f0ea_0%,#f1f8f5_38%,transparent_72%),radial-gradient(48rem_28rem_at_104%_-8%,#faf2e6_0%,#fdfbf8_40%,transparent_74%)]"
       />
       {/*
-        Two columns with a firm gutter between them. The mockups are laid out
-        entirely inside their own column (see hero-mock.tsx) - nothing in the
-        illustration may reach into the text, at any width. Guarded by a
-        browser test that measures the bounds.
+        Two columns with a firm gutter between them. The hero film is laid out
+        entirely inside its own column (see hero-video.tsx) - nothing in it may
+        reach into the text, at any width. Guarded by a browser test that
+        measures the bounds.
       */}
       <Container className="relative grid items-center gap-12 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-26 xl:gap-16 [&>*]:min-w-0">
         <div data-testid="hero-copy">
@@ -443,7 +443,7 @@ function Hero() {
           </p>
         </div>
 
-        <HeroMock />
+        <HeroVideo />
       </Container>
     </section>
   )

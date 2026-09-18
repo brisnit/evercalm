@@ -31,16 +31,17 @@ test('the home page renders and offers real calls to action', async ({ page }) =
 /*
  * REGRESSION: the hero's floating phone once covered the right edge of the
  * description, because it was positioned past the left edge of its own column.
- * This measures the real rendered boxes at every width the page is designed
- * for, so it fails whatever the cause - a margin, a breakpoint, a font change.
+ * The illustration is now a film, and the rule is the same: it is measured at
+ * every width the page is designed for, so this fails whatever the cause - a
+ * margin, a breakpoint, a font change.
  */
 const HERO_WIDTHS = [1920, 1440, 1280, 1024, 768, 390, 360]
 
 for (const width of HERO_WIDTHS) {
-  test(`the hero mockups never cover its text at ${width}px`, async ({ page }) => {
+  test(`the hero film never covers its text at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    await expect(page.getByTestId('hero-phone')).toBeVisible()
+    await expect(page.getByTestId('hero-video')).toBeVisible()
 
     const layout = await page.evaluate(() => {
       const box = (id: string) => {
@@ -64,7 +65,7 @@ for (const width of HERO_WIDTHS) {
           'supporting copy': box('hero-proof'),
         },
         mock: box('hero-mock'),
-        art: { phone: box('hero-phone'), dashboard: box('hero-console') },
+        art: { film: box('hero-video') },
         headlineRight: Math.max(...Array.from(range.getClientRects()).map((r) => r.right)),
         descriptionFontSize: parseFloat(getComputedStyle(description).fontSize),
         descriptionClipped: description.scrollWidth > description.clientWidth + 1,
@@ -80,17 +81,17 @@ for (const width of HERO_WIDTHS) {
       inner.top >= outer.top - 1 &&
       inner.bottom <= outer.bottom + 1
 
-    // Neither mockup touches any piece of text.
+    // The film touches no piece of text.
     for (const [artName, art] of Object.entries(layout.art)) {
       for (const [textName, text] of Object.entries(layout.text)) {
         expect(intersects(art, text), `${artName} overlaps the ${textName}`).toBe(false)
       }
       // ...and each stays inside its own column, and on screen.
-      expect(inside(art, layout.mock), `${artName} leaves the mockup column`).toBe(true)
+      expect(inside(art, layout.mock), `${artName} leaves its column`).toBe(true)
       expect(art.left, `${artName} is cut off at the left`).toBeGreaterThanOrEqual(0)
       expect(art.right, `${artName} is cut off at the right`).toBeLessThanOrEqual(layout.viewport)
     }
-    expect(intersects(layout.mock, layout.copy), 'the mockup column overlaps the text column').toBe(
+    expect(intersects(layout.mock, layout.copy), 'the film column overlaps the text column').toBe(
       false,
     )
 
@@ -104,6 +105,32 @@ for (const width of HERO_WIDTHS) {
     expect(layout.scrollWidth, 'the page scrolls sideways').toBeLessThanOrEqual(layout.viewport)
   })
 }
+
+test('the hero film is held back for anyone who prefers reduced motion', async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await page.goto('/')
+  await expect(page.getByTestId('hero-video')).toBeVisible()
+  // The poster still paints; no video element is ever created, so nothing is
+  // fetched and nothing moves.
+  await page.waitForTimeout(2_500)
+  await expect(page.locator('[data-testid="hero-video"] video')).toHaveCount(0)
+  await expect(page.locator('[data-testid="hero-video"] img')).toHaveCount(1)
+  await context.close()
+})
+
+test('the hero film plays without motion preferences, and carries no sound', async ({ page }) => {
+  await page.goto('/')
+  const video = page.locator('[data-testid="hero-video"] video')
+  await expect(video).toHaveCount(1, { timeout: 15_000 })
+  const state = await video.evaluate(async (v: HTMLVideoElement) => {
+    await new Promise((r) => setTimeout(r, 1_500))
+    return { muted: v.muted, loop: v.loop, paused: v.paused, src: v.currentSrc }
+  })
+  expect(state.muted, 'the hero film must never make noise').toBe(true)
+  expect(state.loop).toBe(true)
+  expect(state.src).toMatch(/evercalm-hero-(480|960)\.mp4$/)
+})
 
 test('every navigation link reaches a page that exists', async ({ page }) => {
   await page.goto('/')

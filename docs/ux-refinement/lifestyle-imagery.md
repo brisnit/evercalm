@@ -11,6 +11,42 @@ Before launch, confirm in writing that the business has the right to use these
 images commercially (and, if any show identifiable real people or venues, the
 releases for them), and record that reference in `imagery.ts`.
 
+## The hero film
+
+The hero is a 9-second film supplied by the product owner
+(`Brand Assets/EverCalmHero.mp4`, 1280x720, H.264 + AAC, 13.4 MB). The source
+stays out of the repository, as the photographs do; what ships is encoded for
+the web:
+
+| File                                     | Size   | Used for                            |
+| ---------------------------------------- | ------ | ----------------------------------- |
+| `public/video/evercalm-hero-960.mp4`     | 4.9 MB | 640px and wider                     |
+| `public/video/evercalm-hero-480.mp4`     | 0.9 MB | narrower than 640px                 |
+| `public/video/evercalm-hero-poster.webp` | 42 KB  | the first frame; what always paints |
+
+Encoded with macOS `avconvert` (`Preset960x540` and `PresetAppleM4VWiFi`);
+there is no ffmpeg on this machine. Re-encode from the source, never from
+these.
+
+**How it behaves** (`src/app/(marketing)/_home/hero-video.tsx`):
+
+- The poster is a plain `<img>`, so the hero paints without waiting for video
+  and the page's largest paint is never a 5 MB download.
+- Nothing is fetched until after first paint, and then only if the visitor has
+  not asked for reduced motion and is not on Data Saver. Switching reduced
+  motion on at any time stops and removes it.
+- Muted, looping, `playsInline`, and hidden from assistive technology, with the
+  same one-sentence caption the illustration it replaced had. A browser test
+  asserts it is muted: the homepage must never make noise.
+- It replaced `hero-mock.tsx`, a hand-built console-and-phone illustration; the
+  layout test that guarded the illustration's bounds now measures the film.
+
+**Known:** the interface shown inside the film is not the real product - the
+text on the tablet is generated and reads as nonsense at close range, and it
+labels content with our palette names ("Warm Sand", "Coral Pop", "Soft Sage").
+It is convincing at hero size and wrong if anyone looks closely, which is worth
+deciding about before launch.
+
 ## Direction
 
 - **Candid working moments, not posed stock.** People mid-task, looking at the
