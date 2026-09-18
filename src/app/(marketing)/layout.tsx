@@ -138,24 +138,11 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   )
 }
 
-/** The compact mark used in the footer: gradient chip plus wordmark. */
+/**
+ * The footer mark is the wordmark itself, not a stand-in: a hand-drawn chip
+ * and the name set in the display face used to sit here, which meant the page
+ * ended on something that was not the brand.
+ */
 function FooterLockup() {
-  return (
-    <span className="flex items-center gap-3">
-      <span
-        aria-hidden="true"
-        className="flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-[linear-gradient(135deg,#2a5c5a_0%,#7fb5a0_55%,#ebd4b8_100%)]"
-      >
-        <svg viewBox="0 0 24 12" className="h-3 w-6" fill="none" aria-hidden="true">
-          <path
-            d="M2 8.5c2.6 0 2.6-5 5.2-5s2.6 5 5.2 5 2.6-5 5.2-5 2.6 5 4.4 5"
-            stroke="white"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </span>
-      <span className="font-display text-deep text-xl font-extrabold tracking-tight">EverCalm</span>
-    </span>
-  )
+  return <Logo size="h-10" />
 }
