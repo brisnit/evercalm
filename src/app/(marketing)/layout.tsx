@@ -141,8 +141,13 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 /**
  * The footer mark is the wordmark itself, not a stand-in: a hand-drawn chip
  * and the name set in the display face used to sit here, which meant the page
- * ended on something that was not the brand.
+ * ended on something that was not the brand. It goes home, as the header's
+ * does - the last thing on a long page is where people look for the way back.
  */
 function FooterLockup() {
-  return <Logo size="h-10" />
+  return (
+    <Link href="/" aria-label="EverCalm home" className="inline-flex w-fit">
+      <Logo size="h-10" />
+    </Link>
+  )
 }
