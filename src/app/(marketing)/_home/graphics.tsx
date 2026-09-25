@@ -5,73 +5,23 @@ import { cn } from '@/lib/cn'
  *
  * Round 2's feedback was specific about what it liked and why:
  *
- *   "These background graphics are very pleasing to the eyes."
  *   "This two-tone page break is sick."
- *   "I like the graphics and background, but not the color choice."
+ *   "I like the white background with the small design elements like the
+ *    quotes and the graphic behind the photo."
  *
  * So the shapes are taken from the reference and the colours are not: the
  * reference was rust-on-rust, and EverCalm is navy, cream, mint, deep teal
- * and coral. Everything here is built from those tokens.
+ * and coral.
  *
- * Two rules keep it from becoming noise. Shapes are DECORATION - every one is
- * aria-hidden and none carries meaning that is not also written down. And the
- * page alternates: an expressive section, then a calm one, so the geometry
- * reads as rhythm rather than wallpaper.
+ * The ambient discs that used to float behind every section are gone: the
+ * backgrounds are plain, and the one place that keeps a field of colour is
+ * the closing tout, where it is the point rather than the wallpaper. What
+ * remains here is used deliberately, one element at a time, and every piece
+ * is aria-hidden - none of it carries meaning that is not also written down.
  */
 
-/* -------------------------------------------------------------------------
-   Fields of shape behind a section
-   ---------------------------------------------------------------------- */
-
+/** The colour fields a section can be, for the two-tone break. */
 type Tone = 'cream' | 'navy' | 'teal' | 'white'
-
-/**
- * Oversized circles and arcs, cropped by the section they sit in.
- *
- * `overflow-hidden` on the section is what does the work: shapes are laid out
- * larger than the box on purpose, so what you see is a fragment of something
- * bigger, which is what makes the reference feel art-directed rather than
- * decorated.
- */
-export function ShapeField({ tone, className }: { tone: Tone; className?: string }) {
-  return (
-    <div aria-hidden="true" className={cn('pointer-events-none absolute inset-0', className)}>
-      {tone === 'cream' ? (
-        <>
-          {/* Mint disc, top right, mostly off the edge. */}
-          <span className="bg-sage-100 absolute -top-[22rem] -right-[14rem] hidden size-[46rem] rounded-full sm:block" />
-          {/* A smaller coral one, low and left, to weight the other corner. */}
-          <span className="bg-coral-100 absolute -bottom-[18rem] -left-[12rem] size-[34rem] rounded-full opacity-80" />
-          {/* One teal quarter-circle, cropped by the right edge. */}
-          <span className="absolute top-[38%] -right-[8rem] hidden size-[18rem] rounded-full bg-teal-100 lg:block" />
-        </>
-      ) : null}
-
-      {tone === 'navy' ? (
-        <>
-          <span className="absolute -top-[16rem] -left-[10rem] size-[38rem] rounded-full bg-[#1b2d3d]" />
-          <span className="absolute -right-[12rem] -bottom-[20rem] size-[42rem] rounded-full bg-teal-800/70" />
-          <span className="bg-coral-400/15 absolute top-[12%] right-[14%] hidden size-[11rem] rounded-full lg:block" />
-        </>
-      ) : null}
-
-      {tone === 'teal' ? (
-        <>
-          <span className="bg-coral-600 absolute -top-[10rem] -left-[16rem] size-[34rem] rounded-full" />
-          <span className="bg-coral-200 absolute -top-[9rem] left-[44%] size-[19rem] rounded-full" />
-          <span className="absolute -right-[10rem] -bottom-[14rem] size-[30rem] rounded-full bg-[#2f4a6b]" />
-        </>
-      ) : null}
-
-      {tone === 'white' ? (
-        <>
-          <span className="bg-sage-50 absolute -top-[10rem] -left-[8rem] size-[26rem] rounded-full" />
-          <span className="bg-coral-50 absolute right-[6%] bottom-[8%] hidden size-[15rem] rounded-full lg:block" />
-        </>
-      ) : null}
-    </div>
-  )
-}
 
 /**
  * One arc peeking out from behind a photograph.
@@ -178,22 +128,5 @@ export function TriRule({ className }: { className?: string }) {
       <span className="bg-coral-500 flex-1" />
       <span className="bg-band flex-1" />
     </span>
-  )
-}
-
-/** A small × mark, as used in the reference's hero geometry. */
-export function CrossMark({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      className={cn('pointer-events-none absolute', className)}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-    >
-      <path d="M3 3l10 10M13 3L3 13" />
-    </svg>
   )
 }

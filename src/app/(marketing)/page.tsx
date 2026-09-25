@@ -1,14 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Container, SECTION, SectionHeading } from './_home/parts'
-import {
-  ArcBehind,
-  CrossMark,
-  QuoteMark,
-  SectionBreak,
-  ShapeField,
-  TriRule,
-} from './_home/graphics'
+import { ArcBehind, QuoteMark, SectionBreak, TriRule } from './_home/graphics'
 import { HeroPeople } from './_home/hero-people'
 import { ManagerWeekFrame, StaffPhoneFrame, StepCard } from './_home/product-frames'
 import { Icon, type IconName } from './_home/icons'
@@ -376,11 +369,7 @@ export default function HomePage() {
 function Hero() {
   return (
     <section className="bg-lift relative overflow-hidden">
-      <ShapeField tone="cream" />
-      <CrossMark className="text-coral-400/70 top-[14%] left-[7%] hidden size-4 lg:block" />
-      <CrossMark className="top-[30%] right-[9%] hidden size-3.5 text-teal-400/60 lg:block" />
-
-      <Container className="relative pt-14 pb-20 sm:pt-20 sm:pb-24">
+      <Container className="relative pt-9 pb-16 sm:pt-11 sm:pb-20">
         <div data-testid="hero-copy" className="mx-auto max-w-[58rem] text-center">
           <p className="border-line/70 text-deep inline-flex items-center gap-2.5 rounded-full border bg-white/80 py-1.5 pr-4 pl-1.5 text-[0.8125rem] font-medium backdrop-blur-sm">
             <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-full">
@@ -396,7 +385,7 @@ function Hero() {
           */}
           <h1
             data-testid="hero-headline"
-            className="font-display text-deep mt-7 text-[2.625rem] leading-[1.0] font-extrabold tracking-[-0.025em] text-balance sm:text-[4.25rem] sm:leading-[0.98] sm:text-wrap lg:text-[5.25rem]"
+            className="font-display text-deep mt-5 text-[2.625rem] leading-[1.0] font-extrabold tracking-[-0.025em] text-balance sm:text-[4.25rem] sm:leading-[0.98] sm:text-wrap lg:text-[5.25rem]"
           >
             Everyone walks in{' '}
             {/* The break is the designed one; on a phone the line finds its
@@ -410,7 +399,7 @@ function Hero() {
 
           <p
             data-testid="hero-description"
-            className="text-quiet mx-auto mt-7 max-w-[38rem] text-[1.0625rem] leading-[1.7]"
+            className="text-quiet mx-auto mt-4 max-w-[34rem] text-[1.0625rem] leading-[1.65]"
           >
             One platform for onboarding, training, scheduling, communication and the daily run of
             the floor. Managers stop rebuilding the same spreadsheet every week. Staff open one app
@@ -419,7 +408,7 @@ function Hero() {
 
           <div
             data-testid="hero-actions"
-            className="mt-9 flex flex-wrap items-center justify-center gap-3"
+            className="mt-6 flex flex-wrap items-center justify-center gap-3"
           >
             <Link
               href="/contact"
@@ -441,13 +430,13 @@ function Hero() {
         </div>
 
         {/* People first, product over the top of them. */}
-        <div className="mt-14 sm:mt-16">
+        <div className="mt-8 sm:mt-9">
           <HeroPeople />
         </div>
 
         <p
           data-testid="hero-proof"
-          className="text-muted mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[0.8125rem] sm:mt-20"
+          className="text-muted mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[0.8125rem] sm:mt-14"
         >
           <span>
             <strong className="text-deep font-semibold">14 min</strong> to import a roster
@@ -493,7 +482,6 @@ function IndustryStrip() {
 function Promise() {
   return (
     <section className={`${SECTION} relative overflow-hidden bg-white`}>
-      <ShapeField tone="white" />
       <Container className="relative">
         {/*
           Round 2 liked "the white background with the small design elements".
@@ -543,10 +531,6 @@ function Promise() {
               style={{ '--reveal-index': index } as React.CSSProperties}
               className="group border-line/70 relative overflow-hidden rounded-[1.15rem] border bg-white p-6 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_34px_60px_-28px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
-              <span
-                aria-hidden="true"
-                className="bg-sage-50 group-hover:bg-coral-50 absolute -top-10 -right-10 size-28 rounded-full transition-colors duration-300"
-              />
               <p className="text-faint relative font-mono text-[0.625rem] tracking-[0.14em] uppercase">
                 {item.marker}
               </p>
@@ -590,8 +574,6 @@ function Promise() {
 function ShiftBoard() {
   return (
     <section id="shift-board" className="bg-band relative scroll-mt-20 overflow-hidden">
-      <ShapeField tone="navy" />
-
       <Container className={`relative ${SECTION}`}>
         <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-14">
           <div>
@@ -681,7 +663,6 @@ function ShiftBoard() {
 function Platform() {
   return (
     <section id="platform" className={`bg-lift relative scroll-mt-24 overflow-hidden ${SECTION}`}>
-      <ShapeField tone="cream" />
       <Container className="relative">
         <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
           <div>
@@ -1025,7 +1006,6 @@ function Industries() {
       id="industries"
       className={`relative scroll-mt-24 overflow-hidden bg-white ${SECTION}`}
     >
-      <ShapeField tone="white" />
       <Container className="relative">
         <div className="max-w-[46rem]">
           <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
@@ -1052,7 +1032,6 @@ function Industries() {
 function Rollout() {
   return (
     <section id="rollout" className={`bg-lift relative scroll-mt-24 overflow-hidden ${SECTION}`}>
-      <ShapeField tone="cream" />
       <Container className="relative">
         <div className="max-w-[46rem]">
           <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
@@ -1089,19 +1068,39 @@ function Rollout() {
   )
 }
 
+/**
+ * THE CLOSING TOUT.
+ *
+ * The one place on the page that keeps the graphic language round 2 asked for:
+ * a deep green field with oversized circles in rust, peach and navy, and the
+ * words carried on a cream card floating over the middle of it. Everywhere
+ * else the backgrounds are plain, so this reads as the page arriving
+ * somewhere rather than as more decoration.
+ */
 function FinalCta() {
   return (
     <>
+      {/* The page arrives at the tout through a shape, not an edge. */}
       <SectionBreak from="cream" peak={44} />
-      <section className="bg-band relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
-        <ShapeField tone="navy" />
-        <Container className="relative">
-          <div data-reveal className="mx-auto max-w-[44rem] text-center">
-            <h2 className="font-display text-[2.25rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance text-white sm:text-[3.25rem]">
-              Give every shift the{' '}
-              <span className="text-band-accent font-serif italic">same answer.</span>
+      <section className="relative overflow-hidden bg-teal-800">
+        {/* The field. Oversized and cropped, so each shape is a fragment. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <span className="bg-coral-600 absolute -top-[14rem] -left-[16rem] size-[40rem] rounded-full" />
+          <span className="bg-coral-200 absolute -top-[11rem] left-[52%] size-[22rem] rounded-full" />
+          <span className="absolute -right-[14rem] -bottom-[18rem] size-[34rem] rounded-full bg-[#2f4a6b]" />
+        </div>
+
+        <Container className="relative py-16 sm:py-24">
+          <div
+            data-reveal
+            className="bg-lift mx-auto max-w-[62rem] rounded-[2rem] px-6 py-14 text-center shadow-[0_46px_90px_-40px_rgb(0_0_0/0.55)] sm:rounded-[2.5rem] sm:px-16 sm:py-20"
+          >
+            <h2 className="font-display text-deep text-[2.25rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.25rem]">
+              Give every shift
+              <br className="hidden sm:block" /> the{' '}
+              <span className="text-accent font-serif italic">same answer.</span>
             </h2>
-            <p className="text-band-quiet mx-auto mt-6 max-w-[38rem] text-[1rem] leading-[1.7]">
+            <p className="text-quiet mx-auto mt-6 max-w-[34rem] text-[1rem] leading-[1.65]">
               Pilot businesses are set up with our team. Import a roster, publish a week, and let
               your team see what’s happening, what’s expected, what they’ve finished and what comes
               next.
@@ -1109,7 +1108,7 @@ function FinalCta() {
             <div className="mt-9 flex flex-wrap justify-center gap-3">
               <Link
                 href="/contact"
-                className="bg-action hover:bg-action-hover group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_18px_34px_-16px_rgb(194_79_49/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+                className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
               >
                 Ask about a pilot
                 <Icon
@@ -1119,12 +1118,12 @@ function FinalCta() {
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex min-h-12 items-center rounded-full border border-white/40 px-7 text-[0.9375rem] font-semibold text-white transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-white/10 motion-reduce:hover:translate-y-0"
+                className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
               >
                 Book a 20-minute walkthrough
               </Link>
             </div>
-            <p className="text-band-quiet mt-7 text-[0.8125rem]">
+            <p className="text-muted mt-10 text-[0.8125rem]">
               Pricing agreed with each pilot · No card taken online · Your data exports whenever you
               ask
             </p>
