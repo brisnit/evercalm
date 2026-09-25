@@ -5,7 +5,8 @@ import { withTenant } from '@/server/db'
 import { getMySchedule } from '@/modules/scheduling/employee'
 import { formatIsoDate, isIsoDate, isoWeekday } from '@/modules/scheduling/time'
 import { Badge, Card, EmptyState, TextLink } from '@/ui/primitives'
-import { EmployeeShell, ScheduleTabs } from '../_components/employee-shell'
+import { EmployeeShell, EmployeeTitle, ScheduleTabs } from '../_components/employee-shell'
+
 import { IncomingSwaps, OpenShiftsAndRequests } from './schedule-requests'
 
 export const metadata: Metadata = { title: 'Your schedule' }
@@ -41,13 +42,11 @@ export default async function MySchedulePage({
 
   return (
     <EmployeeShell>
-      <h1 className="font-display text-ink text-2xl font-extrabold tracking-tight">
-        Your schedule
-      </h1>
-      <p className="text-muted mt-1.5 text-sm">
-        {weekStart ? `Week of ${formatIsoDate(weekStart)}.` : 'The next four weeks.'} Times are
-        shown where you work.
-      </p>
+      <EmployeeTitle
+        title="Your"
+        accent="schedule"
+        description={`${weekStart ? `Week of ${formatIsoDate(weekStart)}.` : 'The next four weeks.'} Times are shown where you work.`}
+      />
       <ScheduleTabs current="schedule" />
 
       <div className="mt-6 flex flex-col gap-6">
@@ -80,7 +79,7 @@ export default async function MySchedulePage({
                     {shifts.map((shift) => (
                       <li key={shift.id}>
                         <Link href={`/my/schedule/shifts/${shift.id}`} className="block">
-                          <Card className="p-4 hover:border-teal-300">
+                          <Card className="hover:border-line-strong p-4">
                             <span className="text-ink block text-base font-semibold tabular-nums">
                               {shift.time}
                               {shift.endsNextDay ? ' (next day)' : ''}
@@ -96,6 +95,15 @@ export default async function MySchedulePage({
                             </span>
                             {shift.notes ? (
                               <span className="text-ink mt-2 block text-sm">{shift.notes}</span>
+                            ) : null}
+                            {shift.override ? (
+                              <span className="mt-2 block">
+                                <Badge tone="warning">
+                                  {shift.override.kind === 'unavailable'
+                                    ? 'Scheduled against your availability'
+                                    : 'Not a shift you prefer'}
+                                </Badge>
+                              </span>
                             ) : null}
                             {shift.swap ? (
                               <span className="mt-2 block">

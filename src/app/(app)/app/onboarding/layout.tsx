@@ -12,11 +12,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
 
   return (
     <>
-      {items.length > 1 ? (
-        <div className="mb-6">
-          <SectionNav items={items} />
-        </div>
-      ) : null}
+      {items.length > 1 ? <SectionNav items={items} /> : null}
       {children}
     </>
   )

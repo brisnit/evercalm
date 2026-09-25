@@ -7,7 +7,13 @@ import { NotFoundError } from '@/lib/errors'
 import { loadLocations, type LocationRef } from './access'
 import { detectConflicts, toSecondPerson } from './conflicts'
 import { conflictShift, loadConflictPeople } from './people'
-import { openShiftClaims, shiftSwapRequests, shifts, timeOffRequests } from './schema'
+import {
+  openShiftClaims,
+  scheduleOverrides,
+  shiftSwapRequests,
+  shifts,
+  timeOffRequests,
+} from './schema'
 import { displayNames, requireShift } from './service'
 import { addCalendarDays } from '@/lib/dates'
 import {
@@ -49,6 +55,13 @@ export interface MyShift {
   stationName: string | null
   notes: string
   swap: MySwap | null
+  /**
+   * Set when a manager scheduled this person against their stated
+   * availability. Round 2 is explicit that the person sees it: the decision is
+   * deliberate and has a name on it, so hiding it would be the wrong kind of
+   * quiet.
+   */
+  override: { kind: 'unavailable' | 'not_preferred'; reason: string } | null
 }
 
 export interface MySwap {
@@ -118,7 +131,7 @@ function toMyShift(
     stationName: string | null
   },
   location: LocationRef,
-): Omit<MyShift, 'swap'> {
+): Omit<MyShift, 'swap' | 'override'> {
   const startsAt = row.startsAt!
   const endsAt = row.endsAt!
   const label = formatShift(startsAt, endsAt, location.timeZone)
@@ -288,7 +301,39 @@ export async function getMySchedule(
     .map((row) => ({
       ...toMyShift(row, locationsById.get(row.locationId)!),
       swap: activeSwapFor(row.id),
+      override: null as MyShift['override'],
     }))
+
+  // Overrides on the shifts this person can see, in one query.
+  if (upcoming.length > 0) {
+    const overrides = await tx
+      .select({
+        shiftId: scheduleOverrides.shiftId,
+        kind: scheduleOverrides.kind,
+        reason: scheduleOverrides.reason,
+      })
+      .from(scheduleOverrides)
+      .where(
+        and(
+          eq(scheduleOverrides.organizationId, actor.organizationId),
+          eq(scheduleOverrides.employmentId, actor.employmentId),
+          inArray(
+            scheduleOverrides.shiftId,
+            upcoming.map((shift) => shift.id),
+          ),
+        ),
+      )
+    const byShift = new Map(overrides.map((o) => [o.shiftId, o]))
+    for (const shift of upcoming) {
+      const found = byShift.get(shift.id)
+      if (found) {
+        shift.override = {
+          kind: found.kind === 'unavailable' ? 'unavailable' : 'not_preferred',
+          reason: found.reason,
+        }
+      }
+    }
+  }
 
   const openShifts = await listOpenShifts(tx, actor, locationsById, now)
 
@@ -504,8 +549,28 @@ export async function getMyShift(
   if (!row) throw new NotFoundError('Shift not found')
   const location = locationsById.get(row.locationId)!
   const swaps = await mySwaps(tx, actor, locationsById)
+  // If a manager scheduled them against their availability, they see it here
+  // as well as on the week - this is the screen they open before a shift.
+  const [override] = await tx
+    .select({ kind: scheduleOverrides.kind, reason: scheduleOverrides.reason })
+    .from(scheduleOverrides)
+    .where(
+      and(
+        eq(scheduleOverrides.organizationId, actor.organizationId),
+        eq(scheduleOverrides.shiftId, shiftId),
+        eq(scheduleOverrides.employmentId, actor.employmentId),
+      ),
+    )
+    .limit(1)
+
   const shift: MyShift = {
     ...toMyShift(row, location),
+    override: override
+      ? {
+          kind: override.kind === 'unavailable' ? 'unavailable' : 'not_preferred',
+          reason: override.reason,
+        }
+      : null,
     swap:
       swaps.find(
         (s) =>
@@ -584,10 +649,10 @@ export async function nextShift(tx: Tx, actor: Actor, now = new Date()): Promise
     ),
   )
   if (!row) return null
-  return { ...toMyShift(row, locationsById.get(row.locationId)!), swap: null }
+  return { ...toMyShift(row, locationsById.get(row.locationId)!), swap: null, override: null }
 }
 
-export interface PersonShift extends Omit<MyShift, 'swap'> {
+export interface PersonShift extends Omit<MyShift, 'swap' | 'override'> {
   onNow: boolean
 }
 

@@ -140,6 +140,8 @@ export interface SeedOrganization {
   name: string
   slug: string
   industry: string
+  /** Local area code, used to generate the demo's phone numbers. */
+  areaCode: string
   timezone: string
   jurisdiction: string
   locations: SeedLocation[]
@@ -180,6 +182,7 @@ const HARBOR: SeedOrganization = {
   name: 'Harbor & Vine',
   slug: 'harbor-vine',
   industry: 'restaurant',
+  areaCode: '916',
   timezone: 'America/Los_Angeles',
   jurisdiction: 'US-CA',
 
@@ -601,7 +604,8 @@ const HARBOR: SeedOrganization = {
       jobTitle: 'Shift Lead',
       grants: [{ role: 'shift_lead', location: 'riverside' }],
       locations: ['riverside'],
-      jobRoles: ['server'],
+      // A shift lead works the door as readily as a section.
+      jobRoles: ['server', 'host'],
       manager: 'gm-riverside',
       hiredOn: '2023-08-21',
       credentials: [
@@ -728,7 +732,9 @@ const HARBOR: SeedOrganization = {
       email: 'kai@harborvine.test',
       jobTitle: 'Busser',
       grants: [{ role: 'employee', location: null }],
-      locations: ['downtown'],
+      // Covers both rooms, which is what makes the Riverside busser slot
+      // fillable and the Downtown one contested - a real two-site problem.
+      locations: ['downtown', 'riverside'],
       jobRoles: ['busser'],
       manager: 'gm-downtown',
       hiredOn: '2026-08-18',
@@ -995,6 +1001,7 @@ const LUMEN: SeedOrganization = {
   name: 'Lumen Salon & Spa',
   slug: 'lumen-salon',
   industry: 'salon_spa',
+  areaCode: '503',
   timezone: 'America/Los_Angeles',
   jurisdiction: 'US-OR',
 

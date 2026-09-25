@@ -79,11 +79,11 @@ export function AccountMenu({
         aria-controls={panelId}
         aria-label={`Account: ${name}`}
         onClick={() => setOpen((value) => !value)}
-        className="rounded-control text-ink hover:bg-sunk flex min-h-11 items-center gap-2 px-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none"
+        className="rounded-control flex min-h-11 items-center gap-2 px-1.5 text-sm font-medium text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none"
       >
         <Avatar name={name} size="sm" />
         <span className="max-w-[7rem] truncate">{firstName}</span>
-        <span aria-hidden="true" className="text-faint text-xs">
+        <span aria-hidden="true" className="text-band-quiet text-xs">
           ▾
         </span>
       </button>
@@ -98,9 +98,23 @@ export function AccountMenu({
           <p className="text-muted truncate text-xs">{organizationName}</p>
         </div>
         <Link
-          href="/my/notifications"
+          href="/my/profile"
           onClick={() => setOpen(false)}
           className="rounded-control text-ink hover:bg-sunk mt-1 flex min-h-11 items-center px-3 text-sm"
+        >
+          Your profile
+        </Link>
+        <Link
+          href="/my/documents"
+          onClick={() => setOpen(false)}
+          className="rounded-control text-ink hover:bg-sunk flex min-h-11 items-center px-3 text-sm"
+        >
+          Documents
+        </Link>
+        <Link
+          href="/my/notifications"
+          onClick={() => setOpen(false)}
+          className="rounded-control text-ink hover:bg-sunk flex min-h-11 items-center px-3 text-sm"
         >
           Notification settings
         </Link>

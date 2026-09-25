@@ -15,7 +15,7 @@ import {
   type TemplateVersionDetail,
 } from '@/modules/operations/templates'
 import { organizationTimeZone } from '@/modules/training/records'
-import { BackLink, Badge, PageHeader } from '@/ui/primitives'
+import { Badge, PageHeader } from '@/ui/primitives'
 import { targetSummary } from '../page'
 import { TemplateBuilder, type VersionView } from './template-builder'
 
@@ -86,8 +86,8 @@ export default async function TemplatePage({
 
   return (
     <>
-      <BackLink href="/app/operations/templates">Templates</BackLink>
       <PageHeader
+        back={{ href: '/app/operations/templates', label: 'Templates' }}
         eyebrow={OPS_KIND_LABELS[template.kind]}
         title={shown?.name ?? template.name}
         description={shown?.description || undefined}

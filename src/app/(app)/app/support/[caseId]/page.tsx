@@ -9,7 +9,7 @@ import { can } from '@/server/authz/can'
 import { clockLabel } from '@/modules/operations/items'
 import { CATEGORY_LABELS, SEVERITY_LABELS, STATUS_LABELS, getCase } from '@/modules/support/service'
 import { organizationTimeZone } from '@/modules/training/records'
-import { BackLink, Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { Badge, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { CaseReply } from './case-reply'
 
@@ -42,8 +42,8 @@ export default async function SupportCasePage({
 
   return (
     <>
-      <BackLink href="/app/support">Support</BackLink>
       <PageHeader
+        back={{ href: '/app/support', label: 'Support' }}
         eyebrow={detail.reference}
         title={detail.subject}
         description={`${CATEGORY_LABELS[detail.category]} · ${SEVERITY_LABELS[detail.severity].label} · opened by ${detail.createdByLabel} ${when(detail.createdAt)}`}

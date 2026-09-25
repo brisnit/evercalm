@@ -57,7 +57,7 @@ describe('administration navigation', () => {
 describe('the administration launcher', () => {
   it('shows only the tools a person can open', () => {
     const scheduler = actorWith(['schedule.view_all', 'schedule.draft'], 'location')
-    expect(launcherTools(scheduler, []).map((t) => t.key)).toEqual(['schedule'])
+    expect(launcherTools(scheduler).map((t) => t.key)).toEqual(['schedule'])
 
     const everything = actorWith([
       'people.view',
@@ -68,7 +68,7 @@ describe('the administration launcher', () => {
       'announcement.create',
       'org.view',
     ])
-    expect(launcherTools(everything, []).map((t) => t.key)).toEqual([
+    expect(launcherTools(everything).map((t) => t.key)).toEqual([
       'people',
       'onboarding',
       'schedule',
@@ -79,31 +79,16 @@ describe('the administration launcher', () => {
     ])
   })
 
-  it('puts each figure on the card for the section where it is decided', () => {
+  it('does not repeat the attention counts on the cards (round 2)', () => {
     const actor = actorWith(['schedule.view_all', 'skill.verify', 'people.view'])
-    const tools = launcherTools(
-      actor,
-      [
-        item({ href: '/app/schedule/requests', label: 'Time off to decide', count: 2 }),
-        item({
-          key: 'b',
-          href: '/app/training/sign-offs',
-          label: 'Waiting for sign-off',
-          count: 1,
-        }),
-      ],
-      { people: '12 active' },
-    )
+    const tools = launcherTools(actor, { people: '12 active' })
     const byKey = Object.fromEntries(tools.map((t) => [t.key, t]))
-    expect(byKey.schedule).toMatchObject({ status: 'Time off to decide: 2', tone: 'attention' })
-    expect(byKey.training).toMatchObject({ status: 'Waiting for sign-off: 1', tone: 'attention' })
+    // The counts live in one place - the attention box - and nowhere else.
+    expect(byKey.schedule).toMatchObject({ status: null, tone: 'calm' })
+    expect(byKey.training).toMatchObject({ status: null, tone: 'calm' })
+    // A calm fact about the section itself is still allowed.
     expect(byKey.people).toMatchObject({ status: '12 active', tone: 'calm' })
-  })
-
-  it('does not mistake a longer path for a section it merely starts like', () => {
-    const actor = actorWith(['people.view'])
-    const [people] = launcherTools(actor, [item({ href: '/app/peoplex', count: 9 })])
-    expect(people!.tone).toBe('calm')
+    expect(tools.every((t) => t.tone === 'calm')).toBe(true)
   })
 
   it('summarises several kinds, and keeps the home box to three figures', () => {

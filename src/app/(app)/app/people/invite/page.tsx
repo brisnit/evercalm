@@ -3,7 +3,7 @@ import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
-import { BackLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { InviteForm } from './invite-form'
 
@@ -20,11 +20,8 @@ export default async function InvitePage() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/people">People</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/people', label: 'People' }}
         title="Invite someone to the team"
         description="They receive a single-use link. Nothing is granted until they accept."
       />

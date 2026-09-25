@@ -40,7 +40,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Organization"
         title={data.organization.name}
-        description="Foundation settings. People, scheduling, and training settings arrive with their slices."
+        description="How this organization is set up: who it is, where it works, and what it stands for."
       />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">

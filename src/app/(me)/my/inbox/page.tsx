@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { EmployeeHeader } from '../_components/employee-shell'
+import { EmployeeHeader, EmployeeTitle } from '../_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import {
@@ -14,6 +14,8 @@ import { PriorityMark, PriorityRail } from '@/ui/patterns/priority-mark'
 import { organizationTimeZone } from '@/modules/comms/service'
 import { formatDateInZone } from '@/lib/dates'
 import { InboxSearch } from './search'
+import { InboxTabs } from '@/ui/patterns/inbox-tabs'
+import { listChannels, unreadThreadCount } from '@/modules/messaging/service'
 
 export const metadata: Metadata = { title: 'Your inbox' }
 export const dynamic = 'force-dynamic'
@@ -47,7 +49,7 @@ export default async function InboxPage({
     : 'all'
   const search = params.q?.trim() || undefined
 
-  const { items, categories, everything, timeZone } = await withTenant(
+  const { items, categories, everything, timeZone, channels, unreadThreads } = await withTenant(
     actor.organizationId,
     async (tx) => ({
       items: await listInbox(tx, actor, actor.employmentId, {
@@ -58,6 +60,8 @@ export default async function InboxPage({
       categories: await inboxCategories(tx, actor, actor.employmentId),
       everything: await listInbox(tx, actor, actor.employmentId, { filter: 'all' }),
       timeZone: await organizationTimeZone(tx, actor.organizationId),
+      channels: await listChannels(tx, actor),
+      unreadThreads: await unreadThreadCount(tx, actor),
     }),
   )
 
@@ -68,17 +72,20 @@ export default async function InboxPage({
     <div className="flex min-h-screen flex-col">
       <EmployeeHeader back={{ href: '/my', label: 'Back' }} />
 
-      <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 py-7">
-        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
-          Your inbox
-        </h1>
-        <p className="text-muted mt-1.5 text-sm">
-          {needsYou > 0
-            ? `${needsYou} ${needsYou === 1 ? 'message needs' : 'messages need'} your confirmation.`
-            : unreadCount > 0
-              ? `${unreadCount} unread.`
-              : 'Everything here is read and confirmed.'}
-        </p>
+      <main id="main" className="mx-auto w-full max-w-xl flex-1 px-5 pb-7">
+        <EmployeeTitle
+          title="Your"
+          accent="inbox"
+          description={
+            needsYou > 0
+              ? `${needsYou} ${needsYou === 1 ? 'message needs' : 'messages need'} your confirmation.`
+              : unreadCount > 0
+                ? `${unreadCount} unread.`
+                : 'Everything here is read and confirmed.'
+          }
+        />
+
+        <InboxTabs channels={channels.length} unread={unreadThreads} />
 
         <nav aria-label="Filter" className="mt-5 flex flex-wrap gap-2">
           {FILTERS.map((option) => {
@@ -96,7 +103,7 @@ export default async function InboxPage({
                 aria-current={active ? 'page' : undefined}
                 className={
                   active
-                    ? 'rounded-control bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white'
+                    ? 'rounded-control bg-action px-3.5 py-2 text-sm font-semibold text-white'
                     : 'rounded-control border-line text-ink hover:bg-sunk border bg-white px-3.5 py-2 text-sm font-medium'
                 }
               >

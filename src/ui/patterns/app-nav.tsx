@@ -15,17 +15,24 @@ import { cn } from '@/lib/cn'
  * three rows of links.
  *
  * The current section is marked with `aria-current="page"` as well as weight
- * and a teal rule, so position never depends on colour alone.
+ * and a sage rule on the navy band, so position never depends on colour alone.
  */
 export function AppNav({
   label,
   items,
   exact = [],
+  menuFooter,
 }: {
   label: string
   items: { href: string; label: string }[]
   /** Hrefs that match only themselves (the section home, e.g. /app). */
   exact?: string[]
+  /**
+   * Account controls for the phone menu. On a wide screen they sit in the
+   * header row; there is no room for them there on a phone, and burying them
+   * in the menu the person already opened beats shrinking them to nothing.
+   */
+  menuFooter?: React.ReactNode
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -38,14 +45,14 @@ export function AppNav({
   const current = items.find((item) => isCurrent(item.href))
 
   return (
-    <nav aria-label={label} className="border-line border-t">
+    <nav aria-label={label} className="border-band-line border-t">
       <div className="mx-auto w-full max-w-6xl px-3">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={listId}
           onClick={() => setOpen((value) => !value)}
-          className="text-ink rounded-control flex min-h-11 w-full items-center gap-2 px-2 text-sm font-medium hover:bg-teal-50 lg:hidden"
+          className="rounded-control flex min-h-11 w-full items-center gap-2 px-2 text-sm font-medium text-white hover:bg-white/10 lg:hidden"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" className="size-4">
             {open ? (
@@ -66,7 +73,7 @@ export function AppNav({
           </svg>
           Menu
           {current ? (
-            <span className="text-muted min-w-0 truncate font-normal">· {current.label}</span>
+            <span className="text-band-quiet min-w-0 truncate font-normal">· {current.label}</span>
           ) : null}
         </button>
 
@@ -88,8 +95,8 @@ export function AppNav({
                     'rounded-control relative flex min-h-11 items-center px-3 text-sm transition-colors',
                     "lg:after:absolute lg:after:inset-x-3 lg:after:bottom-0 lg:after:h-0.5 lg:after:rounded-full lg:after:content-['']",
                     active
-                      ? 'text-ink bg-teal-50 font-semibold lg:bg-transparent lg:after:bg-teal-600'
-                      : 'text-muted hover:text-ink hover:bg-teal-50/70',
+                      ? 'lg:after:bg-sage-400 bg-white/10 font-semibold text-white lg:bg-transparent'
+                      : 'text-band-quiet hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {item.label}
@@ -98,6 +105,10 @@ export function AppNav({
             )
           })}
         </ul>
+
+        {menuFooter && open ? (
+          <div className="border-band-line mt-1 border-t pt-2 pb-2 lg:hidden">{menuFooter}</div>
+        ) : null}
       </div>
     </nav>
   )

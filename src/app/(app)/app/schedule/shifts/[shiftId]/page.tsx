@@ -7,7 +7,7 @@ import { withTenant } from '@/server/db'
 import { loadShiftForManager } from '@/modules/scheduling/manager'
 import { formatDuration, formatIsoDate, weekDates } from '@/modules/scheduling/time'
 import { listJobRoles, listStations } from '@/modules/structure/service'
-import { BackLink, Badge, PageHeader } from '@/ui/primitives'
+import { Badge, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { ShiftManager } from './shift-manager'
 
@@ -43,13 +43,11 @@ export default async function ShiftPage({ params }: { params: Promise<{ shiftId:
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href={weekHref}>
-          {shift.location.name}, week of {formatIsoDate(shift.weekStart)}
-        </BackLink>
-      </nav>
-
       <PageHeader
+        back={{
+          href: weekHref,
+          label: `${shift.location.name}, week of ${formatIsoDate(shift.weekStart)}`,
+        }}
         eyebrow={[shift.jobRoleName, shift.stationName].filter(Boolean).join(' · ') || 'Shift'}
         title={`${shift.day} · ${shift.time}${shift.endsNextDay ? ' (next day)' : ''}`}
         description={`${formatDuration(shift.paidMinutes)} paid${shift.breakMinutes > 0 ? `, ${shift.breakMinutes} minute break` : ''}. ${shift.location.name} time.`}

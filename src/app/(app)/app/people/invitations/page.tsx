@@ -5,7 +5,6 @@ import { listInvitations } from '@/modules/invitations/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
 import {
-  BackLink,
   Badge,
   ButtonLink,
   Card,
@@ -60,11 +59,8 @@ export default async function InvitationsPage() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/people">People</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/people', label: 'People' }}
         title="Invitations"
         description="Every invitation sent, and where it got to."
         action={<ButtonLink href="/app/people/invite">Invite someone</ButtonLink>}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
+import { cn } from '@/lib/cn'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { listProgress } from '@/modules/onboarding/service'
@@ -42,6 +43,13 @@ const STATE_META: Record<
 }
 
 const ORDER = ['blocked', 'overdue', 'in_progress', 'not_started', 'completed'] as const
+
+// The two groups that want a manager are named in warm ink, so the eye lands
+// on them first down a long board. The heading still says which group it is.
+const HEADING_TONE: Record<string, string> = {
+  blocked: 'text-action',
+  overdue: 'text-action',
+}
 
 export default async function OnboardingBoardPage() {
   const { actor } = await requireActorContext()
@@ -97,7 +105,10 @@ export default async function OnboardingBoardPage() {
             <section key={group.state} aria-labelledby={`group-${group.state}`}>
               <h2
                 id={`group-${group.state}`}
-                className="font-display text-muted mb-3 text-sm font-bold tracking-[0.06em] uppercase"
+                className={cn(
+                  'font-display mb-3 text-sm font-bold tracking-[0.06em] uppercase',
+                  HEADING_TONE[group.state] ?? 'text-muted',
+                )}
               >
                 {group.meta.heading} · {group.people.length}
               </h2>

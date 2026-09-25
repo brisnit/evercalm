@@ -3,392 +3,304 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
-import { cn } from '@/lib/cn'
-import { can, canAtAnyLocation } from '@/server/authz/can'
+import { canAtAnyLocation } from '@/server/authz/can'
 import { locationsWhere } from '@/modules/scheduling/access'
-import {
-  listTemplates,
-  loadWeek,
-  previewPublication,
-  type BoardShift,
-} from '@/modules/scheduling/service'
-import {
-  formatDuration,
-  formatIsoDate,
-  formatTimeOfDay,
-  isIsoDate,
-  isoWeekday,
-  localDateOf,
-  weekStartOf,
-} from '@/modules/scheduling/time'
-import { listJobRoles, listStations } from '@/modules/structure/service'
-import { Badge, ButtonLink, Card, CardHeader, EmptyState, PageHeader } from '@/ui/primitives'
+import { listTemplateSets, weekReview, type WeekReview } from '@/modules/scheduling/slotted'
+import { listOpenCallouts } from '@/modules/scheduling/slotted'
+import { schedules } from '@/server/db/schema'
+import { and, eq } from 'drizzle-orm'
+import { addCalendarDays } from '@/lib/dates'
+import { formatIsoDate, isIsoDate, weekStartOf } from '@/modules/scheduling/time'
+import { Card, CardHeader, EmptyState, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
-import { WeekToolbar } from './_components/week-toolbar'
-import { PublishPanel } from './_components/publish-panel'
-import { AddShiftForm } from './_components/add-shift-form'
-import { ApplyTemplatesForm } from './_components/apply-templates-form'
+import { AvailabilityLegend } from '@/ui/patterns/availability-pill'
+import { LocationPicker } from './_components/location-picker'
+import { WeekNav } from './_components/week-nav'
+import { StartWeek } from './_components/start-week'
+import { WeekActions } from './_components/week-actions'
+import { DayStack } from './_components/day-stack'
 
 export const metadata: Metadata = { title: 'Schedule' }
 export const dynamic = 'force-dynamic'
 
 /**
- * The week board.
+ * The week.
  *
- * One location, one local week. Staffing and conflicts are summarised before
- * the detail, publication is a deliberate step with the exact list of people
- * who will be told, and every shift links to where it is changed.
+ * Slotted's two densities from one set of data: on a wide screen the whole
+ * week at once, a row per shift pattern, so a manager can see the shape of it;
+ * on a phone the days stack and one opens at a time, because a shrunken
+ * spreadsheet is unusable in a doorway.
  *
- * Seven columns on a wide screen; on anything narrower the same days stack,
- * so nothing scrolls sideways and each shift stays readable.
+ * Every filled cell carries what the person said about those hours, in a word
+ * and a mark, so a problem is visible before anybody clicks anything.
  */
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ location?: string; week?: string; add?: string }>
+  searchParams: Promise<{ location?: string; week?: string; template?: string; generated?: string }>
 }) {
   const params = await searchParams
   const { actor } = await requireActorContext()
 
   if (!canAtAnyLocation(actor, 'schedule.view_all')) {
-    const decidesRequests = (['timeoff.decide', 'swap.decide', 'openshift.manage'] as const).some(
-      (c) => canAtAnyLocation(actor, c),
+    const decides = (['timeoff.decide', 'swap.decide', 'openshift.manage'] as const).some((c) =>
+      canAtAnyLocation(actor, c),
     )
-    if (decidesRequests) redirect('/app/schedule/requests')
+    if (decides) redirect('/app/schedule/requests')
     return <PermissionDenied capabilityLabel="View all schedules" />
   }
 
+  const weekStart =
+    params.week && isIsoDate(params.week)
+      ? weekStartOf(params.week)
+      : weekStartOf(new Date().toISOString().slice(0, 10))
+
   const data = await withTenant(actor.organizationId, async (tx) => {
     const locations = await locationsWhere(tx, actor, 'schedule.view_all')
-    const location = locations.find((l) => l.id === params.location) ?? locations[0]
-    if (!location) return null
-    const thisWeek = weekStartOf(localDateOf(new Date(), location.timeZone))
-    const weekStart =
-      params.week && isIsoDate(params.week) && isoWeekday(params.week) === 1
-        ? params.week
-        : thisWeek
-    const board = await loadWeek(tx, actor, location.id, weekStart)
-    const canPublish = can(actor, 'schedule.publish', { locationId: location.id })
+    // Default to a site this person actually works at, not the first one
+    // alphabetically - a GM at Riverside should not open on Downtown.
+    const location =
+      locations.find((l) => l.id === params.location) ??
+      locations.find((l) => actor.locationIds.includes(l.id)) ??
+      locations[0]
+    if (!location) return { locations, location: null, review: null, sets: [], callouts: [] }
+
+    const [schedule] = await tx
+      .select({ id: schedules.id })
+      .from(schedules)
+      .where(
+        and(
+          eq(schedules.organizationId, actor.organizationId),
+          eq(schedules.locationId, location.id),
+          eq(schedules.weekStart, weekStart),
+        ),
+      )
+      .limit(1)
+
     return {
       locations,
       location,
-      thisWeek,
-      board,
-      canPublish,
-      canDraft: can(actor, 'schedule.draft', { locationId: location.id }),
-      templates: await listTemplates(tx, actor, location.id),
-      jobRoles: await listJobRoles(tx, actor),
-      stations: (await listStations(tx, actor)).filter((s) => s.locationId === location.id),
-      preview:
-        board.schedule && canPublish
-          ? await previewPublication(tx, actor, board.schedule.id)
-          : null,
+      review: schedule ? await weekReview(tx, actor, schedule.id) : null,
+      sets: await listTemplateSets(tx, actor, location.id),
+      callouts: (await listOpenCallouts(tx, actor, location.id)).filter((c) => !c.resolvedAt),
     }
   })
 
-  if (!data) {
+  if (!data.location) {
     return (
-      <EmptyState
-        title="No locations to schedule"
-        description="You can see schedules only for the locations you manage, and none are set up yet."
-      />
+      <>
+        <PageHeader title="Schedule" />
+        <div className="py-7">
+          <EmptyState
+            title="No locations yet"
+            description="Add a location in Settings, then build a schedule template for it."
+          />
+        </div>
+      </>
     )
   }
 
-  const { board, location } = data
-  const status =
-    !board.schedule || board.totals.shifts + board.totals.unpublishedChanges === 0
-      ? 'empty'
-      : board.schedule.status === 'draft'
-        ? 'draft'
-        : board.totals.unpublishedChanges > 0
-          ? 'changed'
-          : 'published'
-  const addDay = board.days.find((d) => d.date === params.add) ?? null
-  const shiftsByDay = new Map<string, BoardShift[]>()
-  for (const shift of board.shifts) {
-    shiftsByDay.set(shift.localDate, [...(shiftsByDay.get(shift.localDate) ?? []), shift])
-  }
+  const { location, locations, review, sets, callouts } = data
+  const canDraft = canAtAnyLocation(actor, 'schedule.draft')
 
   return (
     <>
       <PageHeader
         eyebrow={location.name}
-        title={`Week of ${formatIsoDate(board.weekStart)}`}
-        description={`Times are ${location.name} time (${location.timeZone}).`}
+        title="Week of"
+        accent={formatIsoDate(weekStart)}
+        description={
+          review
+            ? `${review.filled} of ${review.slots} slots filled · ${review.status === 'published' ? 'published' : 'draft, not published'}`
+            : 'Nothing here yet. Start the week from a template and the slots lay themselves out.'
+        }
         action={
-          data.canDraft ? (
-            <ButtonLink href="#add-shift" variant="secondary">
-              Add a shift
-            </ButtonLink>
+          review && canDraft ? (
+            <WeekActions
+              scheduleId={review.scheduleId}
+              filled={review.filled}
+              slots={review.slots}
+              status={review.status}
+            />
           ) : undefined
         }
       />
 
-      <WeekToolbar
-        locations={data.locations.map((l) => ({ id: l.id, name: l.name }))}
-        locationId={location.id}
-        weekStart={board.weekStart}
-        previousWeek={board.previousWeek}
-        nextWeek={board.nextWeek}
-        thisWeek={data.thisWeek}
-      />
-
-      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start [&>*]:min-w-0">
-        <section aria-labelledby="staffing-heading">
-          <h2 id="staffing-heading" className="sr-only">
-            Staffing this week
-          </h2>
-          <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <Total
-              label="Shifts"
-              value={String(board.totals.shifts)}
-              sub={formatDuration(board.totals.scheduledMinutes)}
+      <div className="flex flex-col gap-6 py-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          {locations.length > 1 ? (
+            <LocationPicker
+              locations={locations}
+              current={location.id}
+              basePath="/app/schedule"
+              extra={{ week: weekStart }}
             />
-            <Total
-              label="Assigned"
-              value={String(board.totals.assigned)}
-              sub={`${board.totals.unassigned} to fill`}
-              tone={board.totals.unassigned > 0 ? 'warning' : 'neutral'}
+          ) : (
+            <span />
+          )}
+          <WeekNav
+            locationId={location.id}
+            previous={addCalendarDays(weekStart, -7)}
+            next={addCalendarDays(weekStart, 7)}
+            current={formatIsoDate(weekStart)}
+          />
+        </div>
+
+        {callouts.length > 0 ? (
+          <Card className="border-danger/30">
+            <CardHeader
+              title={`${callouts.length} ${callouts.length === 1 ? 'person has' : 'people have'} called out`}
+              description="Pick a replacement from people who are qualified and free."
             />
-            <Total label="Open shifts" value={String(board.totals.open)} sub="offered to claim" />
-            <Total
-              label="Conflicts"
-              value={String(board.totals.blocking)}
-              sub={`${board.totals.warnings} to check`}
-              tone={board.totals.blocking > 0 ? 'danger' : 'neutral'}
-            />
-          </dl>
-        </section>
-        <PublishPanel
-          scheduleId={board.schedule?.id ?? null}
-          status={status}
-          version={board.schedule?.publishedVersion ?? 0}
-          publishedAt={
-            board.schedule?.publishedAt
-              ? formatIsoDate(localDateOf(board.schedule.publishedAt, location.timeZone))
-              : null
-          }
-          preview={data.preview}
-          canPublish={data.canPublish}
-        />
-      </div>
-
-      <section aria-label="Shifts by day" className="mt-5">
-        {board.shifts.length === 0 ? (
-          <p className="text-muted mb-3 text-sm" data-testid="empty-week">
-            Nothing is scheduled this week yet.
-            {data.canDraft ? ' Choose Add shift on any day to start.' : ''}
-          </p>
-        ) : null}
-        <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-7" aria-label="Days of the week">
-          {board.days.map((day) => {
-            const shifts = shiftsByDay.get(day.date) ?? []
-            return (
-              <li key={day.date} className="rounded-card border-line bg-raise min-w-0 border p-2.5">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-2 px-1 xl:block">
-                  <h3 className="text-ink text-sm font-semibold">{day.label}</h3>
-                  <p className="text-muted text-xs">
-                    {day.shifts === 0
-                      ? 'No shifts'
-                      : `${day.shifts} · ${formatDuration(day.scheduledMinutes)}`}
-                    {day.unassigned > 0 ? ` · ${day.unassigned} to fill` : ''}
-                  </p>
-                </div>
-                {day.timeOff.length > 0 ? (
-                  <p className="text-muted mt-1 px-1 text-xs">
-                    <span className="font-semibold">Off:</span>{' '}
-                    {day.timeOff
-                      .map((t) => `${t.displayName}${t.status === 'pending' ? ' (asked)' : ''}`)
-                      .join(', ')}
-                  </p>
-                ) : null}
-                {shifts.length > 0 ? (
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {shifts.map((shift) => (
-                      <li key={shift.id}>
-                        <ShiftCard shift={shift} />
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {data.canDraft ? (
-                  <Link
-                    href={`/app/schedule?${new URLSearchParams({
-                      location: location.id,
-                      week: board.weekStart,
-                      add: day.date,
-                    })}#add-shift`}
-                    aria-label={`Add shift on ${day.label}`}
-                    className={cn(
-                      'rounded-control text-accent-strong mt-2 flex min-h-11 items-center justify-center gap-1.5 text-sm font-semibold',
-                      'hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500',
-                      shifts.length === 0
-                        ? 'border-accent/40 border border-dashed bg-white'
-                        : 'border-line border bg-white/60',
-                    )}
-                  >
-                    <span aria-hidden="true" className="text-base leading-none">
-                      +
-                    </span>
-                    Add shift
-                  </Link>
-                ) : null}
-              </li>
-            )
-          })}
-        </ol>
-      </section>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start [&>*]:min-w-0">
-        {data.canDraft ? (
-          <div id="add-shift" className="scroll-mt-6">
-            <Card>
-              <CardHeader
-                title={addDay ? `Add a shift on ${addDay.label}` : 'Add a shift'}
-                description="Pick a template to fill in the times, or enter your own."
-              />
-              <div className="p-5">
-                <AddShiftForm
-                  key={addDay?.date ?? 'any'}
-                  locationId={location.id}
-                  defaultDate={addDay?.date}
-                  days={board.days.map((d) => ({ date: d.date, label: d.label }))}
-                  templates={data.templates.map((t) => ({
-                    id: t.id,
-                    name: t.name,
-                    startTime: formatTimeOfDay(t.startMinute),
-                    endTime: formatTimeOfDay(t.endMinute),
-                    breakMinutes: t.breakMinutes,
-                    jobRoleId: t.jobRoleId,
-                    stationId: t.stationId,
-                    notes: t.notes,
-                  }))}
-                  jobRoles={data.jobRoles.map((r) => ({ id: r.id, name: r.name }))}
-                  stations={data.stations.map((s) => ({ id: s.id, name: s.name }))}
-                  people={board.people.map((p) => ({
-                    employmentId: p.employmentId,
-                    label: `${p.displayName} · ${formatDuration(p.scheduledMinutes)} this week`,
-                  }))}
-                />
-              </div>
-            </Card>
-          </div>
-        ) : null}
-
-        <div className="flex min-w-0 flex-col gap-5">
-          {data.canDraft && data.templates.length > 0 ? (
-            <Card>
-              <CardHeader
-                title="Fill the week from templates"
-                description="Adds each template’s shifts on its days. Running it twice adds nothing twice."
-              />
-              <div className="p-5">
-                <ApplyTemplatesForm
-                  locationId={location.id}
-                  weekStart={board.weekStart}
-                  templates={data.templates.map((t) => ({
-                    id: t.id,
-                    label: `${t.name} · ${formatTimeOfDay(t.startMinute)}–${formatTimeOfDay(t.endMinute)}`,
-                  }))}
-                />
-              </div>
-            </Card>
-          ) : null}
-
-          <Card>
-            <CardHeader title="Hours this week" description="Everyone assigned to this location." />
-            <ul className="divide-line divide-y px-5 pb-2">
-              {board.people.map((p) => (
-                <li
-                  key={p.employmentId}
-                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
-                >
-                  <span className="text-ink min-w-0 truncate">{p.displayName}</span>
-                  <span className="text-muted shrink-0 tabular-nums">
-                    {formatDuration(p.scheduledMinutes)}
+            <ul className="divide-line divide-y">
+              {callouts.map((callout) => (
+                <li key={callout.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                  <span className="text-ink font-medium">{callout.displayName}</span>
+                  <span className="text-muted text-sm">
+                    {callout.roleName ? `${callout.roleName} · ` : ''}
+                    {callout.when}
                   </span>
+                  <Link
+                    href={`/app/schedule/callouts/${callout.shiftId}`}
+                    className="text-action ms-auto text-sm font-semibold underline-offset-4 hover:underline"
+                  >
+                    Find a replacement
+                  </Link>
                 </li>
               ))}
             </ul>
           </Card>
-        </div>
+        ) : null}
+
+        {!review ? (
+          canDraft ? (
+            <StartWeek
+              locationId={location.id}
+              weekStart={weekStart}
+              sets={sets}
+              preselect={params.template}
+            />
+          ) : (
+            <EmptyState
+              title="This week has not been built yet"
+              description="A scheduler starts it from a template."
+            />
+          )
+        ) : (
+          <WeekBody review={review} canDraft={canDraft} />
+        )}
       </div>
     </>
   )
 }
 
-function Total({
-  label,
-  value,
-  sub,
-  tone = 'neutral',
-}: {
-  label: string
-  value: string
-  sub: string
-  tone?: 'neutral' | 'warning' | 'danger'
-}) {
-  const valueTone =
-    tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-ink'
+/** Desktop: the whole week. Phone: the days, one open at a time. */
+function WeekBody({ review, canDraft }: { review: WeekReview; canDraft: boolean }) {
+  const attention = review.days.flatMap((day) =>
+    day.issues.map((issue) => ({ ...issue, date: day.date })),
+  )
+
   return (
-    <div className="border-line rounded-card border bg-white px-3.5 py-2.5">
-      <dt className="text-muted text-[0.8125rem] font-medium">{label}</dt>
-      <dd
-        className={`font-display text-xl font-extrabold tabular-nums ${value === '0' ? 'text-faint' : valueTone}`}
-      >
-        {value}
-        <span className="text-muted block text-xs font-medium">{sub}</span>
-      </dd>
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Slots filled" value={`${review.filled} / ${review.slots}`} />
+        <Stat
+          label="Days approved"
+          value={`${review.days.filter((d) => d.state === 'approved' && d.slots > 0).length} / ${review.days.filter((d) => d.slots > 0).length}`}
+        />
+        <Stat
+          label="Needs attention"
+          value={String(attention.length)}
+          tone={attention.length > 0 ? 'warn' : 'calm'}
+        />
+        <Stat label="Your overrides" value={String(review.overrides.length)} />
+      </div>
+
+      <DayStack review={review} canDraft={canDraft} />
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <Card>
+          <CardHeader
+            title={
+              attention.length === 0 ? 'Nothing needs you' : `Needs attention · ${attention.length}`
+            }
+            description={
+              attention.length === 0
+                ? 'Every slot is filled, and everyone is on hours they said they could work.'
+                : 'Open the day to change any of these. None of them stops you publishing, except an empty slot you meant to fill.'
+            }
+          />
+          {attention.length > 0 ? (
+            <ul className="divide-line divide-y">
+              {attention.slice(0, 10).map((issue, index) => (
+                <li key={`${issue.shiftId}-${index}`} className="flex flex-wrap gap-2 px-5 py-3">
+                  <span className="text-ink text-sm">{issue.message}</span>
+                  <Link
+                    href={`/app/schedule/review/${review.scheduleId}/${issue.date}`}
+                    className="text-action ms-auto text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    {formatIsoDate(issue.date)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Hours this week"
+            description="Amber is within six hours of overtime."
+          />
+          <ul className="divide-line divide-y">
+            {review.hours.map((person) => (
+              <li
+                key={person.employmentId}
+                className="flex items-center justify-between px-5 py-2.5"
+              >
+                <span className="text-ink text-sm">{person.displayName}</span>
+                <span
+                  className={
+                    person.nearOvertime
+                      ? 'text-warning text-sm font-semibold tabular-nums'
+                      : 'text-muted text-sm tabular-nums'
+                  }
+                >
+                  {Math.round(person.minutes / 60)} h
+                  {person.nearOvertime ? <span className="sr-only"> — near overtime</span> : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+
+      <AvailabilityLegend />
     </div>
   )
 }
 
-function ShiftCard({ shift }: { shift: BoardShift }) {
-  const blocking = shift.conflicts.some((c) => c.severity === 'block')
-  const warnings = shift.conflicts.filter((c) => c.severity === 'warn').length
-  const cancelled = shift.status === 'cancelled'
-  const who = cancelled
-    ? `Cancelled${shift.assigneeName ? ` · ${shift.assigneeName}` : ''}`
-    : (shift.assigneeName ?? (shift.isOpen ? 'Open shift' : 'Unassigned'))
+function Stat({
+  label,
+  value,
+  tone = 'calm',
+}: {
+  label: string
+  value: string
+  tone?: 'calm' | 'warn'
+}) {
   return (
-    <Link
-      href={`/app/schedule/shifts/${shift.id}`}
-      className={`rounded-control block border bg-white p-2.5 hover:border-teal-300 focus-visible:outline-2 focus-visible:outline-teal-600 ${
-        blocking ? 'border-danger/50' : 'border-line'
-      }`}
-    >
-      <span
-        className={`text-ink block text-xs font-semibold tabular-nums ${cancelled ? 'line-through' : ''}`}
+    <div className="rounded-card border-line shadow-low border bg-white p-5">
+      <p className="text-muted text-sm">{label}</p>
+      <p
+        className={
+          tone === 'warn'
+            ? 'text-warning font-display mt-1 text-3xl font-extrabold tabular-nums'
+            : 'text-ink font-display mt-1 text-3xl font-extrabold tabular-nums'
+        }
       >
-        {shift.time}
-        {shift.endsNextDay ? ' (next day)' : ''}
-      </span>
-      <span className="text-muted block text-xs break-words">
-        {[shift.jobRoleName, shift.stationName].filter(Boolean).join(' · ') || 'Shift'}
-      </span>
-      <span
-        className={`mt-1 block text-sm break-words ${
-          shift.assigneeName && !cancelled ? 'text-ink font-medium' : 'text-muted italic'
-        }`}
-      >
-        {who}
-      </span>
-      {blocking ||
-      warnings > 0 ||
-      shift.unpublishedChange ||
-      shift.pendingClaims > 0 ||
-      shift.activeSwapStatus ? (
-        <span className="mt-1.5 flex flex-wrap gap-1">
-          {blocking ? <Badge tone="danger">Conflict</Badge> : null}
-          {!blocking && warnings > 0 ? <Badge tone="warning">Check</Badge> : null}
-          {shift.unpublishedChange ? <Badge tone="info">Not published</Badge> : null}
-          {shift.pendingClaims > 0 ? (
-            <Badge tone="accent">{shift.pendingClaims} asked</Badge>
-          ) : null}
-          {shift.activeSwapStatus ? <Badge tone="accent">Swap</Badge> : null}
-        </span>
-      ) : null}
-    </Link>
+        {value}
+      </p>
+    </div>
   )
 }

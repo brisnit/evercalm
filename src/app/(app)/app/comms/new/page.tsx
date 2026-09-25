@@ -5,7 +5,7 @@ import { canAtAnyLocation } from '@/server/authz/can'
 import { listCategories, organizationTimeZone } from '@/modules/comms/service'
 import { publishingScope } from '@/modules/comms/audience'
 import { selectableEvents } from '@/modules/events/service'
-import { BackLink, PageHeader } from '@/ui/primitives'
+import { PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { Composer } from '../composer'
 import { audienceOptions } from '../audience-options'
@@ -30,11 +30,8 @@ export default async function NewAnnouncementPage() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/comms">Announcements</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/comms', label: 'Announcements' }}
         title="New announcement"
         description="Write it, choose who sees it, then check the audience before anything goes out."
       />

@@ -8,9 +8,7 @@ export default async function OperationsLayout({ children }: { children: React.R
   return (
     <>
       {nav.length > 1 ? (
-        <div className="mb-6">
-          <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
-        </div>
+        <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
       ) : null}
       {children}
     </>

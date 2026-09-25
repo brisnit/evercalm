@@ -46,7 +46,7 @@ export function ToolCard({
     >
       <span
         className={cn(
-          'flex shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 transition-colors group-hover:bg-teal-100',
+          'bg-tile group-hover:bg-sage-200 flex shrink-0 items-center justify-center rounded-xl text-teal-700 transition-colors',
           size === 'md' ? 'size-11' : 'size-10',
         )}
       >

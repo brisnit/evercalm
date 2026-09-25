@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { formatCalendarDate } from '@/lib/dates'
 import Link from 'next/link'
-import { EmployeeHeader } from './_components/employee-shell'
+import { EmployeeHeader, EmployeeTitle } from './_components/employee-shell'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getEmployment, listCredentials } from '@/modules/people/service'
@@ -107,14 +107,15 @@ export default async function MyWorkPage() {
 
       <main
         id="main"
-        className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-5 sm:py-7 md:max-w-3xl"
+        className="mx-auto w-full max-w-xl flex-1 px-4 pb-6 sm:px-5 sm:pb-7 md:max-w-3xl"
       >
-        <h1 className="font-display text-ink text-[1.625rem] leading-tight font-extrabold tracking-tight">
-          Hello, {firstName}
-        </h1>
-        <p className="text-muted mt-1 text-sm">{data.me.jobTitle ?? 'Team member'}</p>
+        <EmployeeTitle
+          title="Hello,"
+          accent={firstName}
+          description={data.me.jobTitle ?? 'Team member'}
+        />
 
-        <div className="mt-5 flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-4">
           {/*
             What must not wait stays in full view above the launcher: a message
             to confirm, an urgent or safety notice, a credential running out.
@@ -126,7 +127,7 @@ export default async function MyWorkPage() {
               <section
                 aria-labelledby="handed-to-you"
                 data-testid="handed-to-you"
-                className="rounded-card flex flex-col gap-3 border border-teal-300 bg-white p-4 sm:p-5"
+                className="rounded-card border-action/30 flex flex-col gap-3 border bg-white p-4 sm:p-5"
               >
                 <div>
                   <p className="text-coral-700 text-sm font-semibold">Handed to you</p>

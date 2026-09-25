@@ -7,7 +7,7 @@ import { EmployeeNav } from './_components/employee-nav'
  */
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-canvas min-h-screen pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="bg-canvas min-h-screen overflow-x-clip pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
       <NavigationProgress />
       {children}
       <EmployeeNav variant="bar" />

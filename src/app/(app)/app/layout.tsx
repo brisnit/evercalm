@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireActorContext } from '@/server/auth/session'
 import { Badge, Logo } from '@/ui/primitives'
 import { AppNav } from '@/ui/patterns/app-nav'
+import { ManagerNav } from '@/ui/patterns/manager-nav'
 import { NavigationProgress } from '@/ui/patterns/navigation-progress'
 import { isEmployeeOnly, visibleNavItems } from './navigation'
 import { SignOutButton } from './sign-out-button'
@@ -25,16 +26,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const banner = await withTenant(actor.organizationId, (tx) => billingBanner(tx, actor))
 
   return (
-    <div className="bg-canvas flex min-h-screen flex-col">
+    <div className="bg-canvas flex min-h-screen flex-col overflow-x-clip">
       <NavigationProgress />
-      <header className="border-line border-b bg-white">
+      <header className="bg-band text-white">
         <div className="mx-auto flex w-full max-w-6xl items-center gap-x-4 px-5 py-2.5">
           <Link href="/app" aria-label="EverCalm overview" className="shrink-0">
-            <Logo size="h-7 sm:h-8" eager />
+            <Logo size="h-7 sm:h-8" onDark eager />
           </Link>
 
-          <div className="border-line flex min-w-0 flex-1 items-center gap-2 sm:border-l sm:pl-4">
-            <span className="text-ink truncate text-sm font-semibold">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="truncate rounded-full bg-white/10 px-3 py-1.5 text-[0.8125rem] font-semibold text-white sm:px-3.5 sm:text-sm">
               {activeOrganization.organizationName}
             </span>
             {memberships.length > 1 ? (
@@ -42,11 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <span className="text-muted mr-1 hidden text-sm md:inline">{actor.displayName}</span>
+          <div className="hidden shrink-0 items-center gap-1 lg:flex lg:gap-2">
+            <span className="text-band-quiet mr-1 text-sm">{actor.displayName}</span>
             <Link
               href="/my"
-              className="rounded-control text-muted hover:text-ink inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-teal-50"
+              className="rounded-control text-band-quiet inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-white/10 hover:text-white"
             >
               My work
             </Link>
@@ -58,6 +59,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           label="Administration"
           items={nav.map((item) => ({ href: item.href, label: item.label }))}
           exact={['/app']}
+          menuFooter={
+            <div className="flex items-center justify-between gap-2 px-2">
+              <span className="text-band-quiet min-w-0 truncate text-sm">{actor.displayName}</span>
+              <div className="flex shrink-0 items-center gap-1">
+                <Link
+                  href="/my"
+                  className="rounded-control text-band-quiet inline-flex min-h-11 items-center px-2.5 text-sm font-medium hover:bg-white/10 hover:text-white"
+                >
+                  My work
+                </Link>
+                <SignOutButton />
+              </div>
+            </div>
+          }
         />
       </header>
 
@@ -88,9 +103,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       ) : null}
 
-      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
+      {/*
+        `overflow-x: clip` lets a page header run edge to edge (see the
+        `full-bleed` utility) without the scrollbar turning into sideways
+        scroll. Padding at the bottom clears the phone's navigation bar.
+      */}
+      <main
+        id="main"
+        className="mx-auto w-full max-w-6xl flex-1 px-5 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-12"
+      >
         {children}
       </main>
+
+      <ManagerNav items={nav.map((item) => ({ href: item.href, label: item.label }))} />
     </div>
   )
 }

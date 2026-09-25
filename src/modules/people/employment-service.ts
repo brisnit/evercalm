@@ -10,8 +10,8 @@ import {
 } from '@/server/db/schema'
 import type { Tx } from '@/server/db'
 import { newId } from '@/lib/ids'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { authorize } from '@/server/authz/can'
+import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors'
+import { authorize, can, isSelf } from '@/server/authz/can'
 import type { Actor } from '@/server/authz/actor'
 import { AUDIT_ACTIONS, recordAuditEvent } from '@/server/audit'
 
@@ -73,6 +73,107 @@ export async function changeJobTitle(
     subjectId: employmentId,
     locationId: person.homeLocationId,
     metadata: { from: person.jobTitle, to: next },
+  })
+}
+
+/**
+ * CONTACT DETAILS.
+ *
+ * Round 2: a manager could change someone's title, roles and locations but not
+ * their phone number, which is the field that actually goes stale.
+ *
+ * Two people may write these fields, and they may write different ones:
+ *
+ *   the person themselves - their own phone, emergency contact and date of
+ *     birth. Their email is their sign-in and is not editable here.
+ *   a manager holding people.update AND people.view_sensitive - the same
+ *     fields, because editing a field you are not allowed to read would be a
+ *     way to discover it.
+ *
+ * Every write is audited by field name. The values themselves are never put in
+ * the audit log: an emergency contact's number is exactly the kind of thing
+ * that should not be readable from a history page.
+ */
+export interface ContactDetails {
+  phone: string
+  emergencyContactName: string
+  emergencyContactPhone: string
+  dateOfBirth: string
+}
+
+export async function changeContactDetails(
+  tx: Tx,
+  actor: Actor,
+  employmentId: string,
+  input: Partial<ContactDetails>,
+): Promise<void> {
+  const person = await loadEmployment(tx, actor, employmentId)
+  const own = isSelf(actor, employmentId)
+  if (!own) {
+    authorize(actor, 'people.update', { locationId: person.homeLocationId })
+    if (!can(actor, 'people.view_sensitive', { locationId: person.homeLocationId })) {
+      throw new ForbiddenError(
+        'people.view_sensitive',
+        'Changing contact details needs the sensitive-information permission.',
+      )
+    }
+  }
+
+  const [current] = await tx
+    .select({
+      phone: employments.phone,
+      emergencyContactName: employments.emergencyContactName,
+      emergencyContactPhone: employments.emergencyContactPhone,
+      dateOfBirth: employments.dateOfBirth,
+    })
+    .from(employments)
+    .where(
+      and(eq(employments.organizationId, actor.organizationId), eq(employments.id, employmentId)),
+    )
+    .limit(1)
+  if (!current) throw new NotFoundError('Employee not found')
+
+  const clean = (value: string | undefined) => {
+    if (value === undefined) return undefined
+    const trimmed = value.trim()
+    return trimmed === '' ? null : trimmed
+  }
+  const next = {
+    phone: clean(input.phone),
+    emergencyContactName: clean(input.emergencyContactName),
+    emergencyContactPhone: clean(input.emergencyContactPhone),
+    dateOfBirth: clean(input.dateOfBirth),
+  }
+
+  if (next.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(next.dateOfBirth)) {
+    throw new ValidationError({ dateOfBirth: ['Use a real date.'] }, 'Invalid date of birth')
+  }
+
+  const changed = (Object.keys(next) as (keyof ContactDetails)[]).filter(
+    (key) => next[key] !== undefined && next[key] !== current[key],
+  )
+  if (changed.length === 0) return
+
+  await tx
+    .update(employments)
+    .set({
+      ...Object.fromEntries(changed.map((key) => [key, next[key]])),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(employments.organizationId, actor.organizationId), eq(employments.id, employmentId)),
+    )
+
+  await recordAuditEvent(tx, actor, {
+    action: AUDIT_ACTIONS.EMPLOYMENT_CONTACT_CHANGED,
+    summary: own
+      ? `Updated their own contact details (${changed.join(', ')})`
+      : `Updated ${person.displayName}'s contact details (${changed.join(', ')})`,
+    subjectType: 'employment',
+    subjectId: employmentId,
+    locationId: person.homeLocationId,
+    // Field names only. The values are personal data and stay out of history.
+    metadata: { fields: changed, byThemselves: own },
   })
 }
 

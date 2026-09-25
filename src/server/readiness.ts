@@ -3,7 +3,7 @@
  */
 
 /** The newest migration this build requires. A unit test keeps it in step with drizzle/. */
-export const EXPECTED_LATEST_MIGRATION = '0021_handoff_assignee.sql'
+export const EXPECTED_LATEST_MIGRATION = '0025_template_set_names.sql'
 
 export const WORKER_HEALTHY_MS = 5 * 60_000
 

@@ -86,6 +86,7 @@ const ITEMS: NavItem[] = [
   { href: '/app/schedule', label: 'Schedule', requires: SCHEDULING_CAPABILITIES },
   { href: '/app/training', label: 'Training', requires: TRAINING_CAPABILITIES },
   { href: '/app/operations', label: 'Operations', requires: OPERATIONS_CAPABILITIES },
+  { href: '/app/documents', label: 'Documents', requires: 'people.view' },
   { href: '/app/support', label: 'Support', requires: 'support.manage' },
   { href: '/app/settings', label: 'Settings', requires: 'org.view' },
 ]
@@ -111,6 +112,23 @@ export const SETTINGS_NAV: NavItem[] = [
 
 export function visibleSettingsNav(actor: Actor): NavItem[] {
   return SETTINGS_NAV.filter((item) => allowed(actor, item.requires))
+}
+
+/**
+ * Sub-navigation inside Communication.
+ *
+ * Round 2's three ways to talk, in the order a manager reaches for them:
+ * announcements when it must be read, channels for the running conversation,
+ * messages for one person.
+ */
+export const COMMS_NAV: NavItem[] = [
+  { href: '/app/comms', label: 'Announcements', requires: 'announcement.create' },
+  { href: '/app/comms/channels', label: 'Channels', requires: 'announcement.create' },
+  { href: '/app/comms/messages', label: 'Messages', requires: 'announcement.create' },
+]
+
+export function visibleCommsNav(actor: Actor): NavItem[] {
+  return COMMS_NAV.filter((item) => allowed(actor, item.requires))
 }
 
 /** Sub-navigation inside Schedule. */

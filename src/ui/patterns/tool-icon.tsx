@@ -5,6 +5,7 @@
  */
 
 export type ToolIconName =
+  | 'home'
   | 'people'
   | 'onboarding'
   | 'calendar'
@@ -42,6 +43,12 @@ export function ToolIcon({
 }
 
 const PATHS: Record<ToolIconName, React.ReactNode> = {
+  home: (
+    <path
+      d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z"
+      {...common}
+    />
+  ),
   people: (
     <>
       <circle cx="9" cy="8.5" r="3.2" {...common} />

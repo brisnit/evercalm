@@ -231,6 +231,8 @@ export const shiftTemplates = pgTable(
     /** How many people the pattern needs: one shift row per person. */
     headcount: smallint('headcount').notNull().default(1),
     notes: text('notes').notNull().default(''),
+    /** The named week this pattern belongs to, if any (round 2, Slotted). */
+    templateSetId: uuid('template_set_id'),
     createdByEmploymentId: uuid('created_by_employment_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -253,9 +255,15 @@ export const shiftTemplates = pgTable(
       foreignColumns: [stations.organizationId, stations.id],
       name: 'shift_templates_station_tenant_fk',
     }),
+    // A standalone pattern's name is unique per location, as it always was.
+    // A pattern inside a named week is unique within that week, so two
+    // templates for the same restaurant can both have a "Server · dinner".
     uniqueIndex('shift_templates_location_name_unique')
       .on(t.organizationId, t.locationId, sql`lower(${t.name})`)
-      .where(sql`${t.archivedAt} is null`),
+      .where(sql`${t.archivedAt} is null and ${t.templateSetId} is null`),
+    uniqueIndex('shift_templates_set_name_unique')
+      .on(t.organizationId, t.templateSetId, sql`lower(${t.name})`)
+      .where(sql`${t.archivedAt} is null and ${t.templateSetId} is not null`),
     check(
       'shift_templates_times_check',
       sql`${t.startMinute} between 0 and 1439 and ${t.endMinute} between 0 and 1439 and ${t.startMinute} <> ${t.endMinute}`,
@@ -529,5 +537,177 @@ export const shiftSwapRequests = pgTable(
     index('shift_swap_requests_requester_idx').on(t.organizationId, t.requesterEmploymentId),
     index('shift_swap_requests_recipient_idx').on(t.organizationId, t.recipientEmploymentId),
     index('shift_swap_requests_status_idx').on(t.organizationId, t.status),
+  ],
+)
+
+// ---------------------------------------------------------------------------
+// SLOTTED (round 2): a named week, the review of each day, the overrides a
+// manager took responsibility for, and call-outs.
+// ---------------------------------------------------------------------------
+
+/**
+ * A named week: which days are open, the break rules, and - through
+ * `shiftTemplates.templateSetId` - the demand patterns that belong to it.
+ *
+ * "Describe demand once" is the whole Slotted idea. A manager builds this in a
+ * wizard one time, and every future week starts from it with the slots already
+ * laid out.
+ */
+export const scheduleTemplates = pgTable(
+  'schedule_templates',
+  {
+    id: uuid('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    locationId: uuid('location_id').notNull(),
+    name: text('name').notNull(),
+    isDefault: boolean('is_default').notNull().default(false),
+    /** ISO weekdays the business is open. A closed day never gets slots. */
+    openDays: smallint('open_days')
+      .array()
+      .notNull()
+      .default(sql`'{1,2,3,4,5,6,7}'::smallint[]`),
+    mealMinutes: integer('meal_minutes').notNull().default(30),
+    mealAfterMinutes: integer('meal_after_minutes').notNull().default(300),
+    restMinutes: integer('rest_minutes').notNull().default(10),
+    restEveryMinutes: integer('rest_every_minutes').notNull().default(240),
+    staggerBreaks: boolean('stagger_breaks').notNull().default(true),
+    createdByEmploymentId: uuid('created_by_employment_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+  },
+  (t) => [
+    unique('schedule_templates_org_id_unique').on(t.organizationId, t.id),
+    foreignKey({
+      columns: [t.organizationId, t.locationId],
+      foreignColumns: [locations.organizationId, locations.id],
+      name: 'schedule_templates_location_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.createdByEmploymentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'schedule_templates_created_by_tenant_fk',
+    }),
+    check(
+      'schedule_templates_meal_check',
+      sql`${t.mealMinutes} >= 0 and ${t.mealAfterMinutes} > 0`,
+    ),
+    check(
+      'schedule_templates_rest_check',
+      sql`${t.restMinutes} >= 0 and ${t.restEveryMinutes} > 0`,
+    ),
+  ],
+)
+
+/** Where a day got to in the review stack. No row means "not looked at yet". */
+export const scheduleDayReviews = pgTable(
+  'schedule_day_reviews',
+  {
+    id: uuid('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    scheduleId: uuid('schedule_id').notNull(),
+    onDate: date('on_date').notNull(),
+    state: text('state').notNull(),
+    note: text('note').notNull().default(''),
+    reviewedByEmploymentId: uuid('reviewed_by_employment_id'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('schedule_day_reviews_unique').on(t.organizationId, t.scheduleId, t.onDate),
+    foreignKey({
+      columns: [t.organizationId, t.scheduleId],
+      foreignColumns: [schedules.organizationId, schedules.id],
+      name: 'schedule_day_reviews_schedule_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.reviewedByEmploymentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'schedule_day_reviews_reviewer_tenant_fk',
+    }),
+    check('schedule_day_reviews_state_check', sql`${t.state} in ('approved','flagged')`),
+  ],
+)
+
+/**
+ * A manager's decision to schedule somebody against their stated availability.
+ *
+ * Warn, do not block - except approved time off, which is locked, and which is
+ * why there is no `kind` here that could describe one. The row is what lets the
+ * final check list every override before publishing, and what lets the person
+ * see, on their own schedule, that the choice was deliberate.
+ */
+export const scheduleOverrides = pgTable(
+  'schedule_overrides',
+  {
+    id: uuid('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    scheduleId: uuid('schedule_id').notNull(),
+    shiftId: uuid('shift_id').notNull(),
+    employmentId: uuid('employment_id').notNull(),
+    kind: text('kind').notNull(),
+    reason: text('reason').notNull().default(''),
+    decidedByEmploymentId: uuid('decided_by_employment_id'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('schedule_overrides_unique').on(t.organizationId, t.shiftId),
+    foreignKey({
+      columns: [t.organizationId, t.scheduleId],
+      foreignColumns: [schedules.organizationId, schedules.id],
+      name: 'schedule_overrides_schedule_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.shiftId],
+      foreignColumns: [shifts.organizationId, shifts.id],
+      name: 'schedule_overrides_shift_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.employmentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'schedule_overrides_employment_tenant_fk',
+    }).onDelete('cascade'),
+    check('schedule_overrides_kind_check', sql`${t.kind} in ('unavailable','not_preferred')`),
+  ],
+)
+
+/** Somebody cannot work a shift they were given. Replacing them is a decision. */
+export const shiftCallouts = pgTable(
+  'shift_callouts',
+  {
+    id: uuid('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    shiftId: uuid('shift_id').notNull(),
+    employmentId: uuid('employment_id').notNull(),
+    reason: text('reason').notNull().default(''),
+    reportedByEmploymentId: uuid('reported_by_employment_id'),
+    reportedAt: timestamp('reported_at', { withTimezone: true }).notNull().defaultNow(),
+    replacementEmploymentId: uuid('replacement_employment_id'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  },
+  (t) => [
+    unique('shift_callouts_open_unique').on(t.organizationId, t.shiftId),
+    foreignKey({
+      columns: [t.organizationId, t.shiftId],
+      foreignColumns: [shifts.organizationId, shifts.id],
+      name: 'shift_callouts_shift_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.employmentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'shift_callouts_employment_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.organizationId, t.replacementEmploymentId],
+      foreignColumns: [employments.organizationId, employments.id],
+      name: 'shift_callouts_replacement_tenant_fk',
+    }),
   ],
 )

@@ -1,3 +1,4 @@
+import { buttonClasses } from '@/ui/primitives/button'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -10,7 +11,7 @@ import { buildReport } from '@/modules/reports/builders'
 import { filtersToQuery, isReportKey, parseReportFilters } from '@/modules/reports/filters'
 import { REPORT_CAPABILITY } from '@/modules/reports/scope'
 import { organizationTimeZone } from '@/modules/training/records'
-import { BackLink, Card, CardHeader, PageHeader, ScrollArea } from '@/ui/primitives'
+import { Card, CardHeader, PageHeader, ScrollArea } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { StatTile } from '@/ui/patterns/stat-tile'
 import { SECONDARY_LINK_CLASS, SELECT_CLASS } from '../../training/_components/styles'
@@ -62,8 +63,11 @@ export default async function ReportPage({
 
   return (
     <>
-      <BackLink href="/app/reports">Reports</BackLink>
-      <PageHeader title={report.title} description={report.description} />
+      <PageHeader
+        back={{ href: '/app/reports', label: 'Reports' }}
+        title={report.title}
+        description={report.description}
+      />
 
       <form
         method="get"
@@ -114,10 +118,7 @@ export default async function ReportPage({
           <span className="text-muted">To</span>
           <input type="date" name="to" defaultValue={filters.to} className={SELECT_CLASS} />
         </label>
-        <button
-          type="submit"
-          className="rounded-control inline-flex min-h-11 items-center justify-center bg-teal-600 px-4 text-sm font-medium text-white hover:bg-teal-700"
-        >
+        <button type="submit" className={buttonClasses('primary', 'md')}>
           Apply
         </button>
       </form>

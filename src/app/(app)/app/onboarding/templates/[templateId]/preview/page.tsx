@@ -8,7 +8,6 @@ import { previewVersion } from '@/modules/onboarding/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
 import {
-  BackLink,
   Badge,
   ButtonLink,
   Card,
@@ -76,11 +75,8 @@ export default async function TemplatePreviewPage({
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href={`/app/onboarding/templates/${templateId}`}>{template.name}</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: `/app/onboarding/templates/${templateId}`, label: template.name }}
         eyebrow="Preview"
         title="What a new hire sees"
         description="Exactly what this checklist produces, built from the same data a real run copies."

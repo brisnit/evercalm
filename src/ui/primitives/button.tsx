@@ -4,18 +4,20 @@ import { cn } from '@/lib/cn'
 /**
  * Button.
  *
- * Soft Sage and Coral Pop are never used as text-bearing fills: at 2.33:1 and
- * 2.62:1 white text on them fails AA. The primary action is Deep Teal
- * teal-600 (7.56:1 on white); destructive stays crimson, never coral.
+ * The primary action is coral-600 (white on it is 4.71:1 - AA): round 2 puts
+ * the main move of every screen in coral. Brand Coral Pop itself (2.62:1)
+ * stays a fill, border and icon colour only, and destructive stays crimson so
+ * it can never read as a coral accent.
  */
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800 border border-transparent',
+  primary:
+    'bg-action shadow-low hover:bg-action-hover hover:shadow-lift active:bg-action-hover border border-transparent text-white',
   secondary:
-    'bg-white text-ink border border-field/70 hover:bg-teal-50 hover:border-teal-400 active:bg-teal-100',
+    'bg-white text-ink border border-field/70 shadow-low hover:bg-teal-50 hover:border-teal-400 active:bg-teal-100',
   ghost: 'bg-transparent text-muted border border-transparent hover:bg-sunk hover:text-ink',
   danger: 'bg-danger text-white hover:bg-[#8f1424] active:bg-[#76101e] border border-transparent',
 }

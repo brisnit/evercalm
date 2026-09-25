@@ -19,10 +19,10 @@ export async function EmployeeHeader({
 }) {
   const { actor, activeOrganization } = await requireActorContext()
   return (
-    <header className="border-line border-b bg-white px-5 py-2">
+    <header className="bg-band px-5 py-2.5 text-white">
       <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3 md:max-w-3xl">
         <Link href="/my" aria-label="Your work" className="shrink-0">
-          <Logo size="h-8" eager />
+          <Logo size="h-8" onDark eager />
         </Link>
         <EmployeeNav variant="inline" />
         <div className="flex min-w-0 items-center gap-3">
@@ -30,7 +30,7 @@ export async function EmployeeHeader({
           {back ? (
             <Link
               href={back.href}
-              className="text-muted truncate text-sm underline-offset-4 hover:underline"
+              className="text-band-quiet truncate text-sm underline-offset-4 hover:text-white hover:underline"
             >
               {back.label}
             </Link>
@@ -83,7 +83,7 @@ export function ScheduleTabs({ current }: { current: 'schedule' | 'time-off' | '
               aria-current={current === tab.key ? 'page' : undefined}
               className={
                 current === tab.key
-                  ? 'text-ink inline-flex min-h-11 items-center border-b-2 border-teal-600 px-3 text-sm font-semibold'
+                  ? 'text-ink border-action inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-semibold'
                   : 'text-muted hover:text-ink inline-flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm'
               }
             >
@@ -93,5 +93,34 @@ export function ScheduleTabs({ current }: { current: 'schedule' | 'time-off' | '
         ))}
       </ul>
     </nav>
+  )
+}
+
+/**
+ * The title of an employee page, on the navy band.
+ *
+ * Round 2 gives every screen the same opening: an oversized two-tone line and
+ * one sentence saying where you stand. It runs edge to edge inside the narrow
+ * employee column, which is why the page wrapper clips horizontally.
+ */
+export function EmployeeTitle({
+  title,
+  accent,
+  description,
+}: {
+  title: string
+  accent?: string
+  description?: string
+}) {
+  return (
+    <div className="full-bleed bg-band text-white">
+      <div className="mx-auto w-full max-w-xl py-7 md:max-w-3xl">
+        <h1 className="font-display text-[1.875rem] leading-[1.05] font-extrabold tracking-[-0.02em] text-balance sm:text-[2.25rem]">
+          {title}
+          {accent ? <span className="text-band-accent"> {accent}</span> : null}
+        </h1>
+        {description ? <p className="text-band-quiet mt-2 text-sm">{description}</p> : null}
+      </div>
+    </div>
   )
 }

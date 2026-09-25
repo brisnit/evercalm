@@ -10,7 +10,7 @@ import { formatMinutes } from '@/modules/training/progress'
 import { Badge, Card, EmptyState, PageHeader, ProgressBar } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { StatTile } from '@/ui/patterns/stat-tile'
-import { LINK_BUTTON_CLASS } from './_components/styles'
+import { LINK_BUTTON_CLASS, SECONDARY_LINK_CLASS } from './_components/styles'
 
 export const metadata: Metadata = { title: 'Training' }
 export const dynamic = 'force-dynamic'
@@ -47,9 +47,14 @@ export default async function TrainingPage() {
         description="Build training once, publish it, and assign it to the people who need it. Everyone keeps the version they were given."
         action={
           can(actor, 'training.author') ? (
-            <Link href="/app/training/courses/new" className={LINK_BUTTON_CLASS}>
-              New course
-            </Link>
+            <div className="flex flex-wrap gap-2.5">
+              <Link href="/app/training/library" className={SECONDARY_LINK_CLASS}>
+                Course library
+              </Link>
+              <Link href="/app/training/courses/new" className={LINK_BUTTON_CLASS}>
+                New course
+              </Link>
+            </div>
           ) : null
         }
       />

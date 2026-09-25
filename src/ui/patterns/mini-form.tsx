@@ -23,6 +23,7 @@ export function MiniForm({
   size = 'md',
   fullWidth = false,
   className,
+  onDone,
   children,
 }: {
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>
@@ -32,13 +33,18 @@ export function MiniForm({
   size?: 'sm' | 'md' | 'lg'
   fullWidth?: boolean
   className?: string
+  /** Called once the action has succeeded, e.g. to close an inline editor. */
+  onDone?: () => void
   children?: React.ReactNode | ((state: ActionState) => React.ReactNode)
 }) {
   const show = useShowNotice()
   const [state, formAction, pending] = useActionState(
     async (previous: ActionState, formData: FormData) => {
       const result = await action(previous, formData)
-      if (result.status === 'success') show(result)
+      if (result.status === 'success') {
+        show(result)
+        onDone?.()
+      }
       return result
     },
     IDLE,

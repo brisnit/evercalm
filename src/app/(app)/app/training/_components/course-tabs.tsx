@@ -30,7 +30,7 @@ export function CourseTabs({
               className={cn(
                 'inline-flex min-h-11 items-center border-b-2 px-3 text-sm whitespace-nowrap',
                 current === tab.key
-                  ? 'text-ink border-teal-600 font-semibold'
+                  ? 'text-ink border-action font-semibold'
                   : 'text-muted hover:text-ink hover:border-line-strong border-transparent',
               )}
             >

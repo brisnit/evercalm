@@ -8,9 +8,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
 
   return (
     <>
-      <div className="mb-6">
-        <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
-      </div>
+      <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
       {children}
     </>
   )

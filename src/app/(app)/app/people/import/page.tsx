@@ -4,7 +4,7 @@ import { withTenant } from '@/server/db'
 import { listLocations } from '@/modules/org/service'
 import { listJobRoles } from '@/modules/structure/service'
 import { canAtAnyLocation } from '@/server/authz/can'
-import { BackLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { ImportWizard } from './wizard'
 
@@ -24,11 +24,8 @@ export default async function ImportPage() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/people">People</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/people', label: 'People' }}
         title="Import from a spreadsheet"
         description="Add a lot of people at once. Nothing is created until you have seen exactly what will happen."
       />

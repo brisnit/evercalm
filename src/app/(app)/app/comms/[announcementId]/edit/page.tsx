@@ -14,7 +14,7 @@ import {
 import { instantToZonedWallTime } from '@/lib/dates'
 import { publishingScope, resolveSelectorLabels } from '@/modules/comms/audience'
 import { selectableEvents } from '@/modules/events/service'
-import { BackLink, PageHeader } from '@/ui/primitives'
+import { PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { Composer, type DraftRule } from '../../composer'
 import { audienceOptions } from '../../audience-options'
@@ -69,11 +69,8 @@ export default async function EditAnnouncementPage({
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href={`/app/comms/${announcementId}`}>{data.announcement.title}</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: `/app/comms/${announcementId}`, label: data.announcement.title }}
         title="Edit announcement"
         description="Nobody has received this yet, so changes here replace the draft outright."
       />

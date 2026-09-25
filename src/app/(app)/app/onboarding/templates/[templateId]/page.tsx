@@ -7,7 +7,7 @@ import { listJobRoles } from '@/modules/structure/service'
 import { listLocations } from '@/modules/org/service'
 import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError, NotFoundError } from '@/lib/errors'
-import { BackLink, Badge, ButtonLink, Card, PageHeader } from '@/ui/primitives'
+import { Badge, ButtonLink, Card, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { TemplateBuilder } from './builder'
 
@@ -76,11 +76,8 @@ export default async function TemplateBuilderPage({
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/onboarding/templates">Checklists</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/onboarding/templates', label: 'Checklists' }}
         eyebrow="Onboarding checklist"
         title={template.name}
         description={template.description || undefined}

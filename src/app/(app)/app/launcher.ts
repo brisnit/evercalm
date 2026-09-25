@@ -13,10 +13,13 @@ import {
  * THE ADMINISTRATION LAUNCHER.
  *
  * Home is the tools, not a to-do list. Each card is shown only to someone who
- * can open that section - the same rule as the navigation - and carries at
- * most one line: what needs a decision there, or else one calm fact. The
- * figures come from the attention queue, which is already scoped to the
- * locations and capabilities of the person looking.
+ * can open that section - the same rule as the navigation.
+ *
+ * ROUND 2: the cards no longer repeat the attention counts. "9 confirmations
+ * overdue" appearing under People, again under Communication and again in the
+ * banner above taught a manager to read the same number three times and act on
+ * none of them. One global attention area owns the counts; a card carries at
+ * most one calm fact about the section itself, or nothing at all.
  */
 
 export interface LauncherTool {
@@ -99,29 +102,16 @@ export const TOOLS: readonly ToolDefinition[] = [
 
 export function launcherTools(
   actor: Actor,
-  attention: readonly AttentionItem[],
   calm: Partial<Record<string, string | null>> = {},
 ): LauncherTool[] {
-  return TOOLS.filter((tool) => allowed(actor, tool.requires)).map((tool) => {
-    const mine = attention.filter((item) =>
-      tool.owns.some(
-        (prefix) =>
-          item.href === prefix ||
-          item.href.startsWith(`${prefix}/`) ||
-          item.href.startsWith(`${prefix}#`) ||
-          item.href.startsWith(`${prefix}?`),
-      ),
-    )
-    const status = attentionLine(mine)
-    return {
-      key: tool.key,
-      href: tool.href,
-      label: tool.label,
-      icon: tool.icon,
-      status: status ?? calm[tool.key] ?? null,
-      tone: status ? 'attention' : 'calm',
-    }
-  })
+  return TOOLS.filter((tool) => allowed(actor, tool.requires)).map((tool) => ({
+    key: tool.key,
+    href: tool.href,
+    label: tool.label,
+    icon: tool.icon,
+    status: calm[tool.key] ?? null,
+    tone: 'calm',
+  }))
 }
 
 /** "Time off to decide: 2", or "5 things need you" when there are several kinds. */

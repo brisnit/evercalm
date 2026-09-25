@@ -9,6 +9,7 @@ import { withTenant } from '@/server/db'
 import { requireActorContext } from '@/server/auth/session'
 import {
   addLocationAssignment,
+  changeContactDetails,
   changeJobTitle,
   changeManager,
   grantRole,
@@ -101,6 +102,54 @@ export async function changeJobTitleAction(
     },
     'We could not update the job title.',
   )
+}
+
+const contactSchema = z.object({
+  employmentId: z.uuid(),
+  phone: z.string().trim().max(40, 'That phone number is too long').optional(),
+  emergencyContactName: z.string().trim().max(120, 'That name is too long').optional(),
+  emergencyContactPhone: z.string().trim().max(40, 'That phone number is too long').optional(),
+  dateOfBirth: z.string().trim().max(10).optional(),
+})
+
+/**
+ * Used by a manager on someone's profile and by a person on their own. The
+ * service decides which of those the caller is; this only shapes the input.
+ */
+export async function changeContactDetailsAction(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const refusal = demoRestriction()
+  if (refusal) return refusal
+  const parsed = contactSchema.safeParse({
+    employmentId: formData.get('employmentId'),
+    phone: formData.get('phone') ?? undefined,
+    emergencyContactName: formData.get('emergencyContactName') ?? undefined,
+    emergencyContactPhone: formData.get('emergencyContactPhone') ?? undefined,
+    dateOfBirth: formData.get('dateOfBirth') ?? undefined,
+  })
+  if (!parsed.success) {
+    return {
+      status: 'error',
+      message: 'Please check the form.',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }
+  }
+  const { employmentId, ...fields } = parsed.data
+  const state = await run(
+    employmentId,
+    async ({ actor }) => {
+      await withTenant(actor.organizationId, (tx) =>
+        changeContactDetails(tx, actor, employmentId, fields),
+      )
+      return 'Contact details saved.'
+    },
+    'We could not save those contact details.',
+  )
+  // The person's own profile lives on the employee side.
+  revalidatePath('/my/profile')
+  return state
 }
 
 const managerSchema = z.object({

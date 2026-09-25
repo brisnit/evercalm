@@ -8,7 +8,6 @@ import { canAtAnyLocation } from '@/server/authz/can'
 import { ForbiddenError } from '@/lib/errors'
 import {
   Avatar,
-  BackLink,
   Badge,
   Card,
   CardHeader,
@@ -55,10 +54,8 @@ export default async function AttentionPage() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app">Home</BackLink>
-      </nav>
       <PageHeader
+        back={{ href: '/app', label: 'Home' }}
         title="Needs attention"
         description={
           data.attention.length === 0

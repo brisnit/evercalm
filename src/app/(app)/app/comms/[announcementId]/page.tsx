@@ -15,7 +15,7 @@ import {
 import { receiptReport } from '@/modules/comms/receipts'
 import { resolveSelectorLabels } from '@/modules/comms/audience'
 import { formatDateInZone, formatInZone } from '@/lib/dates'
-import { BackLink, ButtonLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
+import { ButtonLink, Card, CardHeader, PageHeader } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
 import { AnnouncementBody } from '@/ui/patterns/announcement-body'
 import { PriorityMark, StatusMark } from '@/ui/patterns/priority-mark'
@@ -81,11 +81,8 @@ export default async function AnnouncementDetailPage({
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <BackLink href="/app/comms">Announcements</BackLink>
-      </nav>
-
       <PageHeader
+        back={{ href: '/app/comms', label: 'Announcements' }}
         eyebrow={announcement.categoryName}
         title={announcement.title}
         action={

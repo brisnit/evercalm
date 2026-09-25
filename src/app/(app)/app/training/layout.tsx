@@ -9,9 +9,7 @@ export default async function TrainingLayout({ children }: { children: React.Rea
   return (
     <>
       {nav.length > 1 ? (
-        <div className="mb-6">
-          <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
-        </div>
+        <SectionNav items={nav.map((n) => ({ href: n.href, label: n.label }))} />
       ) : null}
       {children}
     </>

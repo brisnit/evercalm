@@ -7,9 +7,14 @@ import { ROLE_KEYS, ROLE_PRESETS } from '@/server/authz/role-presets'
 import * as schema from '../full-schema'
 import { DEFAULT_ANNOUNCEMENT_CATEGORIES } from '@/modules/comms/categories'
 import { deliveryPolicy } from '@/modules/comms/delivery-policy'
+import { seedContact } from './contact'
 import { SEED_ORGANIZATIONS, SEED_PASSWORD, type SeedOrganization } from './data'
 import { seedScheduling } from './scheduling'
 import { linkSeededOnboardingTraining, seedTraining } from './training'
+import { seedAvailability } from './availability'
+import { seedDocuments } from './documents'
+import { seedMessaging } from './messaging'
+import { seedSlottedTemplates } from './slotted'
 import { seedOperations } from './operations'
 import { seedBillingAndSupport, seedPlatformStaff, seedWorkerRuns } from './launch'
 
@@ -46,6 +51,9 @@ export interface SeedOrganizationSummary {
   credentials: number
   onboardingAssignments: number
   announcements: number
+  channels: number
+  directThreads: number
+  messages: number
   shifts: number
   courses: number
   trainingAssignments: number
@@ -145,6 +153,9 @@ function emptySummary(seed: SeedOrganization): SeedOrganizationSummary {
     credentials: 0,
     onboardingAssignments: 0,
     announcements: 0,
+    channels: 0,
+    directThreads: 0,
+    messages: 0,
     shifts: 0,
     courses: 0,
     trainingAssignments: 0,
@@ -524,6 +535,7 @@ async function seedOrganization(
       homeLocationId: homeLocationKey ? (locationIds.get(homeLocationKey) ?? null) : null,
       email: person.email,
       hiredOn: person.hiredOn ?? null,
+      ...seedContact(person, seed.areaCode),
     })
 
     for (const locationKey of person.locations) {
@@ -928,6 +940,18 @@ async function seedOrganization(
   }
 
   // --- scheduling ------------------------------------------------------------
+  // Availability first: every slot the manager fills is coloured by it.
+  await seedAvailability(db, { organizationId, slug: seed.slug, employmentIds })
+
+  // A named week per location, so Schedule opens on something real.
+  await seedSlottedTemplates(db, {
+    organizationId,
+    slug: seed.slug,
+    locationIds,
+    jobRoleIds,
+    employmentIds,
+  })
+
   const scheduling = await seedScheduling(db, {
     organizationId,
     slug: seed.slug,
@@ -968,6 +992,16 @@ async function seedOrganization(
     systemEvent,
   })
 
+  // --- channels and direct messages ------------------------------------------
+  const messaging = await seedMessaging(db, {
+    organizationId,
+    slug: seed.slug,
+    employmentIds,
+  })
+
+  // --- the document hub -------------------------------------------------------
+  await seedDocuments(db, { organizationId, slug: seed.slug, locationIds, employmentIds })
+
   // --- billing, support and delivery history --------------------------------
   await seedBillingAndSupport(db, { organizationId, slug: seed.slug, employmentIds })
 
@@ -990,6 +1024,9 @@ async function seedOrganization(
     credentials: credentialCount,
     onboardingAssignments: onboardingCount,
     announcements: announcementCount,
+    channels: messaging.channels,
+    directThreads: messaging.threads,
+    messages: messaging.messages,
     shifts: scheduling.shifts,
     courses: training.courses,
     trainingAssignments: training.assignments,

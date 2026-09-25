@@ -100,8 +100,8 @@ export function EmployeeNav({ variant }: { variant: 'bar' | 'inline' }) {
                   className={cn(
                     'rounded-control inline-flex min-h-11 items-center px-3 text-sm transition-colors',
                     active
-                      ? 'text-ink bg-teal-50 font-semibold'
-                      : 'text-muted hover:text-ink hover:bg-teal-50/70',
+                      ? 'bg-white/10 font-semibold text-white'
+                      : 'text-band-quiet hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {item.label}
@@ -117,7 +117,7 @@ export function EmployeeNav({ variant }: { variant: 'bar' | 'inline' }) {
   return (
     <nav
       aria-label="Your work"
-      className="border-line fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="bg-band border-band-line fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="mx-auto grid max-w-xl grid-cols-5">
         {ITEMS.map((item) => {
@@ -131,8 +131,8 @@ export function EmployeeNav({ variant }: { variant: 'bar' | 'inline' }) {
                   'relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-medium transition-colors',
                   "before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:content-['']",
                   active
-                    ? 'text-teal-700 before:bg-teal-600'
-                    : 'text-muted hover:text-ink before:bg-transparent',
+                    ? 'text-sage-300 before:bg-sage-400'
+                    : 'text-band-quiet before:bg-transparent hover:text-white',
                 )}
               >
                 <Icon name={item.icon} />

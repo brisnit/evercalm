@@ -128,6 +128,18 @@
   --color-lift: #faf6f0; /* pale sand section ground */
   --color-mist: #f1e9de; /* deeper sand section ground */
 
+  /* --- round 2 surfaces --------------------------------------------------
+     The product now opens on a navy band: navigation, page title and page
+     actions sit on it, and the working surface below is warm white. The band
+     is what makes a screen feel like EverCalm rather than a dashboard. */
+  --color-band: #14202c; /* navy-900. White on it is 16.50:1 */
+  --color-band-quiet: #9fa9b5; /* secondary text on the band, 6.93:1 */
+  --color-band-accent: #f0a68f; /* the second tone in a headline, 8.29:1 */
+  --color-band-line: #2c3c4d; /* hairlines inside the band */
+  --color-action: #c24f31; /* coral-600. White on it is 4.71:1 - AA */
+  --color-action-hover: #a34128; /* coral-700, 6.28:1 */
+  --color-tile: #e7f2ec; /* pale mint behind a card's icon */
+
   /* --- type ------------------------------------------------------------- */
   --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -138,9 +150,21 @@
   --radius-card: 0.75rem; /* 12px - cards */
   --radius-panel: 1.25rem; /* 20px - marketing panels */
 
-  /* Two elevations only. Borders do the structural work. */
-  --shadow-low: 0 1px 2px rgb(4 4 4 / 0.06), 0 1px 3px rgb(4 4 4 / 0.04);
-  --shadow-lift: 0 4px 12px rgb(4 4 4 / 0.08), 0 2px 4px rgb(4 4 4 / 0.04);
+  /* Three elevations. Borders still do the structural work; shadow says
+     "this is a surface you can act on", and `raise` is the hover state. */
+  --shadow-low: 0 1px 2px rgb(20 32 44 / 0.05), 0 2px 8px -4px rgb(20 32 44 / 0.08);
+  --shadow-lift: 0 4px 14px -6px rgb(20 32 44 / 0.14), 0 2px 6px -4px rgb(20 32 44 / 0.10);
+  --shadow-raise: 0 18px 40px -24px rgb(20 32 44 / 0.35), 0 6px 14px -10px rgb(20 32 44 / 0.18);
+}
+
+/*
+  A band that runs edge to edge while its content stays on the page's own
+  column. `overflow-x: clip` on the scroll parent absorbs the scrollbar width,
+  so this never produces a sideways scroll.
+*/
+@utility full-bleed {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
 }
 
 @layer base {

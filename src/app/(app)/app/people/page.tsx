@@ -34,6 +34,14 @@ const STATUS_TONE: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> 
   separated: 'neutral',
 }
 
+// The state is always spelled out in words; the colour only makes the two that
+// need a manager - blocked and overdue - findable in a long list.
+const ONBOARDING_TONE: Record<string, string> = {
+  overdue: 'text-danger font-semibold',
+  blocked: 'text-danger font-semibold',
+  completed: 'text-success font-semibold',
+}
+
 export default async function PeoplePage({
   searchParams,
 }: {
@@ -74,7 +82,8 @@ export default async function PeoplePage({
   return (
     <>
       <PageHeader
-        title="Employee directory"
+        title="Employee"
+        accent="directory"
         description="Everyone employed by this organization, and where they work."
         action={
           can(actor, 'people.invite') || canAtAnyLocation(actor, 'people.invite') ? (
@@ -127,7 +136,7 @@ export default async function PeoplePage({
           */}
           <table className="w-full text-sm">
             <caption className="sr-only">Employee directory</caption>
-            <thead>
+            <thead className="hidden sm:table-header-group">
               <tr className="border-line-strong bg-sunk border-b text-left">
                 <th
                   scope="col"
@@ -172,9 +181,18 @@ export default async function PeoplePage({
                             {person.jobTitle ?? 'No job title'}
                           </span>
                           {/* On a phone the hidden columns move here. */}
-                          <span className="text-faint block truncate text-xs font-normal md:hidden">
+                          <span className="text-faint block truncate text-xs font-normal lg:hidden">
                             {person.homeLocationName ?? 'No location'}
-                            {onboarding ? ` · onboarding ${onboarding.percentComplete}%` : ''}
+                            {onboarding ? (
+                              <>
+                                {' · '}
+                                <span className="tabular-nums">{onboarding.percentComplete}%</span>
+                                {' · '}
+                                <span className={ONBOARDING_TONE[onboarding.state] ?? ''}>
+                                  {ONBOARDING_STATE_LABELS[onboarding.state] ?? onboarding.state}
+                                </span>
+                              </>
+                            ) : null}
                           </span>
                         </span>
                       </Link>
@@ -191,7 +209,9 @@ export default async function PeoplePage({
                       {onboarding ? (
                         <span className="text-muted tabular-nums">
                           {onboarding.percentComplete}% ·{' '}
-                          {ONBOARDING_STATE_LABELS[onboarding.state] ?? onboarding.state}
+                          <span className={ONBOARDING_TONE[onboarding.state] ?? ''}>
+                            {ONBOARDING_STATE_LABELS[onboarding.state] ?? onboarding.state}
+                          </span>
                         </span>
                       ) : (
                         <span className="text-faint">—</span>

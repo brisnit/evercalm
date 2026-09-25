@@ -27,6 +27,7 @@ import {
   TextLink,
 } from '@/ui/primitives'
 import { PermissionDenied } from '@/ui/patterns/permission-denied'
+import { ContactPanel } from './contact-panel'
 import { EmploymentPanels, StartOnboardingForm } from './panels'
 
 export const dynamic = 'force-dynamic'
@@ -204,42 +205,14 @@ export default async function EmployeeProfilePage({
             </dl>
           </Card>
 
-          <Card>
-            <CardHeader
-              title="Contact"
-              description={
-                person.contact
-                  ? 'Personal details, visible to you because you hold the sensitive-information permission.'
-                  : undefined
-              }
-            />
-            <div className="p-5">
-              {person.contact ? (
-                <dl className="flex flex-col gap-3">
-                  {[
-                    ['Email', person.contact.email],
-                    ['Phone', person.contact.phone],
-                    ['Date of birth', person.contact.dateOfBirth],
-                    ['Emergency contact', person.contact.emergencyContactName],
-                    ['Emergency phone', person.contact.emergencyContactPhone],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted text-sm">{label}</dt>
-                      <dd className="text-ink text-sm font-medium">{value ?? 'Not recorded'}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <div className="rounded-control border-line bg-sunk border px-4 py-3">
-                  <p className="text-ink text-sm font-medium">Withheld</p>
-                  <p className="text-muted mt-1 text-sm">
-                    Emergency contacts, date of birth and personal contact details need the
-                    sensitive-information permission, which General Managers do not hold.
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
+          <ContactPanel
+            employmentId={employmentId}
+            contact={person.contact}
+            canEdit={
+              canAtAnyLocation(actor, 'people.update') &&
+              can(actor, 'people.view_sensitive', { locationId: person.homeLocationId })
+            }
+          />
 
           <Card>
             <CardHeader title="Access" description="Roles granted, and where they apply." />

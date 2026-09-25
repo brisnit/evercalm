@@ -19,6 +19,7 @@ export function SignOutButton() {
       <Button
         variant="ghost"
         size="sm"
+        className="text-band-quiet hover:bg-white/10 hover:text-white"
         loading={busy}
         onClick={() => {
           setBusy(true)

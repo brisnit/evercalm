@@ -396,7 +396,7 @@ async function findSchedule(tx: Tx, organizationId: string, locationId: string, 
   return row ?? null
 }
 
-async function ensureSchedule(tx: Tx, actor: Actor, location: LocationRef, weekStart: string) {
+export async function ensureSchedule(tx: Tx, actor: Actor, location: LocationRef, weekStart: string) {
   const inserted = await tx
     .insert(schedules)
     .values({
@@ -424,7 +424,7 @@ async function ensureSchedule(tx: Tx, actor: Actor, location: LocationRef, weekS
 }
 
 /** A published schedule now differs from what employees were told. */
-async function markChanged(tx: Tx, organizationId: string, scheduleId: string): Promise<void> {
+export async function markChanged(tx: Tx, organizationId: string, scheduleId: string): Promise<void> {
   await tx
     .update(schedules)
     .set({ hasUnpublishedChanges: true, updatedAt: new Date() })
@@ -506,7 +506,7 @@ export interface WeekBoard {
   }[]
 }
 
-function weekBounds(location: LocationRef, weekStart: string) {
+export function weekBounds(location: LocationRef, weekStart: string) {
   const from = localTimeToInstant(weekStart, 0, location.timeZone)
   const to = localTimeToInstant(addCalendarDays(weekStart, 7), 0, location.timeZone)
   if (!from || !to) throw new ValidationError({}, 'That week could not be read at this location.')

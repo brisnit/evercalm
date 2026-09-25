@@ -5,8 +5,10 @@ import { isUuid } from '@/lib/uuid'
 import { requireActorContext } from '@/server/auth/session'
 import { withTenant } from '@/server/db'
 import { getMyShift } from '@/modules/scheduling/employee'
+import { getEmployment } from '@/modules/people/service'
 import { Card } from '@/ui/primitives'
 import { EmployeeShell } from '../../../_components/employee-shell'
+import { OverrideNotice } from '@/ui/patterns/override-notice'
 import { SwapPanel } from './swap-panel'
 
 export const metadata: Metadata = { title: 'Shift' }
@@ -22,12 +24,14 @@ export default async function MyShiftPage({ params }: { params: Promise<{ shiftI
   if (!isUuid(shiftId)) notFound()
   const { actor } = await requireActorContext()
 
-  const detail = await withTenant(actor.organizationId, (tx) =>
-    getMyShift(tx, actor, shiftId),
-  ).catch((error: unknown) => {
+  const data = await withTenant(actor.organizationId, async (tx) => ({
+    detail: await getMyShift(tx, actor, shiftId),
+    me: await getEmployment(tx, actor, actor.employmentId).catch(() => null),
+  })).catch((error: unknown) => {
     if (error instanceof NotFoundError) notFound()
     throw error
   })
+  const { detail, me } = data
   const { shift } = detail
 
   return (
@@ -68,6 +72,16 @@ export default async function MyShiftPage({ params }: { params: Promise<{ shiftI
           <p className="text-ink border-line mt-4 border-t pt-4 text-sm">{shift.notes}</p>
         ) : null}
       </Card>
+
+      {shift.override ? (
+        <div className="mt-5">
+          <OverrideNotice
+            override={shift.override}
+            managerEmploymentId={me?.managerEmploymentId ?? null}
+            managerName={me?.managerName ?? null}
+          />
+        </div>
+      ) : null}
 
       <SwapPanel
         shiftId={shift.id}

@@ -8,6 +8,7 @@ import { isUuid } from '@/lib/uuid'
 import { withTenant } from '@/server/db'
 import { requireActorContext } from '@/server/auth/session'
 import { FROZEN_VERSION, pgErrorCode } from './access'
+import { adoptFromLibrary, importCourseFromText } from './library'
 import {
   addLesson,
   archiveCourse,
@@ -575,4 +576,54 @@ export async function requestSignoffAction(
   } catch (error) {
     return fail(error, 'Your request could not be sent. Please try again.')
   }
+}
+
+// ---------------------------------------------------------------------------
+// The library and the import path (round 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Take a ready-made course into this organization.
+ *
+ * It arrives as a draft the manager owns: they edit it in their own words and
+ * publish it themselves, and nothing reaches an employee until they do.
+ */
+export async function adoptFromLibraryAction(
+  _previous: TrainingActionState,
+  formData: FormData,
+): Promise<TrainingActionState> {
+  const { actor } = await requireActorContext()
+  let courseId: string
+  try {
+    courseId = await withTenant(actor.organizationId, (tx) =>
+      adoptFromLibrary(tx, actor, readString(formData, 'key')),
+    )
+  } catch (error) {
+    return fail(error, 'We could not add that course.')
+  }
+  revalidatePath('/app/training', 'layout')
+  redirect(`/app/training/courses/${courseId}`)
+}
+
+/** Paste a policy you already have; each section becomes a reading lesson. */
+export async function importCourseAction(
+  _previous: TrainingActionState,
+  formData: FormData,
+): Promise<TrainingActionState> {
+  const { actor } = await requireActorContext()
+  let courseId: string
+  try {
+    const result = await withTenant(actor.organizationId, (tx) =>
+      importCourseFromText(tx, actor, {
+        title: readString(formData, 'title'),
+        summary: readString(formData, 'summary'),
+        text: readString(formData, 'text'),
+      }),
+    )
+    courseId = result.courseId
+  } catch (error) {
+    return fail(error, 'We could not turn that into a course.')
+  }
+  revalidatePath('/app/training', 'layout')
+  redirect(`/app/training/courses/${courseId}`)
 }
