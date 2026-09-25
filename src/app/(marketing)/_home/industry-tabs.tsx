@@ -70,8 +70,8 @@ export function IndustryTabs({ industries }: { industries: Industry[] }) {
               onKeyDown={(event) => onKeyDown(event, index)}
               className={
                 selected
-                  ? 'bg-accent min-h-11 rounded-full px-4 text-sm font-semibold text-white shadow-[0_6px_16px_-8px_rgb(107_77_241/0.7)] transition-colors duration-200'
-                  : 'border-line text-deep hover:border-accent/40 hover:text-accent-strong hover:bg-lift min-h-11 rounded-full border bg-white px-4 text-sm font-medium transition-colors duration-200'
+                  ? 'bg-accent ease-calm min-h-11 rounded-full px-4 text-sm font-semibold text-white shadow-[0_6px_16px_-8px_rgb(107_77_241/0.7)] transition-colors duration-[320ms]'
+                  : 'border-line text-deep hover:border-accent/40 hover:text-accent-strong hover:bg-lift ease-calm min-h-11 rounded-full border bg-white px-4 text-sm font-medium transition-colors duration-[320ms]'
               }
             >
               {industry.label}

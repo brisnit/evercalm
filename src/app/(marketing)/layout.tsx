@@ -85,7 +85,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             </Link>
             <Link
               href="/contact"
-              className="bg-accent hover:bg-accent-strong inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap text-white transition-colors duration-200 active:translate-y-px sm:px-5"
+              className="bg-accent hover:bg-accent-strong ease-calm inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap text-white transition-colors duration-[320ms] active:translate-y-px sm:px-5"
             >
               Ask about a pilot
             </Link>

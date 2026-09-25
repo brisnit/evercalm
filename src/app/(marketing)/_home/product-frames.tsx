@@ -251,7 +251,7 @@ export function StepCard({
   detail: string
 }) {
   return (
-    <li className="group border-line/70 relative overflow-hidden rounded-[1.15rem] border bg-white p-5 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_28px_50px_-24px_rgb(20_32_44/0.35)] motion-reduce:hover:translate-y-0">
+    <li className="group border-line/70 ease-calm relative overflow-hidden rounded-[1.15rem] border bg-white p-5 transition-[translate,box-shadow,border-color] duration-[550ms] hover:-translate-y-1 hover:border-transparent hover:shadow-[0_28px_50px_-24px_rgb(20_32_44/0.35)] motion-reduce:hover:translate-y-0">
       <p className="font-display text-accent relative text-[1.75rem] leading-none font-extrabold tabular-nums">
         {index}
       </p>

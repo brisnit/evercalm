@@ -412,17 +412,17 @@ function Hero() {
           >
             <Link
               href="/contact"
-              className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_40px_-16px_rgb(42_92_90/0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0"
+              className="bg-accent hover:bg-accent-strong group ease-calm inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,box-shadow,translate] duration-[320ms] hover:-translate-y-0.5 hover:shadow-[0_22px_40px_-16px_rgb(42_92_90/0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0"
             >
               Ask about a pilot
               <Icon
                 name="arrow"
-                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                className="ease-calm h-4 w-4 transition-transform duration-[320ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
               />
             </Link>
             <Link
               href="/#shift-board"
-              className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
+              className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong ease-calm inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,translate,box-shadow] duration-[320ms] hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
               See the shift board
             </Link>
@@ -529,7 +529,7 @@ function Promise() {
               key={item.title}
               data-reveal
               style={{ '--reveal-index': index } as React.CSSProperties}
-              className="group border-line/70 relative overflow-hidden rounded-[1.15rem] border bg-white p-6 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_34px_60px_-28px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
+              className="group border-line/70 ease-calm relative overflow-hidden rounded-[1.15rem] border bg-white p-6 transition-[translate,box-shadow,border-color] duration-[550ms] hover:-translate-y-1 hover:border-transparent hover:shadow-[0_34px_60px_-28px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
               <p className="text-faint relative font-mono text-[0.625rem] tracking-[0.14em] uppercase">
                 {item.marker}
@@ -551,7 +551,7 @@ function Promise() {
                 on hover, and it stays readable without one - it only changes
                 weight, never appears from nothing.
               */}
-              <p className="border-line-strong text-muted group-hover:border-coral-400 group-hover:text-quiet relative mt-4 border-l-2 pl-3 text-[0.8125rem] italic transition-colors duration-300">
+              <p className="border-line-strong text-muted group-hover:border-coral-400 group-hover:text-quiet ease-calm relative mt-4 border-l-2 pl-3 text-[0.8125rem] italic transition-colors duration-[550ms]">
                 {item.quote}
               </p>
             </li>
@@ -607,12 +607,12 @@ function ShiftBoard() {
 
             <Link
               href="/contact"
-              className="bg-action hover:bg-action-hover group mt-10 inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_18px_34px_-16px_rgb(194_79_49/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+              className="bg-action hover:bg-action-hover group ease-calm mt-10 inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_18px_34px_-16px_rgb(194_79_49/0.9)] transition-[background-color,translate,box-shadow] duration-[320ms] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
             >
               See it on your week
               <Icon
                 name="arrow"
-                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                className="ease-calm h-4 w-4 transition-transform duration-[320ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
               />
             </Link>
           </div>
@@ -687,10 +687,10 @@ function Platform() {
               key={item.title}
               data-reveal
               style={{ '--reveal-index': index % 4 } as React.CSSProperties}
-              className="group border-line/60 rounded-2xl border bg-white p-5 transition-[box-shadow,border-color,transform] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_30px_54px_-26px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
+              className="group border-line/60 ease-calm rounded-2xl border bg-white p-5 transition-[box-shadow,border-color,translate] duration-[550ms] hover:-translate-y-1 hover:border-transparent hover:shadow-[0_30px_54px_-26px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
               <span
-                className={`flex h-10 w-10 items-center justify-center rounded-[0.8rem] transition-transform duration-300 group-hover:scale-105 motion-reduce:group-hover:scale-100 ${item.chip}`}
+                className={`ease-calm flex h-10 w-10 items-center justify-center rounded-[0.8rem] transition-transform duration-[550ms] group-hover:scale-105 motion-reduce:group-hover:scale-100 ${item.chip}`}
               >
                 <Icon name={item.icon} className="h-5 w-5" />
               </span>
@@ -797,12 +797,12 @@ function ExperienceCard({
   return (
     <div
       data-reveal
-      className="group border-line/70 relative rounded-[1.15rem] border bg-white p-5 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_38px_66px_-30px_rgb(20_32_44/0.42)] motion-reduce:hover:translate-y-0 sm:p-6"
+      className="group border-line/70 ease-calm relative rounded-[1.15rem] border bg-white p-5 transition-[translate,box-shadow,border-color] duration-[550ms] hover:-translate-y-1 hover:border-transparent hover:shadow-[0_38px_66px_-30px_rgb(20_32_44/0.42)] motion-reduce:hover:translate-y-0 sm:p-6"
     >
       <div className="relative mb-5">
         <ArcBehind
           tone={arc}
-          className="-top-5 -left-5 size-[9rem] rotate-180 transition-transform duration-500 group-hover:-translate-x-1 group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
+          className="ease-calm -top-5 -left-5 size-[9rem] rotate-180 transition-transform duration-[800ms] group-hover:-translate-x-1 group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
         />
         <LifestylePhoto
           image={photo}
@@ -1108,17 +1108,17 @@ function FinalCta() {
             <div className="mt-9 flex flex-wrap justify-center gap-3">
               <Link
                 href="/contact"
-                className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+                className="bg-accent hover:bg-accent-strong group ease-calm inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,translate,box-shadow] duration-[320ms] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
               >
                 Ask about a pilot
                 <Icon
                   name="arrow"
-                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                  className="ease-calm h-4 w-4 transition-transform duration-[320ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
                 />
               </Link>
               <Link
                 href="/contact"
-                className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
+                className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong ease-calm inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,translate,box-shadow] duration-[320ms] hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
               >
                 Book a 20-minute walkthrough
               </Link>
