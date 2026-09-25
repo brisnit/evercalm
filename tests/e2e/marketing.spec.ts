@@ -38,10 +38,10 @@ test('the home page renders and offers real calls to action', async ({ page }) =
 const HERO_WIDTHS = [1920, 1440, 1280, 1024, 768, 390, 360]
 
 for (const width of HERO_WIDTHS) {
-  test(`the hero film never covers its text at ${width}px`, async ({ page }) => {
+  test(`the hero photography never covers its text at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    await expect(page.getByTestId('hero-video')).toBeVisible()
+    await expect(page.getByTestId('hero-still')).toBeVisible()
 
     const layout = await page.evaluate(() => {
       const box = (id: string) => {
@@ -65,7 +65,7 @@ for (const width of HERO_WIDTHS) {
           'supporting copy': box('hero-proof'),
         },
         mock: box('hero-mock'),
-        art: { film: box('hero-video') },
+        art: { photograph: box('hero-still') },
         headlineRight: Math.max(...Array.from(range.getClientRects()).map((r) => r.right)),
         descriptionFontSize: parseFloat(getComputedStyle(description).fontSize),
         descriptionClipped: description.scrollWidth > description.clientWidth + 1,
@@ -91,9 +91,7 @@ for (const width of HERO_WIDTHS) {
       expect(art.left, `${artName} is cut off at the left`).toBeGreaterThanOrEqual(0)
       expect(art.right, `${artName} is cut off at the right`).toBeLessThanOrEqual(layout.viewport)
     }
-    expect(intersects(layout.mock, layout.copy), 'the film column overlaps the text column').toBe(
-      false,
-    )
+    expect(intersects(layout.mock, layout.copy), 'the photography overlaps the text').toBe(false)
 
     // The text keeps its own boundary and stays readable.
     expect(layout.headlineRight, 'the headline runs out of its column').toBeLessThanOrEqual(
@@ -106,30 +104,18 @@ for (const width of HERO_WIDTHS) {
   })
 }
 
-test('the hero film is held back for anyone who prefers reduced motion', async ({ browser }) => {
-  const context = await browser.newContext({ reducedMotion: 'reduce' })
-  const page = await context.newPage()
+test('the opening band shows real people, each one described', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByTestId('hero-video')).toBeVisible()
-  // The poster still paints; no video element is ever created, so nothing is
-  // fetched and nothing moves.
-  await page.waitForTimeout(2_500)
-  await expect(page.locator('[data-testid="hero-video"] video')).toHaveCount(0)
-  await expect(page.locator('[data-testid="hero-video"] img')).toHaveCount(1)
-  await context.close()
-})
-
-test('the hero film plays without motion preferences, and carries no sound', async ({ page }) => {
-  await page.goto('/')
-  const video = page.locator('[data-testid="hero-video"] video')
-  await expect(video).toHaveCount(1, { timeout: 15_000 })
-  const state = await video.evaluate(async (v: HTMLVideoElement) => {
-    await new Promise((r) => setTimeout(r, 1_500))
-    return { muted: v.muted, loop: v.loop, paused: v.paused, src: v.currentSrc }
-  })
-  expect(state.muted, 'the hero film must never make noise').toBe(true)
-  expect(state.loop).toBe(true)
-  expect(state.src).toMatch(/evercalm-hero-(480|960)\.mp4$/)
+  // Round 2 asked for multiple people-focused images in the opening screen.
+  // Three photographs, every one of them carrying alt text a screen reader
+  // can use, and every one of them actually painting.
+  const band = page.locator('[data-testid="hero-people"] img')
+  await expect(band).toHaveCount(3)
+  for (let i = 0; i < 3; i += 1) {
+    const image = band.nth(i)
+    await expect(image).toHaveJSProperty('complete', true)
+    expect((await image.getAttribute('alt'))?.length ?? 0).toBeGreaterThan(20)
+  }
 })
 
 test('every navigation link reaches a page that exists', async ({ page }) => {

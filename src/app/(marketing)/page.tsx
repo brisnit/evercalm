@@ -1,7 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Container, SECTION, SectionHeading } from './_home/parts'
-import { HeroVideo } from './_home/hero-video'
+import {
+  ArcBehind,
+  CrossMark,
+  QuoteMark,
+  SectionBreak,
+  ShapeField,
+  TriRule,
+} from './_home/graphics'
+import { HeroPeople } from './_home/hero-people'
+import { ManagerWeekFrame, StaffPhoneFrame, StepCard } from './_home/product-frames'
 import { Icon, type IconName } from './_home/icons'
 import { IndustryTabs, type Industry } from './_home/industry-tabs'
 import { IMAGERY } from './_home/imagery'
@@ -102,8 +111,8 @@ const CAPABILITIES: { icon: IconName; chip: string; title: string; body: string 
   {
     icon: 'announcements',
     chip: 'bg-coral-50 text-coral-700',
-    title: 'Announcements',
-    body: 'Post to a location, a role, or a shift — and see who has actually read it.',
+    title: 'Announcements & channels',
+    body: 'Post to a location, a role or a shift and see who has read it — plus two team channels and a direct line to one person.',
   },
   {
     icon: 'policies',
@@ -120,8 +129,8 @@ const CAPABILITIES: { icon: IconName; chip: string; title: string; body: string 
   {
     icon: 'preshift',
     chip: 'bg-warning-soft text-warning',
-    title: 'Pre-shift routines',
-    body: 'The huddle note, the 86 list, the special, the focus of the night — written once, read by everyone on.',
+    title: 'Document hub',
+    body: 'The handbook, the allergen matrix, the closing sheet — uploaded once, in one place, with who each one is for.',
   },
   {
     icon: 'performance',
@@ -350,9 +359,12 @@ export default function HomePage() {
       <RevealOnScroll />
       <Hero />
       <IndustryStrip />
+      <SectionBreak from="cream" />
       <Promise />
-      <Platform />
+      <ShiftBoard />
+      <SectionBreak from="navy" peak={62} />
       <Experiences />
+      <Platform />
       <Training />
       <Industries />
       <Rollout />
@@ -363,55 +375,55 @@ export default function HomePage() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      {/* Two soft corner glows on white: sage at the top left, sand at the right. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(52rem_26rem_at_-2%_-14%,#e2f0ea_0%,#f1f8f5_38%,transparent_72%),radial-gradient(48rem_28rem_at_104%_-8%,#faf2e6_0%,#fdfbf8_40%,transparent_74%)]"
-      />
-      {/*
-        Two columns with a firm gutter between them. The hero film is laid out
-        entirely inside its own column (see hero-video.tsx) - nothing in it may
-        reach into the text, at any width. Guarded by a browser test that
-        measures the bounds.
-      */}
-      <Container className="relative grid items-center gap-12 py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:py-26 xl:gap-16 [&>*]:min-w-0">
-        <div data-testid="hero-copy">
-          <p className="border-line/70 inline-flex items-center gap-2.5 rounded-full border bg-white/80 py-1.5 pr-4 pl-1.5 text-[0.8125rem] font-medium">
+    <section className="bg-lift relative overflow-hidden">
+      <ShapeField tone="cream" />
+      <CrossMark className="text-coral-400/70 top-[14%] left-[7%] hidden size-4 lg:block" />
+      <CrossMark className="top-[30%] right-[9%] hidden size-3.5 text-teal-400/60 lg:block" />
+
+      <Container className="relative pt-14 pb-20 sm:pt-20 sm:pb-24">
+        <div data-testid="hero-copy" className="mx-auto max-w-[58rem] text-center">
+          <p className="border-line/70 text-deep inline-flex items-center gap-2.5 rounded-full border bg-white/80 py-1.5 pr-4 pl-1.5 text-[0.8125rem] font-medium backdrop-blur-sm">
             <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-full">
               <Icon name="check" className="h-3.5 w-3.5 text-white" />
             </span>
-            <span className="text-deep">Built for shift-based teams, not desk-based ones</span>
+            Built for shift-based teams, not desk-based ones
           </p>
 
-          {/* Steps down only between 1024 and 1280px, where the column is too
-              narrow for "Everyone walks" at full size and would break it. */}
+          {/*
+            Round 2: "The bold text arrangement with the two-tone lettering is
+            eye catching." Two tones and two voices - the claim in heavy sans,
+            the promise in italic serif - at a size that carries the page.
+          */}
           <h1
             data-testid="hero-headline"
-            className="font-display text-deep mt-6 text-[2.75rem] leading-[1.02] font-extrabold tracking-[-0.015em] sm:text-[4.125rem] lg:text-[3.625rem] xl:text-[4.125rem]"
+            className="font-display text-deep mt-7 text-[2.625rem] leading-[1.0] font-extrabold tracking-[-0.025em] text-balance sm:text-[4.25rem] sm:leading-[0.98] sm:text-wrap lg:text-[5.25rem]"
           >
-            Everyone walks
-            <br />
-            in knowing
-            <br />
-            <span className="text-accent decoration-accent underline decoration-[0.14em] underline-offset-[0.18em]">
-              What’s next.
+            Everyone walks in{' '}
+            {/* The break is the designed one; on a phone the line finds its
+                own shape rather than stranding a word. */}
+            <br className="hidden sm:block" />
+            {/* One unit, so the italic promise never orphans its last word. */}
+            <span className="sm:whitespace-nowrap">
+              knowing <span className="text-accent font-serif italic">what’s next.</span>
             </span>
           </h1>
 
           <p
             data-testid="hero-description"
-            className="text-quiet mt-7 max-w-[34rem] text-[1.0625rem] leading-[1.7]"
+            className="text-quiet mx-auto mt-7 max-w-[38rem] text-[1.0625rem] leading-[1.7]"
           >
-            EverCalm is one platform for onboarding, training, scheduling, communication, and the
-            daily run of the floor. Managers stop rebuilding the same spreadsheet every week. Staff
-            open one app and see their shift, their tasks, and their progress.
+            One platform for onboarding, training, scheduling, communication and the daily run of
+            the floor. Managers stop rebuilding the same spreadsheet every week. Staff open one app
+            and see their shift, their tasks and their progress.
           </p>
 
-          <div data-testid="hero-actions" className="mt-8 flex flex-wrap items-center gap-3">
+          <div
+            data-testid="hero-actions"
+            className="mt-9 flex flex-wrap items-center justify-center gap-3"
+          >
             <Link
               href="/contact"
-              className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold text-white shadow-[0_10px_24px_-12px_rgb(107_77_241/0.7)] transition-[background-color,box-shadow,transform] duration-200 hover:shadow-[0_14px_28px_-12px_rgb(107_77_241/0.8)] active:translate-y-px"
+              className="bg-accent hover:bg-accent-strong group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_16px_32px_-16px_rgb(42_92_90/0.9)] transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_40px_-16px_rgb(42_92_90/0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0"
             >
               Ask about a pilot
               <Icon
@@ -420,30 +432,39 @@ function Hero() {
               />
             </Link>
             <Link
-              href="/#platform"
-              className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-6 text-[0.9375rem] font-semibold transition-colors duration-200 active:translate-y-px"
+              href="/#shift-board"
+              className="border-line-strong text-deep hover:border-accent/60 hover:text-accent-strong inline-flex min-h-12 items-center rounded-full border bg-white px-7 text-[0.9375rem] font-semibold transition-[color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-18px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
               See the shift board
             </Link>
           </div>
-
-          <p
-            data-testid="hero-proof"
-            className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1.5 text-[0.8125rem]"
-          >
-            <span>
-              <strong className="text-deep font-semibold">Pilot</strong> pricing agreed with you
-            </span>
-            <span>
-              <strong className="text-deep font-semibold">14 min</strong> to import a roster
-            </span>
-            <span>
-              <strong className="text-deep font-semibold">No</strong> credit card
-            </span>
-          </p>
         </div>
 
-        <HeroVideo />
+        {/* People first, product over the top of them. */}
+        <div className="mt-14 sm:mt-16">
+          <HeroPeople />
+        </div>
+
+        <p
+          data-testid="hero-proof"
+          className="text-muted mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[0.8125rem] sm:mt-20"
+        >
+          <span>
+            <strong className="text-deep font-semibold">14 min</strong> to import a roster
+          </span>
+          <span aria-hidden="true" className="text-line-strong hidden sm:inline">
+            ·
+          </span>
+          <span>
+            <strong className="text-deep font-semibold">3 weeks</strong> to live, no project manager
+          </span>
+          <span aria-hidden="true" className="text-line-strong hidden sm:inline">
+            ·
+          </span>
+          <span>
+            <strong className="text-deep font-semibold">No</strong> credit card
+          </span>
+        </p>
       </Container>
     </section>
   )
@@ -471,62 +492,187 @@ function IndustryStrip() {
 
 function Promise() {
   return (
-    <section className={SECTION}>
-      <Container>
-        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
-          <SectionHeading
-            eyebrow="The promise"
-            title={
-              <>
-                Four questions, answered
-                <br className="hidden sm:block" /> before anyone has to ask.
-              </>
-            }
-            lead="Most shift-based teams lose hours a week to the same four unknowns — relayed by group text, sticky note, and whoever happens to be on. EverCalm answers all four in one place, for every person, every day."
-          />
-          <div data-reveal className="hidden lg:block">
-            <LifestylePhoto image={IMAGERY.prepForService} sizes="272px" />
+    <section className={`${SECTION} relative overflow-hidden bg-white`}>
+      <ShapeField tone="white" />
+      <Container className="relative">
+        {/*
+          Round 2 liked "the white background with the small design elements".
+          This section leads almost entirely with type: an oversized numeral
+          per question, and the photograph carried on an arc rather than
+          dropped into a grid cell.
+        */}
+        <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+          <div>
+            <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+              A shift, start to close
+            </p>
+            <h2
+              id="promise"
+              className="font-display text-deep mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.75rem]"
+            >
+              Four questions,
+              <br />
+              answered{' '}
+              <span className="text-accent font-serif italic">before anyone has to ask.</span>
+            </h2>
+            <TriRule className="mt-7" />
+            <p className="text-quiet mt-7 max-w-[34rem] text-[1.0625rem] leading-[1.65]">
+              Most shift-based teams lose hours a week to the same four unknowns — relayed by group
+              text, sticky note, and whoever happens to be on. EverCalm answers all four in one
+              place, for every person, every day.
+            </p>
+          </div>
+
+          <div data-reveal className="relative hidden lg:block">
+            <ArcBehind className="-top-7 -left-7 rotate-180" tone="coral" />
+            <div className="relative">
+              <LifestylePhoto
+                image={IMAGERY.managerCheckIn}
+                sizes="380px"
+                className="shadow-[0_34px_60px_-30px_rgb(20_32_44/0.5)]"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="mt-14">
-          <div className="border-line/70 text-faint hidden grid-cols-4 border-t pt-3 font-mono text-[0.625rem] tracking-[0.14em] uppercase lg:grid">
-            {PROMISE.map((item) => (
-              <span key={item.marker} className="last:text-right">
+        <ol className="mt-16 grid gap-5 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+          {PROMISE.map((item, index) => (
+            <li
+              key={item.title}
+              data-reveal
+              style={{ '--reveal-index': index } as React.CSSProperties}
+              className="group border-line/70 relative overflow-hidden rounded-[1.15rem] border bg-white p-6 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_34px_60px_-28px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
+            >
+              <span
+                aria-hidden="true"
+                className="bg-sage-50 group-hover:bg-coral-50 absolute -top-10 -right-10 size-28 rounded-full transition-colors duration-300"
+              />
+              <p className="text-faint relative font-mono text-[0.625rem] tracking-[0.14em] uppercase">
                 {item.marker}
-              </span>
-            ))}
+              </p>
+              <p
+                aria-hidden="true"
+                className={`font-display relative mt-3 text-[2.75rem] leading-none font-extrabold tabular-nums ${item.tone.split(' ')[0]}`}
+              >
+                0{index + 1}
+              </p>
+              <h3 className="font-display text-deep relative mt-3 text-lg font-extrabold">
+                {item.title}
+              </h3>
+              <p className="text-quiet relative mt-2.5 text-[0.9375rem] leading-[1.6]">
+                {item.body}
+              </p>
+              {/*
+                The example line is the contextual detail the brief asked for
+                on hover, and it stays readable without one - it only changes
+                weight, never appears from nothing.
+              */}
+              <p className="border-line-strong text-muted group-hover:border-coral-400 group-hover:text-quiet relative mt-4 border-l-2 pl-3 text-[0.8125rem] italic transition-colors duration-300">
+                {item.quote}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </Container>
+    </section>
+  )
+}
+
+/**
+ * THE SHIFT BOARD.
+ *
+ * Round 2, on the desktop-plus-phone composition: "This layout for the app
+ * display is really nice, but not at the top of the page, maybe mid-page."
+ * So it is here, and it shows the scheduling work that round 2 just built:
+ * the manager's week on the left, the employee's today floating in front of
+ * it, and the four steps underneath.
+ */
+function ShiftBoard() {
+  return (
+    <section id="shift-board" className="bg-band relative scroll-mt-20 overflow-hidden">
+      <ShapeField tone="navy" />
+
+      <Container className={`relative ${SECTION}`}>
+        <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-14">
+          <div>
+            <p className="text-band-accent font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+              The shift board
+            </p>
+            <h2 className="font-display mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance text-white sm:text-[3.5rem]">
+              Tell it how the business runs{' '}
+              <span className="text-band-accent font-serif italic">once.</span>
+            </h2>
+            <p className="text-band-quiet mt-7 max-w-[32rem] text-[1.0625rem] leading-[1.7]">
+              EverCalm lays out the week from your template, proposes a person for every slot, and
+              shows its working. The manager reviews one day at a time and publishes. Nobody
+              rebuilds a spreadsheet.
+            </p>
+
+            <dl className="mt-10 grid max-w-[28rem] grid-cols-3 gap-6">
+              {[
+                ['48 / 50', 'slots filled by autofill'],
+                ['0', 'people over 40 hours'],
+                ['1 tap', 'to publish the week'],
+              ].map(([value, label]) => (
+                <div key={label}>
+                  <dt className="font-display text-[1.375rem] leading-none font-extrabold text-white tabular-nums">
+                    {value}
+                  </dt>
+                  <dd className="text-band-quiet mt-2 text-[0.8125rem] leading-snug">{label}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <Link
+              href="/contact"
+              className="bg-action hover:bg-action-hover group mt-10 inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_18px_34px_-16px_rgb(194_79_49/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+            >
+              See it on your week
+              <Icon
+                name="arrow"
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+              />
+            </Link>
           </div>
 
-          <div className="relative mt-3">
-            <span
-              aria-hidden="true"
-              className="absolute top-4 right-4 left-4 hidden h-px bg-[linear-gradient(90deg,#2a5c5a_0%,#7fb5a0_38%,#e8856c_68%,#f5e6d3_100%)] lg:block"
-            />
-            <ol className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-              {PROMISE.map((item, index) => (
-                <li
-                  key={item.title}
-                  data-reveal
-                  style={{ '--reveal-index': index } as React.CSSProperties}
-                >
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-white ${item.tone}`}
-                  >
-                    <Icon name={item.icon} className="h-4 w-4" />
-                  </span>
-                  <h3 className="font-display text-deep mt-4 text-lg font-extrabold">
-                    {item.title}
-                  </h3>
-                  <p className="text-quiet mt-2.5 text-[0.9375rem] leading-[1.6]">{item.body}</p>
-                  <p className="border-line-strong text-muted mt-4 border-l-2 pl-3 text-[0.8125rem] italic">
-                    {item.quote}
-                  </p>
-                </li>
-              ))}
-            </ol>
+          {/* The product, layered: the week behind, today's shift in front. */}
+          <div data-reveal className="relative">
+            <ManagerWeekFrame />
+            <StaffPhoneFrame className="absolute -right-3 -bottom-16 hidden sm:block lg:-right-16 lg:-bottom-20" />
           </div>
         </div>
+
+        {/* On a phone the staff screen sits under the week rather than over it. */}
+        <div className="mt-10 flex justify-center sm:hidden">
+          <StaffPhoneFrame />
+        </div>
+
+        <ol className="mt-24 grid gap-4 sm:mt-28 sm:grid-cols-2 lg:grid-cols-4">
+          <StepCard
+            index="01"
+            title="Template"
+            body="Describe the week once — open days, the shifts each one needs, and your break rules."
+            detail="About five minutes, once"
+          />
+          <StepCard
+            index="02"
+            title="Autofill"
+            body="Every slot gets a proposal, and a plain-English account of how it decided."
+            detail="46 preferred · 2 not preferred"
+          />
+          <StepCard
+            index="03"
+            title="Review"
+            body="One card per day. Approve it, flag it for later, or open the day and change a pick."
+            detail="Swipe, or use the buttons"
+          />
+          <StepCard
+            index="04"
+            title="Publish"
+            body="Everyone gets their shifts and their break times. Only the people affected are told."
+            detail="One tap"
+          />
+        </ol>
       </Container>
     </section>
   )
@@ -534,36 +680,43 @@ function Promise() {
 
 function Platform() {
   return (
-    <section id="platform" className={`bg-mist scroll-mt-24 ${SECTION}`}>
-      <Container>
-        <SectionHeading
-          eyebrow="The platform"
-          title={
-            <>
-              One system for the
-              <br className="hidden sm:block" /> whole operation.
-            </>
-          }
-          lead="People, training, schedules, and daily operations were never separate problems. EverCalm keeps them in one record, so a new hire’s certification, availability, and closing duties all belong to the same person."
-        />
+    <section id="platform" className={`bg-lift relative scroll-mt-24 overflow-hidden ${SECTION}`}>
+      <ShapeField tone="cream" />
+      <Container className="relative">
+        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+          <div>
+            <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+              The platform
+            </p>
+            <h2 className="font-display text-deep mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.5rem]">
+              One system for the{' '}
+              <span className="text-accent font-serif italic">whole operation.</span>
+            </h2>
+          </div>
+          <p className="text-quiet text-[1.0625rem] leading-[1.65] lg:pb-2">
+            People, training, schedules and daily operations were never separate problems. EverCalm
+            keeps them in one record, across every location, so a new hire’s certification,
+            availability and closing duties all belong to the same person.
+          </p>
+        </div>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {CAPABILITIES.map((item, index) => (
             <li
               key={item.title}
               data-reveal
               style={{ '--reveal-index': index % 4 } as React.CSSProperties}
-              className="border-line/60 hover:border-accent/30 rounded-2xl border bg-white p-4 transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-16px_rgb(23_18_64/0.3)] motion-reduce:hover:translate-y-0"
+              className="group border-line/60 rounded-2xl border bg-white p-5 transition-[box-shadow,border-color,transform] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_30px_54px_-26px_rgb(20_32_44/0.4)] motion-reduce:hover:translate-y-0"
             >
               <span
-                className={`flex h-9 w-9 items-center justify-center rounded-[0.7rem] ${item.chip}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-[0.8rem] transition-transform duration-300 group-hover:scale-105 motion-reduce:group-hover:scale-100 ${item.chip}`}
               >
                 <Icon name={item.icon} className="h-5 w-5" />
               </span>
-              <h3 className="font-display text-deep mt-3.5 text-[0.9375rem] font-extrabold">
+              <h3 className="font-display text-deep mt-4 text-[0.9375rem] font-extrabold">
                 {item.title}
               </h3>
-              <p className="text-quiet mt-1.5 text-[0.8125rem] leading-[1.55]">{item.body}</p>
+              <p className="text-quiet mt-2 text-[0.8125rem] leading-[1.55]">{item.body}</p>
             </li>
           ))}
         </ul>
@@ -574,24 +727,32 @@ function Platform() {
 
 function Experiences() {
   return (
-    <section id="experiences" className={`scroll-mt-24 ${SECTION}`}>
-      <Container>
-        <SectionHeading
-          eyebrow="Two experiences"
-          title={
-            <>
-              Depth for the people running
-              <br className="hidden sm:block" /> it. Simplicity for everyone else.
-            </>
-          }
-          lead="An operations platform fails the moment your staff stop opening it. So the manager side holds everything, and the employee side holds only what that person needs to know right now."
-        />
+    <section
+      id="experiences"
+      className={`relative scroll-mt-24 overflow-hidden bg-white ${SECTION}`}
+    >
+      <Container className="relative">
+        <div className="max-w-[46rem]">
+          <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+            Two experiences
+          </p>
+          <h2 className="font-display text-deep mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.5rem]">
+            Depth for the people running it.{' '}
+            <span className="text-accent font-serif italic">Simplicity for everyone else.</span>
+          </h2>
+          <p className="text-quiet mt-7 text-[1.0625rem] leading-[1.65]">
+            An operations platform fails the moment your staff stop opening it. So the manager side
+            holds everything, and the employee side holds only what that person needs to know right
+            now.
+          </p>
+        </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+        <div className="mt-12 grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
           <ExperienceCard
             photo={IMAGERY.managerCheckIn}
             audience="Owners, HR & managers"
             audienceClass="bg-teal-50 text-teal-700"
+            arc="coral"
             title="The console"
             lead="One place to build the week, spot the gap, and prove it happened."
             points={CONSOLE_POINTS}
@@ -601,12 +762,33 @@ function Experiences() {
             photo={IMAGERY.stylistStation}
             audience="Employees"
             audienceClass="bg-info-soft text-info"
+            arc="mint"
             title="The app"
             lead="Open it, and the answer is already on the screen. No hunting, no training required."
             points={APP_POINTS}
             checkClass="bg-info-soft text-info"
           />
         </div>
+
+        {/*
+          Round 2 liked the pull-quote with its oversized marks. It is a real
+          line from the demo's own huddle note, so the page and the product
+          say the same thing.
+        */}
+        <figure className="bg-lift relative mt-6 overflow-hidden rounded-[1.15rem] px-8 py-12 text-center sm:px-16 sm:py-16">
+          <QuoteMark className="text-coral-400/90 top-6 left-6 h-7 w-9 sm:top-8 sm:left-10 sm:h-9 sm:w-12" />
+          <QuoteMark className="text-coral-400/90 right-6 bottom-6 h-7 w-9 rotate-180 sm:right-10 sm:bottom-8 sm:h-9 sm:w-12" />
+          <figcaption className="text-muted font-mono text-[0.625rem] tracking-[0.14em] uppercase">
+            Tonight’s huddle note · Riverside Ave · 4:45p
+          </figcaption>
+          <blockquote className="font-display text-deep mx-auto mt-5 max-w-[40rem] text-[1.375rem] leading-[1.3] font-extrabold text-balance sm:text-[1.875rem]">
+            “Patio opens at 4. Ramos is out — Devon covers section 3. Allergen refresher due
+            Sunday.”
+          </blockquote>
+          <p className="text-muted mt-5 text-[0.8125rem]">
+            Read by 12 of 14 before the shift started
+          </p>
+        </figure>
       </Container>
     </section>
   )
@@ -620,6 +802,7 @@ function ExperienceCard({
   lead,
   points,
   checkClass,
+  arc,
 }: {
   audience: string
   audienceClass: string
@@ -627,11 +810,25 @@ function ExperienceCard({
   lead: string
   points: string[][]
   checkClass: string
+  arc: 'coral' | 'mint'
   photo: (typeof IMAGERY)[keyof typeof IMAGERY]
 }) {
   return (
-    <div data-reveal className="border-line/70 rounded-[1.15rem] border bg-white p-5 sm:p-6">
-      <LifestylePhoto image={photo} sizes="(min-width: 1024px) 520px, 100vw" className="mb-5" />
+    <div
+      data-reveal
+      className="group border-line/70 relative rounded-[1.15rem] border bg-white p-5 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-transparent hover:shadow-[0_38px_66px_-30px_rgb(20_32_44/0.42)] motion-reduce:hover:translate-y-0 sm:p-6"
+    >
+      <div className="relative mb-5">
+        <ArcBehind
+          tone={arc}
+          className="-top-5 -left-5 size-[9rem] rotate-180 transition-transform duration-500 group-hover:-translate-x-1 group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
+        />
+        <LifestylePhoto
+          image={photo}
+          sizes="(min-width: 1024px) 520px, 100vw"
+          className="relative shadow-[0_24px_44px_-26px_rgb(20_32_44/0.45)]"
+        />
+      </div>
       <span
         className={`inline-block rounded-full px-3 py-1.5 font-mono text-[0.625rem] tracking-[0.14em] uppercase ${audienceClass}`}
       >
@@ -824,19 +1021,27 @@ function StepMark({ state, index }: { state: string; index: number }) {
 
 function Industries() {
   return (
-    <section id="industries" className={`scroll-mt-24 ${SECTION}`}>
-      <Container>
-        <SectionHeading
-          eyebrow="Industry templates"
-          title={
-            <>
-              Start from your industry, then
-              <br className="hidden sm:block" /> bend it to your business.
-            </>
-          }
-          lead="Every template arrives with the roles, checklists, training paths, and certification types that business already uses — then every one of them is yours to rename, reorder, or delete."
-        />
-        <div data-reveal className="mt-10">
+    <section
+      id="industries"
+      className={`relative scroll-mt-24 overflow-hidden bg-white ${SECTION}`}
+    >
+      <ShapeField tone="white" />
+      <Container className="relative">
+        <div className="max-w-[46rem]">
+          <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+            Industry templates
+          </p>
+          <h2 className="font-display text-deep mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.5rem]">
+            Start from your industry, then{' '}
+            <span className="text-accent font-serif italic">bend it to your business.</span>
+          </h2>
+          <p className="text-quiet mt-7 text-[1.0625rem] leading-[1.65]">
+            Every template arrives with the roles, checklists, training paths and certification
+            types that business already uses — then every one of them is yours to rename, reorder or
+            delete.
+          </p>
+        </div>
+        <div data-reveal className="mt-12">
           <IndustryTabs industries={INDUSTRIES} />
         </div>
       </Container>
@@ -846,20 +1051,24 @@ function Industries() {
 
 function Rollout() {
   return (
-    <section id="rollout" className={`bg-lift scroll-mt-24 ${SECTION}`}>
-      <Container>
-        <SectionHeading
-          eyebrow="Rollout"
-          title={
-            <>
-              Live in three weeks,
-              <br className="hidden sm:block" /> without a project manager.
-            </>
-          }
-          lead="The order matters: get people in, then get standards in, then turn it over to the floor. Most single-location businesses finish sooner."
-        />
+    <section id="rollout" className={`bg-lift relative scroll-mt-24 overflow-hidden ${SECTION}`}>
+      <ShapeField tone="cream" />
+      <Container className="relative">
+        <div className="max-w-[46rem]">
+          <p className="text-coral-700 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+            Rollout
+          </p>
+          <h2 className="font-display text-deep mt-5 text-[2.5rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance sm:text-[3.5rem]">
+            Live in three weeks,{' '}
+            <span className="text-accent font-serif italic">without a project manager.</span>
+          </h2>
+          <p className="text-quiet mt-7 text-[1.0625rem] leading-[1.65]">
+            The order matters: get people in, then get standards in, then turn it over to the floor.
+            Most single-location businesses finish sooner.
+          </p>
+        </div>
 
-        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
+        <ol className="mt-14 grid gap-8 md:grid-cols-3 md:gap-6">
           {ROLLOUT.map((step, index) => (
             <li
               key={step.week}
@@ -882,46 +1091,46 @@ function Rollout() {
 
 function FinalCta() {
   return (
-    <section className="pt-16 pb-32 sm:pt-24 sm:pb-48">
-      <Container>
-        <div data-reveal className="mb-6">
-          <LifestylePhoto
-            image={IMAGERY.closingTogether}
-            sizes="(min-width: 1168px) 1128px, 100vw"
-          />
-        </div>
-        <div
-          data-reveal
-          className="rounded-[1.5rem] bg-[linear-gradient(to_top_right,#1c3c3b_0%,#2a5c5a_52%,#35706d_100%)] px-6 py-14 text-center sm:px-12"
-        >
-          <h2 className="font-display text-[1.75rem] leading-[1.15] font-extrabold tracking-[-0.02em] text-balance text-white sm:text-[2.35rem]">
-            Give every shift the same answer.
-          </h2>
-          <p className="mx-auto mt-4 max-w-[38rem] text-[0.9375rem] leading-[1.7] text-white/85">
-            Pilot businesses are set up with our team. Import a roster, publish a week, and let your
-            team see what’s happening, what’s expected, what they’ve finished, and what comes next.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/contact"
-              className="text-deep inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-semibold hover:bg-white/90"
-            >
-              Ask about a pilot
-              <Icon name="arrow" className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex min-h-12 items-center rounded-full border border-white/50 px-6 text-[0.9375rem] font-semibold text-white hover:bg-white/10"
-            >
-              Book a 20-minute walkthrough
-            </Link>
+    <>
+      <SectionBreak from="cream" peak={44} />
+      <section className="bg-band relative overflow-hidden pt-16 pb-24 sm:pt-24 sm:pb-32">
+        <ShapeField tone="navy" />
+        <Container className="relative">
+          <div data-reveal className="mx-auto max-w-[44rem] text-center">
+            <h2 className="font-display text-[2.25rem] leading-[0.98] font-extrabold tracking-[-0.025em] text-balance text-white sm:text-[3.25rem]">
+              Give every shift the{' '}
+              <span className="text-band-accent font-serif italic">same answer.</span>
+            </h2>
+            <p className="text-band-quiet mx-auto mt-6 max-w-[38rem] text-[1rem] leading-[1.7]">
+              Pilot businesses are set up with our team. Import a roster, publish a week, and let
+              your team see what’s happening, what’s expected, what they’ve finished and what comes
+              next.
+            </p>
+            <div className="mt-9 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/contact"
+                className="bg-action hover:bg-action-hover group inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-[0.9375rem] font-semibold text-white shadow-[0_18px_34px_-16px_rgb(194_79_49/0.9)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+              >
+                Ask about a pilot
+                <Icon
+                  name="arrow"
+                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                />
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex min-h-12 items-center rounded-full border border-white/40 px-7 text-[0.9375rem] font-semibold text-white transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-white/10 motion-reduce:hover:translate-y-0"
+              >
+                Book a 20-minute walkthrough
+              </Link>
+            </div>
+            <p className="text-band-quiet mt-7 text-[0.8125rem]">
+              Pricing agreed with each pilot · No card taken online · Your data exports whenever you
+              ask
+            </p>
           </div>
-          <p className="mt-6 text-[0.8125rem] text-white/75">
-            Pricing agreed with each pilot · No card taken online · Your data exports whenever you
-            ask
-          </p>
-        </div>
-      </Container>
-    </section>
+        </Container>
+      </section>
+    </>
   )
 }
